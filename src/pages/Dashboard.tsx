@@ -1,14 +1,50 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { storage } from "@/lib/storage";
 import { WORK_UNITS, SERVICE_LABELS } from "@/lib/constants";
-import { FileText, Clock, CheckCircle, AlertCircle, MessageSquare, TrendingUp } from "lucide-react";
+import { FileText, Clock, CheckCircle, MessageSquare, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const services = storage.getServices();
-  const consultations = storage.getConsultations();
+  const [services, setServices] = useState<any[]>([]);
+  const [consultations, setConsultations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    
+    // Load services based on role
+    let servicesQuery = supabase.from("services").select("*");
+    if (user?.role === "user_unit") {
+      servicesQuery = servicesQuery.eq("user_id", user.id);
+    } else if (user?.role === "admin_unit") {
+      servicesQuery = servicesQuery.eq("work_unit_id", user.work_unit_id);
+    }
+    
+    const { data: servicesData } = await servicesQuery.order("created_at", { ascending: false });
+    setServices(servicesData || []);
+
+    // Load consultations based on role
+    let consultationsQuery = supabase.from("consultations").select("*");
+    if (user?.role === "user_unit") {
+      consultationsQuery = consultationsQuery.eq("user_id", user.id);
+    } else if (user?.role === "admin_unit") {
+      consultationsQuery = consultationsQuery.eq("work_unit_id", user.work_unit_id);
+    }
+    
+    const { data: consultationsData } = await consultationsQuery.order("created_at", { ascending: false });
+    setConsultations(consultationsData || []);
+
+    setIsLoading(false);
+  };
 
   // Get user's work unit name
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);

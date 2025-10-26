@@ -1,15 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { storage } from "@/lib/storage";
-import { initializeSeedData } from "@/lib/seed-data";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
-interface User {
-  id: string;
+interface Profile {
   name: string;
-  email: string;
   role: string;
   work_unit_id: number | null;
   nip: string;
-  phone: string;
+  phone: string | null;
+}
+
+interface User extends Profile {
+  id: string;
+  email: string;
 }
 
 interface AuthContextType {
@@ -27,64 +30,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize seed data
-    initializeSeedData();
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadUserProfile(session.user);
+      }
+      setIsLoading(false);
+    });
 
-    // Check for existing user session
-    const currentUser = storage.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setIsLoading(false);
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        loadUserProfile(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const users = storage.getUsers();
-    const foundUser = users.find((u) => u.email === email && u.password === password);
+  const loadUserProfile = async (authUser: SupabaseUser) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      storage.setCurrentUser(userWithoutPassword);
-      return { success: true };
+    if (profile) {
+      setUser({
+        id: authUser.id,
+        email: authUser.email!,
+        name: profile.name,
+        role: profile.role,
+        work_unit_id: profile.work_unit_id,
+        nip: profile.nip,
+        phone: profile.phone,
+      });
     }
+  };
 
-    return { success: false, error: "Email atau password salah" };
+  const login = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        await loadUserProfile(data.user);
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   };
 
   const register = async (userData: any) => {
-    const users = storage.getUsers();
-    
-    // Check if email already exists
-    if (users.some((u) => u.email === userData.email)) {
-      return { success: false, error: "Email sudah terdaftar" };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            role: "user_unit",
+            work_unit_id: userData.work_unit_id,
+            nip: userData.nip,
+            phone: userData.phone,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        await loadUserProfile(data.user);
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
-
-    // Check if NIP already exists
-    if (users.some((u) => u.nip === userData.nip)) {
-      return { success: false, error: "NIP sudah terdaftar" };
-    }
-
-    const newUser = {
-      id: Date.now().toString(),
-      ...userData,
-      role: "user_unit", // Default role
-      created_at: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    storage.setUsers(users);
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    storage.setCurrentUser(userWithoutPassword);
-
-    return { success: true };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    storage.clearCurrentUser();
   };
 
   return (
