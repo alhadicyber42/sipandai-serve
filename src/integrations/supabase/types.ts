@@ -334,7 +334,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      current_user_work_unit: { Args: never; Returns: number }
     }
     Enums: {
       consultation_category:
