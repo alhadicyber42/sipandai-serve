@@ -10,6 +10,8 @@ import KenaikanPangkat from "./pages/services/KenaikanPangkat";
 import Mutasi from "./pages/services/Mutasi";
 import Cuti from "./pages/services/Cuti";
 import Profile from "./pages/Profile";
+import KelolaAdminUnit from "./pages/admin/KelolaAdminUnit";
+import KelolaUnitKerja from "./pages/admin/KelolaUnitKerja";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/usulan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
             <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
             <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
+            <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
+            <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
