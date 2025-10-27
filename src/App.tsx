@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import KenaikanPangkat from "./pages/services/KenaikanPangkat";
 import Mutasi from "./pages/services/Mutasi";
 import Cuti from "./pages/services/Cuti";
+import Pensiun from "./pages/services/Pensiun";
 import Profile from "./pages/Profile";
 import KelolaAdminUnit from "./pages/admin/KelolaAdminUnit";
 import KelolaUnitKerja from "./pages/admin/KelolaUnitKerja";
@@ -50,9 +51,11 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/layanan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
             <Route path="/layanan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+            <Route path="/layanan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
             <Route path="/layanan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
             <Route path="/usulan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
             <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+            <Route path="/usulan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
             <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
             <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
             <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />

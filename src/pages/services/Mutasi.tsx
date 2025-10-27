@@ -1,25 +1,22 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { ServiceList } from "@/components/ServiceList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Upload, FileText, Eye, CheckCircle, XCircle } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { Plus, Users } from "lucide-react";
 
 export default function Mutasi() {
   const { user } = useAuth();
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,7 +29,11 @@ export default function Mutasi() {
     setIsLoading(true);
     let query = supabase
       .from("services")
-      .select("*, profiles!services_user_id_fkey(name)")
+      .select(`
+        *,
+        profiles!services_user_id_fkey(name),
+        work_units(name)
+      `)
       .eq("service_type", "mutasi");
 
     if (user.role === "user_unit") {
@@ -80,60 +81,6 @@ export default function Mutasi() {
     setIsSubmitting(false);
   };
 
-  const handleApprove = async (serviceId: string) => {
-    const newStatus = user?.role === "admin_unit" ? "approved_by_unit" : "approved_final";
-    const { error } = await supabase
-      .from("services")
-      .update({
-        status: newStatus,
-        notes: [
-          ...(selectedService?.notes || []),
-          {
-            actor: user?.name,
-            role: user?.role,
-            note: "Disetujui",
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      })
-      .eq("id", serviceId);
-
-    if (error) {
-      toast.error("Gagal menyetujui usulan");
-    } else {
-      toast.success("Usulan berhasil disetujui");
-      setSelectedService(null);
-      loadServices();
-    }
-  };
-
-  const handleReturn = async (serviceId: string, note: string) => {
-    const newStatus = user?.role === "admin_unit" ? "returned_to_user" : "returned_to_unit";
-    const { error } = await supabase
-      .from("services")
-      .update({
-        status: newStatus,
-        notes: [
-          ...(selectedService?.notes || []),
-          {
-            actor: user?.name,
-            role: user?.role,
-            note,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      })
-      .eq("id", serviceId);
-
-    if (error) {
-      toast.error("Gagal mengembalikan usulan");
-    } else {
-      toast.success("Usulan dikembalikan untuk revisi");
-      setSelectedService(null);
-      loadServices();
-    }
-  };
-
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
 
   return (
@@ -141,16 +88,27 @@ export default function Mutasi() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Mutasi Pegawai</h1>
-            <p className="text-muted-foreground mt-1">
-              {user?.role === "user_unit" ? "Kelola usulan mutasi Anda" : "Review usulan mutasi pegawai"}
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Mutasi Pegawai</h1>
+                <p className="text-muted-foreground mt-1">
+                  {user?.role === "user_unit"
+                    ? "Kelola usulan mutasi Anda"
+                    : user?.role === "admin_unit"
+                    ? "Review usulan mutasi unit Anda"
+                    : "Kelola semua usulan mutasi pegawai"}
+                </p>
+              </div>
+            </div>
           </div>
           {user?.role === "user_unit" && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Ajukan Mutasi
                 </Button>
               </DialogTrigger>
@@ -160,7 +118,7 @@ export default function Mutasi() {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Judul Usulan</Label>
+                    <Label htmlFor="title">Judul Usulan *</Label>
                     <Input
                       id="title"
                       name="title"
@@ -169,16 +127,16 @@ export default function Mutasi() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Deskripsi</Label>
+                    <Label htmlFor="description">Deskripsi *</Label>
                     <Textarea
                       id="description"
                       name="description"
                       placeholder="Jelaskan alasan dan tujuan mutasi..."
-                      rows={4}
+                      rows={5}
                       required
                     />
                   </div>
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex gap-2 justify-end pt-4 border-t">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Batal
                     </Button>
@@ -192,93 +150,56 @@ export default function Mutasi() {
           )}
         </div>
 
-        <div className="grid gap-4">
-          {isLoading ? (
+        {/* Statistics for Admin */}
+        {isAdmin && (
+          <div className="grid md:grid-cols-4 gap-4">
             <Card>
-              <CardContent className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Memuat data...</p>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">{services.length}</div>
+                <p className="text-sm text-muted-foreground">Total Usulan</p>
               </CardContent>
             </Card>
-          ) : services.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">Belum ada usulan</p>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {services.filter((s) => s.status === "submitted").length}
+                </div>
+                <p className="text-sm text-muted-foreground">Menunggu Review</p>
               </CardContent>
             </Card>
-          ) : (
-            services.map((service) => (
-              <Card key={service.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{service.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {user?.role !== "user_unit" && `Diajukan oleh: ${service.profiles?.name} • `}
-                        {format(new Date(service.created_at), "dd MMMM yyyy", { locale: localeId })}
-                      </p>
-                    </div>
-                    <StatusBadge status={service.status} />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm mb-4">{service.description}</p>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => setSelectedService(service)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Detail
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Detail Usulan</DialogTitle>
-                      </DialogHeader>
-                      {selectedService && (
-                        <div className="space-y-4">
-                          <div>
-                            <Label>Judul</Label>
-                            <p className="text-sm mt-1">{selectedService.title}</p>
-                          </div>
-                          <div>
-                            <Label>Deskripsi</Label>
-                            <p className="text-sm mt-1">{selectedService.description}</p>
-                          </div>
-                          <div>
-                            <Label>Status</Label>
-                            <div className="mt-1">
-                              <StatusBadge status={selectedService.status} />
-                            </div>
-                          </div>
-                          {isAdmin && (selectedService.status === "submitted" || selectedService.status === "approved_by_unit") && (
-                            <div className="flex gap-2 pt-4 border-t">
-                              <Button className="flex-1" onClick={() => handleApprove(selectedService.id)}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Setujui
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                className="flex-1"
-                                onClick={() => {
-                                  const note = prompt("Alasan pengembalian:");
-                                  if (note) handleReturn(selectedService.id, note);
-                                }}
-                              >
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Kembalikan
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-green-600">
+                  {services.filter((s) => s.status === "approved_final").length}
+                </div>
+                <p className="text-sm text-muted-foreground">Disetujui</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-red-600">
+                  {
+                    services.filter(
+                      (s) =>
+                        s.status === "returned_to_user" ||
+                        s.status === "returned_to_unit" ||
+                        s.status === "rejected"
+                    ).length
+                  }
+                </div>
+                <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        <ServiceList
+          services={services}
+          isLoading={isLoading}
+          onReload={loadServices}
+          showFilters={isAdmin}
+          allowActions={isAdmin}
+        />
       </div>
     </DashboardLayout>
   );

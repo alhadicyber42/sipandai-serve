@@ -10,9 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, UserX } from "lucide-react";
 
-export default function KenaikanPangkat() {
+export default function Pensiun() {
   const { user } = useAuth();
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,20 +34,18 @@ export default function KenaikanPangkat() {
         profiles!services_user_id_fkey(name),
         work_units(name)
       `)
-      .eq("service_type", "kenaikan_pangkat");
+      .eq("service_type", "pensiun");
 
     if (user.role === "user_unit") {
       query = query.eq("user_id", user.id);
     } else if (user.role === "admin_unit") {
       query = query.eq("work_unit_id", user.work_unit_id);
     }
-    // admin_pusat can see all
 
     const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       toast.error("Gagal memuat data");
-      console.error(error);
     } else {
       setServices(data || []);
     }
@@ -65,7 +63,7 @@ export default function KenaikanPangkat() {
     const { error } = await supabase.from("services").insert({
       user_id: user!.id,
       work_unit_id: user!.work_unit_id,
-      service_type: "kenaikan_pangkat",
+      service_type: "pensiun",
       status: "submitted",
       title,
       description,
@@ -74,7 +72,6 @@ export default function KenaikanPangkat() {
 
     if (error) {
       toast.error("Gagal mengajukan usulan");
-      console.error(error);
     } else {
       toast.success("Usulan berhasil diajukan");
       setIsDialogOpen(false);
@@ -93,16 +90,16 @@ export default function KenaikanPangkat() {
           <div>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-primary" />
+                <UserX className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Kenaikan Pangkat</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Pensiun</h1>
                 <p className="text-muted-foreground mt-1">
                   {user?.role === "user_unit"
-                    ? "Kelola usulan kenaikan pangkat Anda"
+                    ? "Kelola usulan pensiun Anda"
                     : user?.role === "admin_unit"
-                    ? "Review usulan kenaikan pangkat unit Anda"
-                    : "Kelola semua usulan kenaikan pangkat"}
+                    ? "Review usulan pensiun unit Anda"
+                    : "Kelola semua usulan pensiun"}
                 </p>
               </div>
             </div>
@@ -112,12 +109,12 @@ export default function KenaikanPangkat() {
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Ajukan Usulan
+                  Ajukan Pensiun
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Ajukan Kenaikan Pangkat</DialogTitle>
+                  <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
@@ -125,7 +122,7 @@ export default function KenaikanPangkat() {
                     <Input
                       id="title"
                       name="title"
-                      placeholder="Contoh: Usulan Kenaikan Pangkat Periode April 2025"
+                      placeholder="Contoh: Permohonan Pensiun BUP"
                       required
                     />
                   </div>
@@ -134,17 +131,13 @@ export default function KenaikanPangkat() {
                     <Textarea
                       id="description"
                       name="description"
-                      placeholder="Jelaskan detail usulan kenaikan pangkat..."
+                      placeholder="Jelaskan detail permohonan pensiun..."
                       rows={5}
                       required
                     />
                   </div>
                   <div className="flex gap-2 justify-end pt-4 border-t">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Batal
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
