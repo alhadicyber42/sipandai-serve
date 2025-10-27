@@ -22,8 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Tempo
-**/tempobook/dynamic/
-**/tempobook/storyboards/
-.env

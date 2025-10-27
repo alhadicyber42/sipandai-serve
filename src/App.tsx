@@ -10,8 +10,6 @@ import KenaikanPangkat from "./pages/services/KenaikanPangkat";
 import Mutasi from "./pages/services/Mutasi";
 import Cuti from "./pages/services/Cuti";
 import Pensiun from "./pages/services/Pensiun";
-import Konsultasi from "./pages/services/Konsultasi";
-import KonsultasiDetail from "./pages/services/KonsultasiDetail";
 import Profile from "./pages/Profile";
 import KelolaAdminUnit from "./pages/admin/KelolaAdminUnit";
 import KelolaUnitKerja from "./pages/admin/KelolaUnitKerja";
@@ -59,8 +57,6 @@ const App = () => (
             <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
             <Route path="/usulan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
             <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
-            <Route path="/konsultasi" element={<ProtectedRoute><Konsultasi /></ProtectedRoute>} />
-            <Route path="/konsultasi/:id" element={<ProtectedRoute><KonsultasiDetail /></ProtectedRoute>} />
             <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
             <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -1,167 +1,251 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Shield, Edit, Trash2, UserCog, Building2 } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { Users, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-const ROLE_LABELS = {
-  admin_unit: "Admin Unit",
-  admin_pusat: "Admin Pusat",
-};
+interface Admin {
+  id: string;
+  name: string;
+  nip: string;
+  email: string;
+  phone: string | null;
+  work_unit_id: number | null;
+  work_unit_name?: string;
+}
+
+interface WorkUnit {
+  id: number;
+  name: string;
+  code: string;
+}
 
 export default function KelolaAdminUnit() {
   const { user } = useAuth();
-  const [admins, setAdmins] = useState<any[]>([]);
-  const [workUnits, setWorkUnits] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingAdmin, setEditingAdmin] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    nip: "",
+    email: "",
+    phone: "",
+    password: "",
+    work_unit_id: "",
+  });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.role === "admin_pusat") {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     setIsLoading(true);
+    try {
+      // Load work units
+      const { data: units } = await supabase
+        .from("work_units")
+        .select("*")
+        .order("name");
+      
+      if (units) setWorkUnits(units);
 
-    // Load admins
-    const { data: adminsData, error: adminsError } = await supabase
-      .from("profiles")
-      .select(`
-        *,
-        work_units(name, code)
-      `)
-      .in("role", ["admin_unit", "admin_pusat"])
-      .order("created_at", { ascending: false });
-
-    if (adminsError) {
-      toast.error("Gagal memuat data admin");
-      console.error(adminsError);
-    } else {
-      setAdmins(adminsData || []);
-    }
-
-    // Load work units
-    const { data: unitsData, error: unitsError } = await supabase
-      .from("work_units")
-      .select("*")
-      .order("name");
-
-    if (unitsError) {
-      console.error(unitsError);
-    } else {
-      setWorkUnits(unitsData || []);
-    }
-
-    setIsLoading(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
-    const nip = formData.get("nip") as string;
-    const phone = formData.get("phone") as string;
-    const role = formData.get("role") as string;
-    const workUnitId = formData.get("work_unit_id") as string;
-
-    if (editingAdmin) {
-      // Update existing admin
-      const { error } = await supabase
+      // Load admin units with their work unit info
+      const { data: profiles } = await supabase
         .from("profiles")
-        .update({
+        .select(`
+          id,
           name,
           nip,
           phone,
-          role: role as any,
-          work_unit_id: role === "admin_unit" ? workUnitId : null,
-        })
-        .eq("id", editingAdmin.id);
+          work_unit_id,
+          work_units (
+            name
+          )
+        `)
+        .eq("role", "admin_unit")
+        .order("name");
 
-      if (error) {
-        toast.error("Gagal memperbarui admin");
-        console.error(error);
-      } else {
-        toast.success("Admin berhasil diperbarui");
-        setIsDialogOpen(false);
-        setEditingAdmin(null);
-        loadData();
+      if (profiles) {
+        // Get emails from auth.users via RPC or separate query
+        const adminIds = profiles.map(p => p.id);
+        const adminList: Admin[] = [];
+
+        for (const profile of profiles) {
+          // Get user email from metadata or auth
+          const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+          
+          adminList.push({
+            id: profile.id,
+            name: profile.name,
+            nip: profile.nip,
+            phone: profile.phone,
+            work_unit_id: profile.work_unit_id,
+            work_unit_name: (profile.work_units as any)?.name || "-",
+            email: authUser?.user?.email || "-",
+          });
+        }
+
+        setAdmins(adminList);
       }
-    } else {
-      // Create new admin via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            nip,
-            phone,
-            role,
-            work_unit_id: role === "admin_unit" ? workUnitId : null,
-          },
-        },
+    } catch (error: any) {
+      console.error("Error loading data:", error);
+      toast.error("Gagal memuat data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenDialog = (admin?: Admin) => {
+    if (admin) {
+      setSelectedAdmin(admin);
+      setFormData({
+        name: admin.name,
+        nip: admin.nip,
+        email: admin.email,
+        phone: admin.phone || "",
+        password: "",
+        work_unit_id: admin.work_unit_id?.toString() || "",
       });
-
-      if (authError) {
-        toast.error("Gagal menambahkan admin: " + authError.message);
-        console.error(authError);
-      } else {
-        toast.success("Admin berhasil ditambahkan");
-        setIsDialogOpen(false);
-        loadData();
-      }
-    }
-
-    setIsSubmitting(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus admin ini?")) return;
-
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
-
-    if (error) {
-      toast.error("Gagal menghapus admin");
-      console.error(error);
     } else {
-      toast.success("Admin berhasil dihapus");
-      loadData();
+      setSelectedAdmin(null);
+      setFormData({
+        name: "",
+        nip: "",
+        email: "",
+        phone: "",
+        password: "",
+        work_unit_id: "",
+      });
     }
-  };
-
-  const handleEdit = (admin: any) => {
-    setEditingAdmin(admin);
     setIsDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingAdmin(null);
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.nip || !formData.email || !formData.work_unit_id) {
+      toast.error("Mohon lengkapi semua field yang wajib diisi");
+      return;
+    }
+
+    if (!selectedAdmin && !formData.password) {
+      toast.error("Password wajib diisi untuk admin baru");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (selectedAdmin) {
+        // Update existing admin
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            name: formData.name,
+            nip: formData.nip,
+            phone: formData.phone || null,
+            work_unit_id: parseInt(formData.work_unit_id),
+          })
+          .eq("id", selectedAdmin.id);
+
+        if (profileError) throw profileError;
+        
+        toast.success("Admin unit berhasil diperbarui");
+      } else {
+        // Create new admin
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              name: formData.name,
+              role: "admin_unit",
+              work_unit_id: parseInt(formData.work_unit_id),
+              nip: formData.nip,
+              phone: formData.phone || null,
+            },
+          },
+        });
+
+        if (authError) throw authError;
+        
+        toast.success("Admin unit berhasil dibuat");
+      }
+
+      setIsDialogOpen(false);
+      loadData();
+    } catch (error: any) {
+      console.error("Error saving admin:", error);
+      toast.error(error.message || "Gagal menyimpan data admin");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleDelete = async () => {
+    if (!selectedAdmin) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(selectedAdmin.id);
+      
+      if (error) throw error;
+      
+      toast.success("Admin unit berhasil dihapus");
+      setIsDeleteDialogOpen(false);
+      setSelectedAdmin(null);
+      loadData();
+    } catch (error: any) {
+      console.error("Error deleting admin:", error);
+      toast.error("Gagal menghapus admin unit");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredAdmins = admins.filter(
+    (admin) =>
+      admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      admin.nip.includes(searchQuery) ||
+      admin.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (user?.role !== "admin_pusat") {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Anda tidak memiliki akses ke halaman ini</p>
+          <p className="text-muted-foreground">Anda tidak memiliki akses ke halaman ini.</p>
         </div>
       </DashboardLayout>
     );
@@ -172,254 +256,92 @@ export default function KelolaAdminUnit() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <UserCog className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Kelola Admin</h1>
-                <p className="text-muted-foreground mt-1">Manajemen admin unit dan admin pusat</p>
-              </div>
-            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Kelola Admin Unit</h1>
+            <p className="text-muted-foreground mt-1">
+              Kelola data administrator unit kerja
+            </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Tambah Admin
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingAdmin ? "Edit Admin" : "Tambah Admin Baru"}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nama Lengkap *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      placeholder="Nama lengkap admin"
-                      defaultValue={editingAdmin?.name}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nip">NIP *</Label>
-                    <Input
-                      id="nip"
-                      name="nip"
-                      placeholder="Nomor Induk Pegawai"
-                      defaultValue={editingAdmin?.nip}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {!editingAdmin && (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="email@example.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password *</Label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="Minimal 6 karakter"
-                        minLength={6}
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Nomor Telepon</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      placeholder="08xxxxxxxxxx"
-                      defaultValue={editingAdmin?.phone}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role *</Label>
-                    <Select name="role" defaultValue={editingAdmin?.role || "admin_unit"} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="work_unit_id">Unit Kerja (untuk Admin Unit)</Label>
-                  <Select name="work_unit_id" defaultValue={editingAdmin?.work_unit_id}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit kerja" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workUnits.map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Kosongkan jika role adalah Admin Pusat
-                  </p>
-                </div>
-
-                <div className="flex gap-2 justify-end pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Menyimpan..." : editingAdmin ? "Perbarui" : "Tambah"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Tambah Admin Unit
+          </Button>
         </div>
 
-        {/* Statistics */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Shield className="h-8 w-8 text-primary" />
-                <div>
-                  <div className="text-2xl font-bold">{admins.length}</div>
-                  <p className="text-sm text-muted-foreground">Total Admin</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Building2 className="h-8 w-8 text-blue-600" />
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {admins.filter((a) => a.role === "admin_unit").length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Admin Unit</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Shield className="h-8 w-8 text-purple-600" />
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {admins.filter((a) => a.role === "admin_pusat").length}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Admin Pusat</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Admins Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Admin</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Daftar Admin Unit
+            </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cari berdasarkan nama, NIP, atau email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Memuat data...</p>
-              </div>
-            ) : admins.length === 0 ? (
-              <div className="text-center py-8">
-                <UserCog className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">Belum ada admin</p>
+                <p className="mt-2 text-sm text-muted-foreground">Memuat data...</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Admin</TableHead>
+                      <TableHead>Nama</TableHead>
                       <TableHead>NIP</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead>Telepon</TableHead>
                       <TableHead>Unit Kerja</TableHead>
-                      <TableHead>Dibuat</TableHead>
                       <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {admins.map((admin) => (
-                      <TableRow key={admin.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${admin.email}`} />
-                              <AvatarFallback>{admin.name?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{admin.name}</p>
-                              <p className="text-xs text-muted-foreground">{admin.phone || "-"}</p>
-                            </div>
-                          </div>
+                    {filteredAdmins.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          Tidak ada data admin unit
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{admin.nip}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{admin.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={admin.role === "admin_pusat" ? "default" : "secondary"}>
-                            {ROLE_LABELS[admin.role as keyof typeof ROLE_LABELS]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {admin.work_units?.name || "-"}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(admin.created_at), "dd MMM yyyy", { locale: localeId })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(admin)}>
-                              <Edit className="h-4 w-4" />
+                      </TableRow>
+                    ) : (
+                      filteredAdmins.map((admin) => (
+                        <TableRow key={admin.id}>
+                          <TableCell className="font-medium">{admin.name}</TableCell>
+                          <TableCell>{admin.nip}</TableCell>
+                          <TableCell>{admin.email}</TableCell>
+                          <TableCell>{admin.phone || "-"}</TableCell>
+                          <TableCell>{admin.work_unit_name}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenDialog(admin)}
+                            >
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(admin.id)}
-                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setSelectedAdmin(admin);
+                                setIsDeleteDialogOpen(true);
+                              }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -427,6 +349,130 @@ export default function KelolaAdminUnit() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedAdmin ? "Edit Admin Unit" : "Tambah Admin Unit Baru"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAdmin
+                ? "Perbarui informasi admin unit"
+                : "Buat akun admin unit baru"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nama Lengkap *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Masukkan nama lengkap"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="nip">NIP *</Label>
+              <Input
+                id="nip"
+                value={formData.nip}
+                onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
+                placeholder="Masukkan NIP"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Masukkan email"
+                disabled={!!selectedAdmin}
+              />
+            </div>
+
+            {!selectedAdmin && (
+              <div>
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Masukkan password"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="phone">Telepon</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="Masukkan nomor telepon"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="work_unit">Unit Kerja *</Label>
+              <Select
+                value={formData.work_unit_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, work_unit_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih unit kerja" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workUnits.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus admin unit{" "}
+              <strong>{selectedAdmin?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+              {isLoading ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
