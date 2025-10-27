@@ -2,141 +2,177 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  FileText,
-  MessageSquare,
-  Users,
-  Settings,
-  LogOut,
-  ChevronDown,
-  Menu,
-  X,
-  Building2,
-  TrendingUp,
-  User,
-} from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, logout } = useAuth();
+export const DashboardLayout = ({
+  children
+}: {
+  children: React.ReactNode;
+}) => {
+  const {
+    user,
+    logout
+  } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>(["layanan"]);
-
   const handleLogout = () => {
     logout();
     navigate("/auth");
   };
-
   const toggleMenu = (menu: string) => {
-    setOpenMenus((prev) =>
-      prev.includes(menu) ? prev.filter((m) => m !== menu) : [...prev, menu]
-    );
+    setOpenMenus(prev => prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]);
   };
-
   const isActive = (path: string) => location.pathname === path;
 
   // Menu items based on role
   const getMenuItems = () => {
     const role = user?.role;
-
     if (role === "user_unit") {
-      return [
-        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        {
-          label: "Layanan Saya",
-          icon: FileText,
-          id: "layanan",
-          submenu: [
-            { path: "/layanan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
-            { path: "/layanan/mutasi", label: "Mutasi Pegawai" },
-            { path: "/layanan/pensiun", label: "Pensiun" },
-            { path: "/layanan/cuti", label: "Cuti Pegawai" },
-          ],
-        },
-        {
-          label: "Konsultasi",
-          icon: MessageSquare,
-          id: "konsultasi",
-          submenu: [
-            { path: "/konsultasi/baru", label: "Buat Konsultasi Baru" },
-            { path: "/konsultasi/riwayat", label: "Riwayat Konsultasi" },
-          ],
-        },
-        { path: "/profile", label: "Profil", icon: User },
-      ];
+      return [{
+        path: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard
+      }, {
+        label: "Layanan Saya",
+        icon: FileText,
+        id: "layanan",
+        submenu: [{
+          path: "/layanan/kenaikan-pangkat",
+          label: "Kenaikan Pangkat"
+        }, {
+          path: "/layanan/mutasi",
+          label: "Mutasi Pegawai"
+        }, {
+          path: "/layanan/pensiun",
+          label: "Pensiun"
+        }, {
+          path: "/layanan/cuti",
+          label: "Cuti Pegawai"
+        }]
+      }, {
+        label: "Konsultasi",
+        icon: MessageSquare,
+        id: "konsultasi",
+        submenu: [{
+          path: "/konsultasi/baru",
+          label: "Buat Konsultasi Baru"
+        }, {
+          path: "/konsultasi/riwayat",
+          label: "Riwayat Konsultasi"
+        }]
+      }, {
+        path: "/profile",
+        label: "Profil",
+        icon: User
+      }];
     }
-
     if (role === "admin_unit") {
-      return [
-        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        {
-          label: "Usulan Masuk",
-          icon: FileText,
-          id: "usulan",
-          submenu: [
-            { path: "/usulan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
-            { path: "/usulan/mutasi", label: "Mutasi Pegawai" },
-            { path: "/usulan/pensiun", label: "Pensiun" },
-            { path: "/usulan/cuti", label: "Cuti Pegawai" },
-          ],
-        },
-        {
-          label: "Konsultasi Unit",
-          icon: MessageSquare,
-          id: "konsultasi",
-          submenu: [
-            { path: "/konsultasi/masuk", label: "Konsultasi Masuk" },
-            { path: "/konsultasi/tereskalasi", label: "Konsultasi Tereskalasi" },
-            { path: "/konsultasi/riwayat", label: "Riwayat Konsultasi" },
-          ],
-        },
-        { path: "/usulan/disetujui", label: "Usulan Disetujui", icon: TrendingUp },
-        { path: "/pegawai", label: "Daftar Pegawai Unit", icon: Users },
-        { path: "/profile", label: "Profil", icon: User },
-      ];
+      return [{
+        path: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard
+      }, {
+        label: "Usulan Masuk",
+        icon: FileText,
+        id: "usulan",
+        submenu: [{
+          path: "/usulan/kenaikan-pangkat",
+          label: "Kenaikan Pangkat"
+        }, {
+          path: "/usulan/mutasi",
+          label: "Mutasi Pegawai"
+        }, {
+          path: "/usulan/pensiun",
+          label: "Pensiun"
+        }, {
+          path: "/usulan/cuti",
+          label: "Cuti Pegawai"
+        }]
+      }, {
+        label: "Konsultasi Unit",
+        icon: MessageSquare,
+        id: "konsultasi",
+        submenu: [{
+          path: "/konsultasi/masuk",
+          label: "Konsultasi Masuk"
+        }, {
+          path: "/konsultasi/tereskalasi",
+          label: "Konsultasi Tereskalasi"
+        }, {
+          path: "/konsultasi/riwayat",
+          label: "Riwayat Konsultasi"
+        }]
+      }, {
+        path: "/usulan/disetujui",
+        label: "Usulan Disetujui",
+        icon: TrendingUp
+      }, {
+        path: "/pegawai",
+        label: "Daftar Pegawai Unit",
+        icon: Users
+      }, {
+        path: "/profile",
+        label: "Profil",
+        icon: User
+      }];
     }
-
     if (role === "admin_pusat") {
-      return [
-        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        {
-          label: "Semua Usulan",
-          icon: FileText,
-          id: "usulan",
-          submenu: [
-            { path: "/usulan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
-            { path: "/usulan/mutasi", label: "Mutasi Pegawai" },
-            { path: "/usulan/pensiun", label: "Pensiun" },
-            { path: "/usulan/cuti", label: "Cuti Pegawai" },
-          ],
-        },
-        {
-          label: "Konsultasi",
-          icon: MessageSquare,
-          id: "konsultasi",
-          submenu: [
-            { path: "/konsultasi/semua", label: "Semua Konsultasi" },
-            { path: "/konsultasi/tereskalasi", label: "Konsultasi Tereskalasi" },
-            { path: "/konsultasi/butuh-respons", label: "Butuh Respons" },
-          ],
-        },
-        { path: "/admin/kelola-admin", label: "Kelola Admin Unit", icon: Users },
-        { path: "/admin/kelola-unit", label: "Kelola Unit Kerja", icon: Building2 },
-        { path: "/profile", label: "Profil", icon: User },
-      ];
+      return [{
+        path: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard
+      }, {
+        label: "Semua Usulan",
+        icon: FileText,
+        id: "usulan",
+        submenu: [{
+          path: "/usulan/kenaikan-pangkat",
+          label: "Kenaikan Pangkat"
+        }, {
+          path: "/usulan/mutasi",
+          label: "Mutasi Pegawai"
+        }, {
+          path: "/usulan/pensiun",
+          label: "Pensiun"
+        }, {
+          path: "/usulan/cuti",
+          label: "Cuti Pegawai"
+        }]
+      }, {
+        label: "Konsultasi",
+        icon: MessageSquare,
+        id: "konsultasi",
+        submenu: [{
+          path: "/konsultasi/semua",
+          label: "Semua Konsultasi"
+        }, {
+          path: "/konsultasi/tereskalasi",
+          label: "Konsultasi Tereskalasi"
+        }, {
+          path: "/konsultasi/butuh-respons",
+          label: "Butuh Respons"
+        }]
+      }, {
+        path: "/admin/kelola-admin",
+        label: "Kelola Admin Unit",
+        icon: Users
+      }, {
+        path: "/admin/kelola-unit",
+        label: "Kelola Unit Kerja",
+        icon: Building2
+      }, {
+        path: "/profile",
+        label: "Profil",
+        icon: User
+      }];
     }
-
     return [];
   };
-
   const menuItems = getMenuItems();
-
-  return (
-    <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
+  return <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground border-b border-primary/20 shadow-md">
         <div className="flex items-center justify-between p-4">
@@ -144,25 +180,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             <Building2 className="h-6 w-6" />
             <span className="font-bold text-lg">SIPANDAI</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-primary-foreground hover:bg-primary-glow/20"
-          >
+          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-primary-foreground hover:bg-primary-glow/20">
             {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
       </div>
 
       {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed lg:sticky top-0 left-0 h-screen bg-primary text-primary-foreground transition-all duration-300 z-40 flex flex-col",
-          isSidebarOpen ? "w-64 translate-x-0" : "w-0 lg:w-64 -translate-x-full lg:translate-x-0",
-          "border-r border-primary/20 shadow-2xl"
-        )}
-      >
+      <aside className={cn("fixed lg:sticky top-0 left-0 h-screen bg-primary text-primary-foreground transition-all duration-300 z-40 flex flex-col", isSidebarOpen ? "w-64 translate-x-0" : "w-0 lg:w-64 -translate-x-full lg:translate-x-0", "border-r border-primary/20 shadow-2xl")}>
         {/* Logo */}
         <div className="p-6 border-b border-primary/20 hidden lg:block">
           <div className="flex items-center gap-3">
@@ -171,7 +196,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             </div>
             <div>
               <h1 className="font-bold text-xl">SIPANDAI</h1>
-              <p className="text-xs text-primary-foreground/70">Sistem Pelayanan ASN</p>
+              <p className="text-xs text-primary-foreground/70">Sistem Pelayanan Administrasi Digital ASN Terintegrasi</p>
             </div>
           </div>
         </div>
@@ -185,11 +210,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{user?.name}</p>
               <p className="text-xs text-primary-foreground/70 truncate">
-                {user?.role === "admin_pusat"
-                  ? "Administrator Pusat"
-                  : user?.role === "admin_unit"
-                  ? "Admin Unit"
-                  : "Pegawai"}
+                {user?.role === "admin_pusat" ? "Administrator Pusat" : user?.role === "admin_unit" ? "Admin Unit" : "Pegawai"}
               </p>
             </div>
           </div>
@@ -197,69 +218,28 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {menuItems.map((item) =>
-            item.submenu ? (
-              <Collapsible
-                key={item.id}
-                open={openMenus.includes(item.id || "")}
-                onOpenChange={() => toggleMenu(item.id || "")}
-              >
+          {menuItems.map(item => item.submenu ? <Collapsible key={item.id} open={openMenus.includes(item.id || "")} onOpenChange={() => toggleMenu(item.id || "")}>
                 <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-primary-glow/20 transition-colors">
                   <div className="flex items-center gap-3">
                     <item.icon className="h-5 w-5" />
                     <span className="text-sm font-medium">{item.label}</span>
                   </div>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 transition-transform",
-                      openMenus.includes(item.id || "") && "rotate-180"
-                    )}
-                  />
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", openMenus.includes(item.id || "") && "rotate-180")} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-1 ml-8 space-y-1">
-                  {item.submenu.map((subitem) => (
-                    <Link
-                      key={subitem.path}
-                      to={subitem.path}
-                      onClick={() => setIsSidebarOpen(false)}
-                      className={cn(
-                        "block px-3 py-2 rounded-lg text-sm transition-colors",
-                        isActive(subitem.path)
-                          ? "bg-primary-glow/30 font-medium"
-                          : "hover:bg-primary-glow/20"
-                      )}
-                    >
+                  {item.submenu.map(subitem => <Link key={subitem.path} to={subitem.path} onClick={() => setIsSidebarOpen(false)} className={cn("block px-3 py-2 rounded-lg text-sm transition-colors", isActive(subitem.path) ? "bg-primary-glow/30 font-medium" : "hover:bg-primary-glow/20")}>
                       {subitem.label}
-                    </Link>
-                  ))}
+                    </Link>)}
                 </CollapsibleContent>
-              </Collapsible>
-            ) : (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                  isActive(item.path)
-                    ? "bg-primary-glow/30 font-medium"
-                    : "hover:bg-primary-glow/20"
-                )}
-              >
+              </Collapsible> : <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)} className={cn("flex items-center gap-3 px-3 py-2 rounded-lg transition-colors", isActive(item.path) ? "bg-primary-glow/30 font-medium" : "hover:bg-primary-glow/20")}>
                 <item.icon className="h-5 w-5" />
                 <span className="text-sm font-medium">{item.label}</span>
-              </Link>
-            )
-          )}
+              </Link>)}
         </nav>
 
         {/* Logout */}
         <div className="p-4 border-t border-primary/20">
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start gap-3 hover:bg-destructive/20 text-primary-foreground"
-          >
+          <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-3 hover:bg-destructive/20 text-primary-foreground">
             <LogOut className="h-5 w-5" />
             <span>Keluar</span>
           </Button>
@@ -267,17 +247,11 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
       </aside>
 
       {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      {isSidebarOpen && <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
         <div className="p-6 lg:p-8">{children}</div>
       </main>
-    </div>
-  );
+    </div>;
 };
