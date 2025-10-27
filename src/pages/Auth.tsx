@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,10 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [user, navigate]);
+  if (user) {
+    navigate("/dashboard");
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,7 +34,7 @@ export default function Auth() {
 
     if (result.success) {
       toast.success("Login berhasil!");
-      // Navigation will happen automatically via useEffect when user state updates
+      navigate("/dashboard");
     } else {
       toast.error(result.error || "Login gagal");
     }
@@ -70,7 +69,7 @@ export default function Auth() {
 
     if (result.success) {
       toast.success("Registrasi berhasil!");
-      // Navigation will happen automatically via useEffect when user state updates
+      navigate("/dashboard");
     } else {
       toast.error(result.error || "Registrasi gagal");
     }
