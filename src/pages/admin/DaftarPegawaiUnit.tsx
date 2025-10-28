@@ -74,6 +74,7 @@ export default function DaftarPegawaiUnit() {
           nip,
           phone,
           work_unit_id,
+          role,
           work_units (
             name
           )
@@ -91,11 +92,8 @@ export default function DaftarPegawaiUnit() {
         const employeeList: Employee[] = [];
 
         for (const profile of profiles) {
-          const { data: authUser } = await supabase.auth.admin.getUserById(
-            profile.id
-          );
-
-          const { data: roleData } = await supabase
+          // Get user role from user_roles table, fallback to profiles.role
+          const { data: roleData, error: roleError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", profile.id)
@@ -108,8 +106,8 @@ export default function DaftarPegawaiUnit() {
             phone: profile.phone,
             work_unit_id: profile.work_unit_id,
             work_unit_name: (profile.work_units as any)?.name || "-",
-            email: authUser?.user?.email || "-",
-            role: roleData?.role || "user_unit",
+            email: "-", // Will be populated via edge function in future
+            role: roleError ? (profile as any).role : (roleData?.role || (profile as any).role || "user_unit"),
           });
         }
 

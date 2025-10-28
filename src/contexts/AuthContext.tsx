@@ -64,21 +64,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq("id", authUser.id)
       .maybeSingle();
 
-    // Get user role from user_roles table
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", authUser.id)
-      .order("role", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
     if (profile) {
+      // Try to get role from user_roles table first
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authUser.id)
+        .order("role", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      // Fallback to profile.role if user_roles query fails or returns nothing
+      const userRole = roleError ? profile.role : (roleData?.role || profile.role || "user_unit");
+
       setUser({
         id: authUser.id,
         email: authUser.email!,
         name: profile.name,
-        role: roleData?.role || profile.role || "user_unit",
+        role: userRole,
         work_unit_id: profile.work_unit_id,
         nip: profile.nip,
         phone: profile.phone,
