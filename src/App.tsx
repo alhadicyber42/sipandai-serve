@@ -14,6 +14,11 @@ import Profile from "./pages/Profile";
 import KelolaAdminUnit from "./pages/admin/KelolaAdminUnit";
 import KelolaUnitKerja from "./pages/admin/KelolaUnitKerja";
 import DaftarPegawaiUnit from "./pages/admin/DaftarPegawaiUnit";
+import AllConsultations from "./pages/consultations/AllConsultations";
+import MyConsultations from "./pages/consultations/MyConsultations";
+import NewConsultation from "./pages/consultations/NewConsultation";
+import UnitConsultations from "./pages/consultations/UnitConsultations";
+import ConsultationDetail from "./pages/consultations/ConsultationDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +66,11 @@ const App = () => (
             <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
             <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
             <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
+            <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
+            <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
+            <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
+            <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
+            <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
