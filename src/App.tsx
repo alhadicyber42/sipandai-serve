@@ -13,6 +13,7 @@ import Pensiun from "./pages/services/Pensiun";
 import Profile from "./pages/Profile";
 import KelolaAdminUnit from "./pages/admin/KelolaAdminUnit";
 import KelolaUnitKerja from "./pages/admin/KelolaUnitKerja";
+import DaftarPegawaiUnit from "./pages/admin/DaftarPegawaiUnit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
             <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
             <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
+            <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

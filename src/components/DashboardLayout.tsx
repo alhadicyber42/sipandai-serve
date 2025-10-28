@@ -110,7 +110,7 @@ export const DashboardLayout = ({
         label: "Usulan Disetujui",
         icon: TrendingUp
       }, {
-        path: "/pegawai",
+        path: "/admin/daftar-pegawai",
         label: "Daftar Pegawai Unit",
         icon: Users
       }, {
@@ -163,6 +163,10 @@ export const DashboardLayout = ({
         path: "/admin/kelola-unit",
         label: "Kelola Unit Kerja",
         icon: Building2
+      }, {
+        path: "/admin/daftar-pegawai",
+        label: "Daftar Pegawai Unit",
+        icon: Users
       }, {
         path: "/profile",
         label: "Profil",
