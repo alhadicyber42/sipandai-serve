@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ServiceHistory } from "@/components/ServiceHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, FileText, Eye, CheckCircle, XCircle, CalendarIcon, Link as LinkIcon, Trash2, ExternalLink } from "lucide-react";
@@ -155,56 +156,78 @@ export default function Cuti() {
 
   const handleApprove = async (serviceId: string) => {
     const newStatus = user?.role === "admin_unit" ? "approved_by_unit" : "approved_final";
-    const { error } = await supabase
+    const approvedAt = user?.role === "admin_pusat" ? new Date().toISOString() : null;
+
+    // Update service status
+    const { error: serviceError } = await supabase
       .from("services")
       .update({
         status: newStatus,
-        notes: [
-          ...(selectedService?.notes || []),
-          {
-            actor: user?.name,
-            role: user?.role,
-            note: "Disetujui",
-            timestamp: new Date().toISOString(),
-          },
-        ],
+        ...(approvedAt && { approved_at: approvedAt }),
       })
       .eq("id", serviceId);
 
-    if (error) {
+    if (serviceError) {
       toast.error("Gagal menyetujui cuti");
-    } else {
-      toast.success("Cuti berhasil disetujui");
-      setSelectedService(null);
-      loadServices();
+      return;
     }
+
+    // Add to service history
+    const { error: historyError } = await supabase
+      .from("service_history")
+      .insert({
+        service_id: serviceId,
+        service_type: "cuti",
+        actor_id: user!.id,
+        actor_role: user!.role as any,
+        action: `Disetujui oleh ${user?.role === "admin_unit" ? "Admin Unit" : "Admin Pusat"}`,
+        notes: "Permohonan cuti telah disetujui",
+      });
+
+    if (historyError) {
+      console.error("Error adding history:", historyError);
+    }
+
+    toast.success("Cuti berhasil disetujui");
+    setSelectedService(null);
+    loadServices();
   };
 
   const handleReturn = async (serviceId: string, note: string) => {
     const newStatus = user?.role === "admin_unit" ? "returned_to_user" : "returned_to_unit";
-    const { error } = await supabase
+
+    // Update service status
+    const { error: serviceError } = await supabase
       .from("services")
       .update({
         status: newStatus,
-        notes: [
-          ...(selectedService?.notes || []),
-          {
-            actor: user?.name,
-            role: user?.role,
-            note,
-            timestamp: new Date().toISOString(),
-          },
-        ],
       })
       .eq("id", serviceId);
 
-    if (error) {
+    if (serviceError) {
       toast.error("Gagal mengembalikan cuti");
-    } else {
-      toast.success("Cuti dikembalikan untuk revisi");
-      setSelectedService(null);
-      loadServices();
+      return;
     }
+
+    // Add to service history
+    const { error: historyError } = await supabase
+      .from("service_history")
+      .insert({
+        service_id: serviceId,
+        service_type: "cuti",
+        actor_id: user!.id,
+        actor_role: user!.role as any,
+        action: `Dikembalikan oleh ${user?.role === "admin_unit" ? "Admin Unit" : "Admin Pusat"}`,
+        notes: note,
+      });
+
+    if (historyError) {
+      console.error("Error adding history:", historyError);
+    }
+
+    toast.success("Cuti dikembalikan untuk revisi");
+    setSelectedService(null);
+    loadServices();
   };
 
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
@@ -494,6 +517,12 @@ export default function Cuti() {
                                 <StatusBadge status={selectedService.status} />
                               </div>
                             </div>
+
+                            <ServiceHistory
+                              serviceId={selectedService.id}
+                              serviceType="cuti"
+                            />
+
                             {isAdmin && (selectedService.status === "submitted" || selectedService.status === "approved_by_unit") && (
                               <div className="flex gap-2 pt-4 border-t">
                                 <Button className="flex-1" onClick={() => handleApprove(selectedService.id)}>

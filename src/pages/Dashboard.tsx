@@ -76,12 +76,24 @@ export default function Dashboard() {
   // Calculate statistics
   const stats = {
     total: userServices.length,
-    pending:
-      userServices.filter((s) => s.status === "submitted" || s.status === "under_review_unit" || s.status === "under_review_central")
-        .length,
+    pending: userServices.filter((s) => 
+      s.status === "submitted" || 
+      s.status === "approved_by_unit"
+    ).length,
+    pendingForMe: user?.role === "admin_unit" 
+      ? userServices.filter((s) => s.status === "submitted").length
+      : user?.role === "admin_pusat"
+      ? userServices.filter((s) => s.status === "approved_by_unit").length
+      : 0,
     approved: userServices.filter((s) => s.status === "approved_final").length,
-    returned: userServices.filter((s) => s.status === "returned_to_user" || s.status === "returned_to_unit").length,
+    returned: userServices.filter((s) => 
+      s.status === "returned_to_user" || 
+      s.status === "returned_to_unit"
+    ).length,
     consultations: userConsultations.length,
+    pendingConsultations: user?.role !== "user_unit"
+      ? userConsultations.filter((c) => c.status === "submitted" || c.status === "in_progress").length
+      : 0,
   };
 
   const getGreeting = () => {
@@ -110,7 +122,7 @@ export default function Dashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card className="bg-gradient-to-br from-card to-card/50 border-primary/20 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Usulan</CardTitle>
@@ -123,6 +135,23 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+
+          {(user?.role === "admin_unit" || user?.role === "admin_pusat") && (
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-500/30 hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Perlu Persetujuan</CardTitle>
+                <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400 animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {stats.pendingForMe}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {user?.role === "admin_unit" ? "Menunggu review unit" : "Menunggu approval pusat"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="bg-gradient-to-br from-card to-card/50 border-warning/20 hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
