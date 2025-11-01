@@ -13,11 +13,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, FileText, Eye, CheckCircle, XCircle, CalendarIcon } from "lucide-react";
+import { Plus, FileText, Eye, CheckCircle, XCircle, CalendarIcon, Link as LinkIcon, Trash2, ExternalLink } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { LEAVE_LABELS } from "@/lib/constants";
+import { z } from "zod";
 
 export default function Cuti() {
   const { user } = useAuth();
@@ -28,6 +29,8 @@ export default function Cuti() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [documentLinks, setDocumentLinks] = useState<string[]>([]);
+  const [currentLink, setCurrentLink] = useState("");
 
   useEffect(() => {
     loadServices();
@@ -56,6 +59,31 @@ export default function Cuti() {
       setServices(data || []);
     }
     setIsLoading(false);
+  };
+
+  const addDocumentLink = () => {
+    if (!currentLink.trim()) {
+      toast.error("Masukkan link dokumen");
+      return;
+    }
+
+    // Validate URL
+    const urlSchema = z.string().url({ message: "Link tidak valid" });
+    const validation = urlSchema.safeParse(currentLink.trim());
+
+    if (!validation.success) {
+      toast.error("Link tidak valid. Pastikan menggunakan format yang benar (https://...)");
+      return;
+    }
+
+    setDocumentLinks([...documentLinks, currentLink.trim()]);
+    setCurrentLink("");
+    toast.success("Link dokumen ditambahkan");
+  };
+
+  const removeDocumentLink = (index: number) => {
+    setDocumentLinks(documentLinks.filter((_, i) => i !== index));
+    toast.success("Link dokumen dihapus");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -87,7 +115,7 @@ export default function Cuti() {
         status: "submitted",
         title,
         description: `${LEAVE_LABELS[leaveType as keyof typeof LEAVE_LABELS]} - ${totalDays} hari`,
-        documents: [],
+        documents: documentLinks,
       })
       .select()
       .single();
@@ -117,6 +145,8 @@ export default function Cuti() {
       setIsDialogOpen(false);
       setStartDate(undefined);
       setEndDate(undefined);
+      setDocumentLinks([]);
+      setCurrentLink("");
       loadServices();
     }
 
@@ -274,6 +304,58 @@ export default function Cuti() {
                     <Label htmlFor="emergency_contact">Kontak Darurat</Label>
                     <Input id="emergency_contact" name="emergency_contact" placeholder="Nomor telepon yang dapat dihubungi" required />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Dokumen Pendukung (Link)</Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="https://drive.google.com/... atau https://www.dropbox.com/..."
+                          value={currentLink}
+                          onChange={(e) => setCurrentLink(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addDocumentLink();
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button type="button" onClick={addDocumentLink} variant="outline" size="icon">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {documentLinks.length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {documentLinks.map((link, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                            <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline truncate flex-1"
+                            >
+                              {link}
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeDocumentLink(index)}
+                              className="h-8 w-8 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Tambahkan link ke dokumen pendukung (Google Drive, Dropbox, OneDrive, dll)
+                    </p>
+                  </div>
+
                   <div className="flex gap-2 justify-end">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Batal
@@ -382,6 +464,30 @@ export default function Cuti() {
                               <Label>Kontak Darurat</Label>
                               <p className="text-sm mt-1">{selectedService.leave_details[0].emergency_contact}</p>
                             </div>
+
+                            {selectedService.documents && selectedService.documents.length > 0 && (
+                              <div>
+                                <Label>Dokumen Pendukung</Label>
+                                <div className="space-y-2 mt-2">
+                                  {selectedService.documents.map((link: string, index: number) => (
+                                    <a
+                                      key={index}
+                                      href={link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                                    >
+                                      <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                      <span className="text-sm text-primary hover:underline truncate flex-1">
+                                        {link}
+                                      </span>
+                                      <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             <div>
                               <Label>Status</Label>
                               <div className="mt-1">
