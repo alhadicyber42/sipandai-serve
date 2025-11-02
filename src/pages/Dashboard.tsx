@@ -5,6 +5,7 @@ import { WORK_UNITS, SERVICE_LABELS } from "@/lib/constants";
 import { FileText, Clock, CheckCircle, MessageSquare, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -21,15 +22,28 @@ export default function Dashboard() {
   const loadData = async () => {
     setIsLoading(true);
     
-    // Load services based on role
-    let servicesQuery = supabase.from("services").select("*");
+    // Load services based on role with profiles and work_units info
+    let servicesQuery = supabase
+      .from("services")
+      .select(`
+        *,
+        profiles!services_user_id_fkey(name),
+        work_units!services_work_unit_id_fkey(name)
+      `);
+    
     if (user?.role === "user_unit") {
       servicesQuery = servicesQuery.eq("user_id", user.id);
     } else if (user?.role === "admin_unit") {
       servicesQuery = servicesQuery.eq("work_unit_id", user.work_unit_id);
     }
     
-    const { data: servicesData } = await servicesQuery.order("created_at", { ascending: false });
+    const { data: servicesData, error: servicesError } = await servicesQuery.order("created_at", { ascending: false });
+    
+    if (servicesError) {
+      console.error("Error loading services:", servicesError);
+      toast.error("Gagal memuat data usulan");
+    }
+    
     setServices(servicesData || []);
 
     // Load consultations based on role
@@ -205,7 +219,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {userServices.slice(0, 5).map((service) => (
+                 {userServices.slice(0, 5).map((service) => (
                   <div
                     key={service.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
@@ -213,6 +227,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{service.title}</p>
                       <p className="text-xs text-muted-foreground">
+                        {user?.role !== "user_unit" && service.profiles?.name && `${service.profiles.name} • `}
                         {SERVICE_LABELS[service.service_type as keyof typeof SERVICE_LABELS]} •{" "}
                         {new Date(service.created_at).toLocaleDateString("id-ID")}
                       </p>
