@@ -55,29 +55,53 @@ export default function Cuti() {
 
     if (error) {
       toast.error("Gagal memuat data");
-    } else {
-      const list = (data as any[]) || [];
-      // Ambil leave_details terpisah dan gabungkan ke services
-      const ids = list.map((s) => s.id);
-      if (ids.length > 0) {
-        const { data: details, error: ldError } = await supabase
-          .from("leave_details")
-          .select("*")
-          .in("service_id", ids);
-        if (ldError) {
-          console.error("Gagal memuat detail cuti:", ldError);
-          setServices(list);
-        } else {
-          const byService: Record<string, any[]> = {};
-          (details || []).forEach((d: any) => {
-            byService[d.service_id] = [...(byService[d.service_id] || []), d];
-          });
-          setServices(list.map((s) => ({ ...s, leave_details: byService[s.id] || [] })));
-        }
-      } else {
-        setServices(list);
-      }
+      setServices([]);
+      setIsLoading(false);
+      return;
     }
+
+    const list = (data as any[]) || [];
+    
+    if (list.length > 0) {
+      // Load leave_details
+      const ids = list.map((s) => s.id);
+      const { data: details } = await supabase
+        .from("leave_details")
+        .select("*")
+        .in("service_id", ids);
+
+      const byService: Record<string, any[]> = {};
+      (details || []).forEach((d: any) => {
+        byService[d.service_id] = [...(byService[d.service_id] || []), d];
+      });
+
+      // Load profiles and work_units
+      const userIds = [...new Set(list.map(s => s.user_id))];
+      const workUnitIds = [...new Set(list.map(s => s.work_unit_id))];
+
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .in("id", userIds);
+
+      const { data: workUnitsData } = await supabase
+        .from("work_units")
+        .select("id, name")
+        .in("id", workUnitIds);
+
+      const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+      const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
+
+      setServices(list.map((s) => ({
+        ...s,
+        leave_details: byService[s.id] || [],
+        profiles: profilesMap.get(s.user_id),
+        work_units: workUnitsMap.get(s.work_unit_id),
+      })));
+    } else {
+      setServices([]);
+    }
+    
     setIsLoading(false);
   };
 

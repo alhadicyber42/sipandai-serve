@@ -42,8 +42,36 @@ export default function Mutasi() {
 
     if (error) {
       toast.error("Gagal memuat data");
+      setServices([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const list = data || [];
+    if (list.length > 0) {
+      const userIds = [...new Set(list.map(s => s.user_id))];
+      const workUnitIds = [...new Set(list.map(s => s.work_unit_id))];
+
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .in("id", userIds);
+
+      const { data: workUnitsData } = await supabase
+        .from("work_units")
+        .select("id, name")
+        .in("id", workUnitIds);
+
+      const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+      const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
+
+      setServices(list.map(s => ({
+        ...s,
+        profiles: profilesMap.get(s.user_id),
+        work_units: workUnitsMap.get(s.work_unit_id),
+      })));
     } else {
-      setServices(data || []);
+      setServices([]);
     }
     setIsLoading(false);
   };

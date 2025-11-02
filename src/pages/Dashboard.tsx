@@ -22,7 +22,7 @@ export default function Dashboard() {
   const loadData = async () => {
     setIsLoading(true);
     
-    // Load services based on role with profiles and work_units info
+    // Load services based on role
     let servicesQuery = supabase
       .from("services")
       .select("*");
@@ -38,9 +38,40 @@ export default function Dashboard() {
     if (servicesError) {
       console.error("Error loading services:", servicesError);
       toast.error("Gagal memuat data usulan");
+      setServices([]);
+      setIsLoading(false);
+      return;
     }
-    
-    setServices(servicesData || []);
+
+    // Load profiles and work_units data separately
+    const servicesList = servicesData || [];
+    if (servicesList.length > 0) {
+      const userIds = [...new Set(servicesList.map(s => s.user_id))];
+      const workUnitIds = [...new Set(servicesList.map(s => s.work_unit_id))];
+
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .in("id", userIds);
+
+      const { data: workUnitsData } = await supabase
+        .from("work_units")
+        .select("id, name")
+        .in("id", workUnitIds);
+
+      const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+      const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
+
+      const enrichedServices = servicesList.map(service => ({
+        ...service,
+        profiles: profilesMap.get(service.user_id),
+        work_units: workUnitsMap.get(service.work_unit_id),
+      }));
+
+      setServices(enrichedServices);
+    } else {
+      setServices([]);
+    }
 
     // Load consultations based on role
     let consultationsQuery = supabase.from("consultations").select("*");

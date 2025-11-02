@@ -64,7 +64,25 @@ export default function UsulanDisetujui() {
         .order("approved_at", { ascending: false });
 
       if (error) throw error;
-      setServices(data as any || []);
+      
+      const list = data || [];
+      if (list.length > 0) {
+        const userIds = [...new Set(list.map(s => s.user_id))];
+
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+
+        const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+
+        setServices(list.map(s => ({
+          ...s,
+          profiles: profilesMap.get(s.user_id),
+        })) as any);
+      } else {
+        setServices([]);
+      }
     } catch (error: any) {
       console.error("Error loading services:", error);
       toast.error("Gagal memuat data usulan");
