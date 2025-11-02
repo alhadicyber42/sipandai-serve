@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { ServiceList } from "@/components/ServiceList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,11 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { StatusBadge } from "@/components/StatusBadge";
-import { ServiceHistory } from "@/components/ServiceHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, FileText, Eye, CheckCircle, XCircle, CalendarIcon, Link as LinkIcon, Trash2, ExternalLink } from "lucide-react";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -172,82 +171,6 @@ export default function Cuti() {
     }
 
     setIsSubmitting(false);
-  };
-
-  const handleApprove = async (serviceId: string) => {
-    const newStatus = user?.role === "admin_unit" ? "approved_by_unit" : "approved_final";
-    const approvedAt = user?.role === "admin_pusat" ? new Date().toISOString() : null;
-
-    // Update service status
-    const { error: serviceError } = await supabase
-      .from("services")
-      .update({
-        status: newStatus,
-        ...(approvedAt && { approved_at: approvedAt }),
-      })
-      .eq("id", serviceId);
-
-    if (serviceError) {
-      toast.error("Gagal menyetujui cuti");
-      return;
-    }
-
-    // Add to service history
-    const { error: historyError } = await supabase
-      .from("service_history")
-      .insert({
-        service_id: serviceId,
-        service_type: "cuti",
-        actor_id: user!.id,
-        actor_role: user!.role as any,
-        action: `Disetujui oleh ${user?.role === "admin_unit" ? "Admin Unit" : "Admin Pusat"}`,
-        notes: "Permohonan cuti telah disetujui",
-      });
-
-    if (historyError) {
-      console.error("Error adding history:", historyError);
-    }
-
-    toast.success("Cuti berhasil disetujui");
-    setSelectedService(null);
-    loadServices();
-  };
-
-  const handleReturn = async (serviceId: string, note: string) => {
-    const newStatus = user?.role === "admin_unit" ? "returned_to_user" : "returned_to_unit";
-
-    // Update service status
-    const { error: serviceError } = await supabase
-      .from("services")
-      .update({
-        status: newStatus,
-      })
-      .eq("id", serviceId);
-
-    if (serviceError) {
-      toast.error("Gagal mengembalikan cuti");
-      return;
-    }
-
-    // Add to service history
-    const { error: historyError } = await supabase
-      .from("service_history")
-      .insert({
-        service_id: serviceId,
-        service_type: "cuti",
-        actor_id: user!.id,
-        actor_role: user!.role as any,
-        action: `Dikembalikan oleh ${user?.role === "admin_unit" ? "Admin Unit" : "Admin Pusat"}`,
-        notes: note,
-      });
-
-    if (historyError) {
-      console.error("Error adding history:", historyError);
-    }
-
-    toast.success("Cuti dikembalikan untuk revisi");
-    setSelectedService(null);
-    loadServices();
   };
 
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
@@ -413,165 +336,52 @@ export default function Cuti() {
           )}
         </div>
 
-        <div className="grid gap-4">
-          {isLoading ? (
+        {isAdmin && (
+          <div className="grid gap-4 md:grid-cols-4">
             <Card>
-              <CardContent className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Memuat data...</p>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">{services.length}</div>
+                <p className="text-sm text-muted-foreground">Total Usulan</p>
               </CardContent>
             </Card>
-          ) : services.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">Belum ada permohonan cuti</p>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-warning">
+                  {services.filter((s) => s.status === "submitted" || s.status === "approved_by_unit").length}
+                </div>
+                <p className="text-sm text-muted-foreground">Diproses</p>
               </CardContent>
             </Card>
-          ) : (
-            services.map((service) => {
-              const leaveDetail = service.leave_details?.[0];
-              return (
-                <Card key={service.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{service.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {user?.role !== "user_unit" && `${service.profiles?.name} • `}
-                          {leaveDetail && `${format(new Date(leaveDetail.start_date), "dd MMM")} - ${format(new Date(leaveDetail.end_date), "dd MMM yyyy")}`}
-                        </p>
-                      </div>
-                      <StatusBadge status={service.status} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {leaveDetail && (
-                      <div className="space-y-2 mb-4">
-                        <p className="text-sm">
-                          <span className="font-medium">Jenis: </span>
-                          {LEAVE_LABELS[leaveDetail.leave_type as keyof typeof LEAVE_LABELS]}
-                        </p>
-                        <p className="text-sm">
-                          <span className="font-medium">Durasi: </span>
-                          {leaveDetail.total_days} hari
-                        </p>
-                      </div>
-                    )}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setSelectedService(service)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Detail
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Detail Permohonan Cuti</DialogTitle>
-                        </DialogHeader>
-                        {selectedService && selectedService.leave_details?.[0] && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label>Jenis Cuti</Label>
-                                <p className="text-sm mt-1">
-                                  {LEAVE_LABELS[selectedService.leave_details[0].leave_type as keyof typeof LEAVE_LABELS]}
-                                </p>
-                              </div>
-                              <div>
-                                <Label>Total Hari</Label>
-                                <p className="text-sm mt-1">{selectedService.leave_details[0].total_days} hari</p>
-                              </div>
-                              <div>
-                                <Label>Tanggal Mulai</Label>
-                                <p className="text-sm mt-1">
-                                  {format(new Date(selectedService.leave_details[0].start_date), "dd MMMM yyyy", { locale: localeId })}
-                                </p>
-                              </div>
-                              <div>
-                                <Label>Tanggal Selesai</Label>
-                                <p className="text-sm mt-1">
-                                  {format(new Date(selectedService.leave_details[0].end_date), "dd MMMM yyyy", { locale: localeId })}
-                                </p>
-                              </div>
-                            </div>
-                            <div>
-                              <Label>Pegawai Pengganti</Label>
-                              <p className="text-sm mt-1">{selectedService.leave_details[0].substitute_employee}</p>
-                            </div>
-                            <div>
-                              <Label>Alasan</Label>
-                              <p className="text-sm mt-1">{selectedService.leave_details[0].reason}</p>
-                            </div>
-                            <div>
-                              <Label>Kontak Darurat</Label>
-                              <p className="text-sm mt-1">{selectedService.leave_details[0].emergency_contact}</p>
-                            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-success">
+                  {services.filter((s) => s.status === "approved_final").length}
+                </div>
+                <p className="text-sm text-muted-foreground">Disetujui</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-destructive">
+                  {
+                    services.filter(
+                      (s) => s.status === "returned_to_user" || s.status === "returned_to_unit"
+                    ).length
+                  }
+                </div>
+                <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-                            {selectedService.documents && selectedService.documents.length > 0 && (
-                              <div>
-                                <Label>Dokumen Pendukung</Label>
-                                <div className="space-y-2 mt-2">
-                                  {selectedService.documents.map((link: string, index: number) => (
-                                    <a
-                                      key={index}
-                                      href={link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-2 p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-                                    >
-                                      <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                      <span className="text-sm text-primary hover:underline truncate flex-1">
-                                        {link}
-                                      </span>
-                                      <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <Label>Status</Label>
-                              <div className="mt-1">
-                                <StatusBadge status={selectedService.status} />
-                              </div>
-                            </div>
-
-                            <ServiceHistory
-                              serviceId={selectedService.id}
-                              serviceType="cuti"
-                            />
-
-                            {isAdmin && (selectedService.status === "submitted" || selectedService.status === "approved_by_unit") && (
-                              <div className="flex gap-2 pt-4 border-t">
-                                <Button className="flex-1" onClick={() => handleApprove(selectedService.id)}>
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Setujui
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  className="flex-1"
-                                  onClick={() => {
-                                    const note = prompt("Alasan pengembalian:");
-                                    if (note) handleReturn(selectedService.id, note);
-                                  }}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Kembalikan
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
+        <ServiceList
+          services={services}
+          isLoading={isLoading}
+          onReload={loadServices}
+          showFilters={isAdmin}
+          allowActions={isAdmin}
+        />
       </div>
     </DashboardLayout>
   );
