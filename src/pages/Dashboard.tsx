@@ -25,11 +25,7 @@ export default function Dashboard() {
     // Load services based on role with profiles and work_units info
     let servicesQuery = supabase
       .from("services")
-      .select(`
-        *,
-        profiles!services_user_id_fkey(name),
-        work_units!services_work_unit_id_fkey(name)
-      `);
+      .select("*");
     
     if (user?.role === "user_unit") {
       servicesQuery = servicesQuery.eq("user_id", user.id);

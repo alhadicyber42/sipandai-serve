@@ -58,10 +58,7 @@ export default function UsulanDisetujui() {
     try {
       const { data, error } = await supabase
         .from("services")
-        .select(`
-          *,
-          profiles!services_user_id_fkey (name)
-        `)
+        .select("*")
         .eq("work_unit_id", user?.work_unit_id)
         .in("status", ["approved_by_unit", "approved_final"])
         .order("approved_at", { ascending: false });
@@ -106,7 +103,7 @@ export default function UsulanDisetujui() {
   const filteredServices = services.filter((service) => {
     const matchesSearch =
       service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.profiles.name.toLowerCase().includes(searchQuery.toLowerCase());
+      (service as any).profiles?.name?.toLowerCase?.().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === "all" || service.service_type === typeFilter;
 
     return matchesSearch && matchesType;
@@ -221,7 +218,7 @@ export default function UsulanDisetujui() {
                               {getServiceTypeLabel(service.service_type)}
                             </Badge>
                             <span className="text-muted-foreground">
-                              {service.profiles.name}
+                              {(service as any).profiles?.name || "-"}
                             </span>
                             {service.approved_at && (
                               <>

@@ -43,7 +43,7 @@ export default function Cuti() {
     setIsLoading(true);
     let query = supabase
       .from("services")
-      .select("*, profiles!services_user_id_fkey(name), leave_details(*)")
+      .select("*")
       .eq("service_type", "cuti");
 
     if (user.role === "user_unit") {
@@ -57,7 +57,27 @@ export default function Cuti() {
     if (error) {
       toast.error("Gagal memuat data");
     } else {
-      setServices(data || []);
+      const list = (data as any[]) || [];
+      // Ambil leave_details terpisah dan gabungkan ke services
+      const ids = list.map((s) => s.id);
+      if (ids.length > 0) {
+        const { data: details, error: ldError } = await supabase
+          .from("leave_details")
+          .select("*")
+          .in("service_id", ids);
+        if (ldError) {
+          console.error("Gagal memuat detail cuti:", ldError);
+          setServices(list);
+        } else {
+          const byService: Record<string, any[]> = {};
+          (details || []).forEach((d: any) => {
+            byService[d.service_id] = [...(byService[d.service_id] || []), d];
+          });
+          setServices(list.map((s) => ({ ...s, leave_details: byService[s.id] || [] })));
+        }
+      } else {
+        setServices(list);
+      }
     }
     setIsLoading(false);
   };

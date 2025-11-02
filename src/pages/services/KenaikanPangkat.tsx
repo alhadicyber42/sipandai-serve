@@ -29,11 +29,7 @@ export default function KenaikanPangkat() {
     setIsLoading(true);
     let query = supabase
       .from("services")
-      .select(`
-        *,
-        profiles!services_user_id_fkey(name),
-        work_units(name)
-      `)
+      .select("*")
       .eq("service_type", "kenaikan_pangkat");
 
     if (user.role === "user_unit") {
