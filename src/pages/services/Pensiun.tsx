@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, UserX } from "lucide-react";
+import { Plus, UserX, AlertCircle } from "lucide-react";
+import { RETIREMENT_CATEGORIES } from "@/lib/retirement-categories";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Pensiun() {
   const { user } = useAuth();
@@ -18,6 +20,8 @@ export default function Pensiun() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadServices();
@@ -78,32 +82,66 @@ export default function Pensiun() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!selectedCategory) {
+      toast.error("Pilih kategori pensiun terlebih dahulu");
+      return;
+    }
+
+    const category = RETIREMENT_CATEGORIES.find(c => c.id === selectedCategory);
+    if (!category) {
+      toast.error("Kategori tidak valid");
+      return;
+    }
+
+    // Validate all required documents have links
+    const missingDocs = category.documents.filter(doc => !documentLinks[doc.name]?.trim());
+    if (missingDocs.length > 0) {
+      toast.error(`Lengkapi link dokumen: ${missingDocs[0].name}`);
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
+    const documents = category.documents.map(doc => ({
+      name: doc.name,
+      url: documentLinks[doc.name],
+      note: doc.note
+    }));
 
     const { error } = await supabase.from("services").insert({
       user_id: user!.id,
       work_unit_id: user!.work_unit_id,
       service_type: "pensiun",
       status: "submitted",
-      title,
-      description,
-      documents: [],
+      title: `Pengajuan ${category.name}`,
+      description: `Kategori: ${category.name}`,
+      documents,
     });
 
     if (error) {
       toast.error("Gagal mengajukan usulan");
+      console.error(error);
     } else {
       toast.success("Usulan berhasil diajukan");
       setIsDialogOpen(false);
+      setSelectedCategory("");
+      setDocumentLinks({});
       loadServices();
     }
 
     setIsSubmitting(false);
   };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setSelectedCategory("");
+      setDocumentLinks({});
+    }
+  };
+
+  const selectedCategoryData = RETIREMENT_CATEGORIES.find(c => c.id === selectedCategory);
 
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
 
@@ -129,46 +167,90 @@ export default function Pensiun() {
             </div>
           </div>
           {user?.role === "user_unit" && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
                   Ajukan Pensiun
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-3xl max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Judul Usulan *</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="Contoh: Permohonan Pensiun BUP"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Deskripsi *</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Jelaskan detail permohonan pensiun..."
-                      rows={5}
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
-                    </Button>
-                  </div>
-                </form>
+                <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Kategori Pensiun *</Label>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih kategori pensiun" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RETIREMENT_CATEGORIES.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedCategoryData && (
+                      <div className="space-y-4">
+                        <div className="bg-muted/50 p-4 rounded-lg">
+                          <h3 className="font-semibold mb-3">Dokumen Persyaratan</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Masukkan link/URL untuk setiap dokumen yang diperlukan
+                          </p>
+                          <div className="space-y-4">
+                            {selectedCategoryData.documents.map((doc, index) => (
+                              <div key={index} className="space-y-2">
+                                <Label htmlFor={`doc-${index}`} className="flex items-start gap-2">
+                                  <span className="flex-1">
+                                    {index + 1}. {doc.name}
+                                  </span>
+                                </Label>
+                                {doc.note && (
+                                  <div className="flex items-start gap-2 text-xs text-muted-foreground ml-4 mb-2">
+                                    <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                    <span>{doc.note}</span>
+                                  </div>
+                                )}
+                                <Input
+                                  id={`doc-${index}`}
+                                  type="url"
+                                  placeholder="https://..."
+                                  value={documentLinks[doc.name] || ""}
+                                  onChange={(e) =>
+                                    setDocumentLinks({
+                                      ...documentLinks,
+                                      [doc.name]: e.target.value,
+                                    })
+                                  }
+                                  required
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 justify-end pt-4 border-t sticky bottom-0 bg-background">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleDialogOpenChange(false)}
+                      >
+                        Batal
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting || !selectedCategory}>
+                        {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
+                      </Button>
+                    </div>
+                  </form>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
           )}
