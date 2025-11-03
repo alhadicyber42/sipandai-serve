@@ -8,9 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, AlertCircle } from "lucide-react";
+import { PROMOTION_CATEGORIES, MONTHS, YEARS } from "@/lib/promotion-categories";
 
 export default function KenaikanPangkat() {
   const { user } = useAuth();
@@ -18,6 +21,10 @@ export default function KenaikanPangkat() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadServices();
@@ -80,11 +87,41 @@ export default function KenaikanPangkat() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!selectedCategory) {
+      toast.error("Pilih kategori kenaikan pangkat");
+      return;
+    }
+
+    if (!selectedMonth || !selectedYear) {
+      toast.error("Pilih periode pengajuan");
+      return;
+    }
+
+    const category = PROMOTION_CATEGORIES.find(c => c.id === selectedCategory);
+    if (!category) return;
+
+    // Validate all required documents are filled
+    const missingDocs = category.documents.filter(doc => !documentLinks[doc.name] || documentLinks[doc.name].trim() === "");
+    if (missingDocs.length > 0) {
+      toast.error(`Lengkapi semua dokumen persyaratan (${missingDocs.length} dokumen belum dilengkapi)`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const title = formData.get("title") as string;
     const description = formData.get("description") as string;
+
+    // Prepare documents array with names and URLs
+    const documents = category.documents.map(doc => ({
+      name: doc.name,
+      url: documentLinks[doc.name],
+      note: doc.note
+    }));
+
+    const period = `${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
+    const title = `${category.name} - Periode ${period}`;
 
     const { error } = await supabase.from("services").insert({
       user_id: user!.id,
@@ -92,8 +129,8 @@ export default function KenaikanPangkat() {
       service_type: "kenaikan_pangkat",
       status: "submitted",
       title,
-      description,
-      documents: [],
+      description: `${description}\n\nKategori: ${category.name}\nPeriode: ${period}`,
+      documents,
     });
 
     if (error) {
@@ -102,11 +139,24 @@ export default function KenaikanPangkat() {
     } else {
       toast.success("Usulan berhasil diajukan");
       setIsDialogOpen(false);
+      setSelectedCategory("");
+      setSelectedMonth("");
+      setSelectedYear("");
+      setDocumentLinks({});
       loadServices();
     }
 
     setIsSubmitting(false);
   };
+
+  const handleDocumentLinkChange = (docName: string, value: string) => {
+    setDocumentLinks(prev => ({
+      ...prev,
+      [docName]: value
+    }));
+  };
+
+  const selectedCategoryData = PROMOTION_CATEGORIES.find(c => c.id === selectedCategory);
 
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
 
@@ -139,39 +189,138 @@ export default function KenaikanPangkat() {
                   Ajukan Usulan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Ajukan Kenaikan Pangkat</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Category Selection */}
                   <div className="space-y-2">
-                    <Label htmlFor="title">Judul Usulan *</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="Contoh: Usulan Kenaikan Pangkat Periode April 2025"
-                      required
-                    />
+                    <Label htmlFor="category">Kategori Kenaikan Pangkat *</Label>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROMOTION_CATEGORIES.map(category => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {/* Period Selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="month">Bulan Periode *</Label>
+                      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih bulan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTHS.map(month => (
+                            <SelectItem key={month.value} value={month.value}>
+                              {month.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="year">Tahun Periode *</Label>
+                      <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih tahun" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEARS.map(year => (
+                            <SelectItem key={year.value} value={year.value}>
+                              {year.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Description */}
                   <div className="space-y-2">
-                    <Label htmlFor="description">Deskripsi *</Label>
+                    <Label htmlFor="description">Catatan Tambahan</Label>
                     <Textarea
                       id="description"
                       name="description"
-                      placeholder="Jelaskan detail usulan kenaikan pangkat..."
-                      rows={5}
-                      required
+                      placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
+                      rows={3}
                     />
                   </div>
+
+                  {/* Document Requirements */}
+                  {selectedCategoryData && (
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-sm">Dokumen Persyaratan</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Masukkan link/URL untuk setiap dokumen yang diperlukan
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {selectedCategoryData.documents.map((doc, index) => (
+                          <div key={index} className="space-y-2">
+                            <Label htmlFor={`doc-${index}`} className="flex items-start">
+                              <span className="font-medium">{index + 1}. {doc.name} *</span>
+                            </Label>
+                            {doc.note && (
+                              <Alert className="bg-muted/50">
+                                <AlertDescription className="text-xs">
+                                  <span className="font-medium">Catatan: </span>
+                                  {doc.note}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                            <Input
+                              id={`doc-${index}`}
+                              type="url"
+                              placeholder="https://drive.google.com/... atau link lainnya"
+                              value={documentLinks[doc.name] || ""}
+                              onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
+                              required
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedCategoryData && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Pilih kategori kenaikan pangkat untuk melihat daftar dokumen persyaratan
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="flex gap-2 justify-end pt-4 border-t">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setSelectedCategory("");
+                        setSelectedMonth("");
+                        setSelectedYear("");
+                        setDocumentLinks({});
+                      }}
                     >
                       Batal
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || !selectedCategoryData}>
                       {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
                     </Button>
                   </div>
