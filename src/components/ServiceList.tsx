@@ -35,6 +35,8 @@ import { Eye, CheckCircle, XCircle, FileText, Search, Filter } from "lucide-reac
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { DocumentVerification, type VerifiedDocument } from "@/components/DocumentVerification";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Service {
   id: string;
@@ -46,6 +48,7 @@ interface Service {
   work_unit_id: number;
   service_type: string;
   notes: any[];
+  documents?: VerifiedDocument[];
   profiles?: { name: string };
   work_units?: { name: string };
 }
@@ -74,9 +77,30 @@ export function ServiceList({
   const [actionType, setActionType] = useState<"approve" | "return">("approve");
   const [actionNote, setActionNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verifiedDocuments, setVerifiedDocuments] = useState<VerifiedDocument[]>([]);
 
   const handleApprove = async () => {
     if (!selectedService) return;
+
+    // Check if all documents are verified
+    if (verifiedDocuments && verifiedDocuments.length > 0) {
+      const hasUnverified = verifiedDocuments.some(
+        doc => doc.verification_status === "menunggu_review"
+      );
+      const needsRevision = verifiedDocuments.some(
+        doc => doc.verification_status === "perlu_perbaikan"
+      );
+
+      if (hasUnverified) {
+        toast.error("Masih ada dokumen yang belum diverifikasi");
+        return;
+      }
+
+      if (needsRevision) {
+        toast.error("Ada dokumen yang perlu perbaikan. Silakan kembalikan usulan terlebih dahulu.");
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -88,6 +112,7 @@ export function ServiceList({
         .update({
           status: newStatus,
           approved_at: new Date().toISOString(),
+          documents: (verifiedDocuments && verifiedDocuments.length > 0 ? verifiedDocuments : selectedService.documents) as any,
           notes: [
             ...(selectedService.notes || []),
             {
@@ -117,6 +142,7 @@ export function ServiceList({
       setIsDetailOpen(false);
       setSelectedService(null);
       setActionNote("");
+      setVerifiedDocuments([]);
       onReload();
     } catch (error: any) {
       console.error("Error approving service:", error);
@@ -127,7 +153,28 @@ export function ServiceList({
   };
 
   const handleReturn = async () => {
-    if (!selectedService || !actionNote.trim()) {
+    if (!selectedService) return;
+
+    // Check if documents have been reviewed
+    if (verifiedDocuments && verifiedDocuments.length > 0) {
+      const hasUnverified = verifiedDocuments.some(
+        doc => doc.verification_status === "menunggu_review"
+      );
+
+      if (hasUnverified) {
+        toast.error("Harap tinjau semua dokumen sebelum mengembalikan usulan");
+        return;
+      }
+
+      const needsRevision = verifiedDocuments.some(
+        doc => doc.verification_status === "perlu_perbaikan"
+      );
+
+      if (!needsRevision && !actionNote.trim()) {
+        toast.error("Alasan pengembalian wajib diisi");
+        return;
+      }
+    } else if (!actionNote.trim()) {
       toast.error("Alasan pengembalian wajib diisi");
       return;
     }
@@ -142,12 +189,13 @@ export function ServiceList({
         .update({
           status: newStatus,
           rejected_at: new Date().toISOString(),
+          documents: (verifiedDocuments && verifiedDocuments.length > 0 ? verifiedDocuments : selectedService.documents) as any,
           notes: [
             ...(selectedService.notes || []),
             {
               actor: user?.name,
               role: user?.role,
-              note: actionNote,
+              note: actionNote || "Dikembalikan untuk perbaikan dokumen",
               timestamp: new Date().toISOString(),
             },
           ],
@@ -163,7 +211,7 @@ export function ServiceList({
         action: "returned",
         actor_id: user!.id,
         actor_role: user!.role as any,
-        notes: actionNote,
+        notes: actionNote || "Dikembalikan untuk perbaikan dokumen",
       });
 
       toast.success("Usulan dikembalikan untuk revisi");
@@ -171,6 +219,7 @@ export function ServiceList({
       setIsDetailOpen(false);
       setSelectedService(null);
       setActionNote("");
+      setVerifiedDocuments([]);
       onReload();
     } catch (error: any) {
       console.error("Error returning service:", error);
@@ -186,6 +235,12 @@ export function ServiceList({
     setActionNote("");
     setIsDetailOpen(false);
     setIsActionDialogOpen(true);
+  };
+
+  const handleDetailOpen = (service: Service) => {
+    setSelectedService(service);
+    setVerifiedDocuments(service.documents || []);
+    setIsDetailOpen(true);
   };
 
   const filteredServices = services.filter((service) => {
@@ -306,10 +361,7 @@ export function ServiceList({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedService(service);
-                            setIsDetailOpen(true);
-                          }}
+                          onClick={() => handleDetailOpen(service)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Detail
@@ -346,89 +398,118 @@ export function ServiceList({
 
       {/* Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detail Usulan</DialogTitle>
           </DialogHeader>
           {selectedService && (
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Pemohon</Label>
-                  <p className="text-sm mt-1">{selectedService.profiles?.name || "-"}</p>
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">Informasi</TabsTrigger>
+                <TabsTrigger value="documents">
+                  Dokumen
+                  {selectedService.documents && selectedService.documents.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedService.documents.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="info" className="space-y-4 mt-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Pemohon</Label>
+                    <p className="text-sm mt-1">{selectedService.profiles?.name || "-"}</p>
+                  </div>
+                  <div>
+                    <Label>Unit Kerja</Label>
+                    <p className="text-sm mt-1">{selectedService.work_units?.name || "-"}</p>
+                  </div>
                 </div>
+
                 <div>
-                  <Label>Unit Kerja</Label>
-                  <p className="text-sm mt-1">{selectedService.work_units?.name || "-"}</p>
+                  <Label>Judul</Label>
+                  <p className="text-sm mt-1">{selectedService.title}</p>
                 </div>
-              </div>
 
-              <div>
-                <Label>Judul</Label>
-                <p className="text-sm mt-1">{selectedService.title}</p>
-              </div>
-
-              <div>
-                <Label>Deskripsi</Label>
-                <p className="text-sm mt-1 whitespace-pre-wrap">
-                  {selectedService.description || "-"}
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Tanggal Diajukan</Label>
-                  <p className="text-sm mt-1">
-                    {format(new Date(selectedService.created_at), "dd MMMM yyyy HH:mm", {
-                      locale: localeId,
-                    })}
+                  <Label>Deskripsi</Label>
+                  <p className="text-sm mt-1 whitespace-pre-wrap">
+                    {selectedService.description || "-"}
                   </p>
                 </div>
-                <div>
-                  <Label>Status</Label>
-                  <div className="mt-1">
-                    <StatusBadge status={selectedService.status} />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Tanggal Diajukan</Label>
+                    <p className="text-sm mt-1">
+                      {format(new Date(selectedService.created_at), "dd MMMM yyyy HH:mm", {
+                        locale: localeId,
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <div className="mt-1">
+                      <StatusBadge status={selectedService.status} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {selectedService.notes && selectedService.notes.length > 0 && (
-                <div>
-                  <Label>Riwayat</Label>
-                  <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-                    {selectedService.notes.map((note: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-muted rounded-lg text-sm">
-                        <p className="font-medium">{note.actor}</p>
-                        <p className="text-muted-foreground">{note.note}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(note.timestamp), "dd MMM yyyy, HH:mm")}
-                        </p>
-                      </div>
-                    ))}
+                {selectedService.notes && selectedService.notes.length > 0 && (
+                  <div>
+                    <Label>Riwayat</Label>
+                    <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                      {selectedService.notes.map((note: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-muted rounded-lg text-sm">
+                          <p className="font-medium">{note.actor}</p>
+                          <p className="text-muted-foreground">{note.note}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(note.timestamp), "dd MMM yyyy, HH:mm")}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {canTakeAction(selectedService) && (
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button
-                    className="flex-1"
-                    onClick={() => openActionDialog(selectedService, "approve")}
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Setujui
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => openActionDialog(selectedService, "return")}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Kembalikan
-                  </Button>
-                </div>
-              )}
-            </div>
+                {canTakeAction(selectedService) && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      className="flex-1"
+                      onClick={() => openActionDialog(selectedService, "approve")}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Setujui
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => openActionDialog(selectedService, "return")}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Kembalikan
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="documents" className="mt-4">
+                {selectedService.documents && selectedService.documents.length > 0 ? (
+                  <DocumentVerification
+                    documents={selectedService.documents}
+                    onUpdate={setVerifiedDocuments}
+                    readOnly={!canTakeAction(selectedService)}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Tidak ada dokumen yang dilampirkan</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
