@@ -185,13 +185,13 @@ export default function Mutasi() {
                   Ajukan Mutasi
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh]">
+              <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                   <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-6">
+                    <div className="space-y-6 pb-4">
                       <div className="space-y-2">
                         <Label htmlFor="category">Kategori Mutasi *</Label>
                         <Select
@@ -224,7 +224,7 @@ export default function Mutasi() {
                             </h3>
                             <div className="space-y-4">
                               {selectedCategory.documents.map((doc, index) => (
-                                <div key={index} className="space-y-2 p-4 border rounded-lg">
+                                <div key={index} className="space-y-2 p-3 border rounded-lg">
                                   <Label htmlFor={`doc-${index}`}>
                                     {index + 1}. {doc.name} *
                                   </Label>
@@ -253,15 +253,16 @@ export default function Mutasi() {
                     </div>
                   </ScrollArea>
                   
-                  <div className="flex gap-2 justify-end pt-4 border-t mt-4">
+                  <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => handleDialogOpenChange(false)}
+                      className="w-full sm:w-auto"
                     >
                       Batal
                     </Button>
-                    <Button type="submit" disabled={isSubmitting || !selectedCategory}>
+                    <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
                       {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
                     </Button>
                   </div>

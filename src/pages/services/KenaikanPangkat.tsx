@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -189,124 +190,128 @@ export default function KenaikanPangkat() {
                   Ajukan Usulan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Kenaikan Pangkat</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Category Selection */}
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Kategori Kenaikan Pangkat *</Label>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROMOTION_CATEGORIES.map(category => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                  <ScrollArea className="flex-1 pr-4">
+                    <div className="space-y-6 pb-4">
+                      {/* Category Selection */}
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Kategori Kenaikan Pangkat *</Label>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROMOTION_CATEGORIES.map(category => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Period Selection */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="month">Bulan Periode *</Label>
-                      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih bulan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MONTHS.map(month => (
-                            <SelectItem key={month.value} value={month.value}>
-                              {month.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="year">Tahun Periode *</Label>
-                      <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih tahun" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {YEARS.map(year => (
-                            <SelectItem key={year.value} value={year.value}>
-                              {year.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Catatan Tambahan</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* Document Requirements */}
-                  {selectedCategoryData && (
-                    <div className="space-y-4 border-t pt-4">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-sm">Dokumen Persyaratan</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Masukkan link/URL untuk setiap dokumen yang diperlukan
-                          </p>
+                      {/* Period Selection */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="month">Bulan Periode *</Label>
+                          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih bulan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {MONTHS.map(month => (
+                                <SelectItem key={month.value} value={month.value}>
+                                  {month.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="year">Tahun Periode *</Label>
+                          <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih tahun" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {YEARS.map(year => (
+                                <SelectItem key={year.value} value={year.value}>
+                                  {year.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        {selectedCategoryData.documents.map((doc, index) => (
-                          <div key={index} className="space-y-2">
-                            <Label htmlFor={`doc-${index}`} className="flex items-start">
-                              <span className="font-medium">{index + 1}. {doc.name} *</span>
-                            </Label>
-                            {doc.note && (
-                              <Alert className="bg-muted/50">
-                                <AlertDescription className="text-xs">
-                                  <span className="font-medium">Catatan: </span>
-                                  {doc.note}
-                                </AlertDescription>
-                              </Alert>
-                            )}
-                            <Input
-                              id={`doc-${index}`}
-                              type="url"
-                              placeholder="https://drive.google.com/... atau link lainnya"
-                              value={documentLinks[doc.name] || ""}
-                              onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
-                              required
-                            />
-                          </div>
-                        ))}
+                      {/* Description */}
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Catatan Tambahan</Label>
+                        <Textarea
+                          id="description"
+                          name="description"
+                          placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
+                          rows={3}
+                        />
                       </div>
+
+                      {/* Document Requirements */}
+                      {selectedCategoryData && (
+                        <div className="space-y-4 border-t pt-4">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-semibold text-sm">Dokumen Persyaratan</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Masukkan link/URL untuk setiap dokumen yang diperlukan
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            {selectedCategoryData.documents.map((doc, index) => (
+                              <div key={index} className="space-y-2 p-3 border rounded-lg">
+                                <Label htmlFor={`doc-${index}`} className="flex items-start">
+                                  <span className="font-medium">{index + 1}. {doc.name} *</span>
+                                </Label>
+                                {doc.note && (
+                                  <Alert className="bg-muted/50">
+                                    <AlertDescription className="text-xs">
+                                      <span className="font-medium">Catatan: </span>
+                                      {doc.note}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                                <Input
+                                  id={`doc-${index}`}
+                                  type="url"
+                                  placeholder="https://drive.google.com/... atau link lainnya"
+                                  value={documentLinks[doc.name] || ""}
+                                  onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
+                                  required
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {!selectedCategoryData && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            Pilih kategori kenaikan pangkat untuk melihat daftar dokumen persyaratan
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
-                  )}
+                  </ScrollArea>
 
-                  {!selectedCategoryData && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Pilih kategori kenaikan pangkat untuk melihat daftar dokumen persyaratan
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="flex gap-2 justify-end pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
                     <Button
                       type="button"
                       variant="outline"
@@ -317,10 +322,11 @@ export default function KenaikanPangkat() {
                         setSelectedYear("");
                         setDocumentLinks({});
                       }}
+                      className="w-full sm:w-auto"
                     >
                       Batal
                     </Button>
-                    <Button type="submit" disabled={isSubmitting || !selectedCategoryData}>
+                    <Button type="submit" disabled={isSubmitting || !selectedCategoryData} className="w-full sm:w-auto">
                       {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
                     </Button>
                   </div>
