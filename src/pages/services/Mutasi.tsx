@@ -190,7 +190,7 @@ export default function Mutasi() {
                   <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                  <ScrollArea className="flex-1 pr-4">
+                  <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
                     <div className="space-y-6 pb-4">
                       <div className="space-y-2">
                         <Label htmlFor="category">Kategori Mutasi *</Label>

@@ -223,7 +223,7 @@ export default function Cuti() {
                   <DialogTitle>Ajukan Permohonan Cuti</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                  <ScrollArea className="flex-1 pr-4">
+                  <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
                     <div className="space-y-4 pb-4">
                       <div className="space-y-2">
                         <Label htmlFor="title">Judul Permohonan</Label>
