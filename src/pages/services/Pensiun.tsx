@@ -174,7 +174,7 @@ export default function Pensiun() {
                   Ajukan Pensiun
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+              <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
                 </DialogHeader>

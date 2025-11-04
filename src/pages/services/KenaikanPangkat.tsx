@@ -190,7 +190,7 @@ export default function KenaikanPangkat() {
                   Ajukan Usulan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+              <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Kenaikan Pangkat</DialogTitle>
                 </DialogHeader>

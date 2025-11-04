@@ -218,7 +218,7 @@ export default function Cuti() {
                   Ajukan Cuti
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+              <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Permohonan Cuti</DialogTitle>
                 </DialogHeader>

@@ -185,7 +185,7 @@ export default function Mutasi() {
                   Ajukan Mutasi
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+              <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
                 </DialogHeader>
