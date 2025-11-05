@@ -78,6 +78,7 @@ export function ServiceList({
   const [actionNote, setActionNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verifiedDocuments, setVerifiedDocuments] = useState<VerifiedDocument[]>([]);
+  const [isSavingVerification, setIsSavingVerification] = useState(false);
 
   const handleApprove = async () => {
     if (!selectedService) return;
@@ -241,6 +242,49 @@ export function ServiceList({
     setSelectedService(service);
     setVerifiedDocuments(service.documents || []);
     setIsDetailOpen(true);
+  };
+
+  const handleSaveVerification = async () => {
+    if (!selectedService) return;
+
+    setIsSavingVerification(true);
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({
+          documents: verifiedDocuments as any,
+        })
+        .eq("id", selectedService.id);
+
+      if (error) throw error;
+
+      toast.success("Hasil verifikasi berhasil disimpan");
+      
+      // Check if any document needs revision
+      const hasDocumentsNeedingRevision = verifiedDocuments.some(
+        doc => doc.verification_status === "perlu_perbaikan"
+      );
+
+      // Auto-suggest returning if documents need revision
+      if (hasDocumentsNeedingRevision) {
+        toast.info("Ada dokumen yang perlu perbaikan. Silakan kembalikan usulan.", {
+          duration: 5000,
+        });
+      }
+
+      // Update selected service with new documents
+      setSelectedService({
+        ...selectedService,
+        documents: verifiedDocuments,
+      });
+      
+      onReload();
+    } catch (error: any) {
+      console.error("Error saving verification:", error);
+      toast.error("Gagal menyimpan hasil verifikasi");
+    } finally {
+      setIsSavingVerification(false);
+    }
   };
 
   const filteredServices = services.filter((service) => {
@@ -495,13 +539,47 @@ export function ServiceList({
                 )}
               </TabsContent>
 
-              <TabsContent value="documents" className="mt-4">
+              <TabsContent value="documents" className="mt-4 space-y-4">
                 {selectedService.documents && selectedService.documents.length > 0 ? (
-                  <DocumentVerification
-                    documents={selectedService.documents}
-                    onUpdate={setVerifiedDocuments}
-                    readOnly={!canTakeAction(selectedService)}
-                  />
+                  <>
+                    <DocumentVerification
+                      documents={verifiedDocuments.length > 0 ? verifiedDocuments : selectedService.documents}
+                      onUpdate={setVerifiedDocuments}
+                      readOnly={!canTakeAction(selectedService)}
+                    />
+                    
+                    {canTakeAction(selectedService) && (
+                      <div className="flex gap-2 pt-4 border-t sticky bottom-0 bg-background pb-2">
+                        <Button
+                          onClick={handleSaveVerification}
+                          disabled={isSavingVerification}
+                          className="flex-1"
+                          variant="outline"
+                        >
+                          {isSavingVerification ? "Menyimpan..." : "Simpan Verifikasi"}
+                        </Button>
+                        {verifiedDocuments.some(doc => doc.verification_status === "perlu_perbaikan") && (
+                          <Button
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => openActionDialog(selectedService, "return")}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Kembalikan Usulan
+                          </Button>
+                        )}
+                        {verifiedDocuments.every(doc => doc.verification_status === "sudah_sesuai") && (
+                          <Button
+                            className="flex-1"
+                            onClick={() => openActionDialog(selectedService, "approve")}
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Setujui Usulan
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
