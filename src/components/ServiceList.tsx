@@ -59,6 +59,7 @@ interface ServiceListProps {
   onReload: () => void;
   showFilters?: boolean;
   allowActions?: boolean;
+  onEditService?: (service: Service) => void;
 }
 
 export function ServiceList({
@@ -67,6 +68,7 @@ export function ServiceList({
   onReload,
   showFilters = true,
   allowActions = true,
+  onEditService,
 }: ServiceListProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -309,6 +311,10 @@ export function ServiceList({
     return false;
   };
 
+  const canEditService = (service: Service) => {
+    return onEditService && user?.role === "user_unit" && service.status === "returned_to_user";
+  };
+
   return (
     <>
       {showFilters && (
@@ -410,6 +416,17 @@ export function ServiceList({
                           <Eye className="h-4 w-4 mr-2" />
                           Detail
                         </Button>
+                        {canEditService(service) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEditService!(service)}
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Perbaiki
+                          </Button>
+                        )}
                         {canTakeAction(service) && (
                           <>
                             <Button
