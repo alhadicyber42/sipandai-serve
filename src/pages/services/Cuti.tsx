@@ -12,9 +12,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Link as LinkIcon, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -26,12 +28,15 @@ export default function Cuti() {
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [documentLinks, setDocumentLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState("");
+  const [editingDocuments, setEditingDocuments] = useState<string[]>([]);
+  const [savingDocuments, setSavingDocuments] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadServices();
@@ -192,6 +197,95 @@ export default function Cuti() {
       setEndDate(undefined);
       setDocumentLinks([]);
       setCurrentLink("");
+      loadServices();
+    }
+
+    setIsSubmitting(false);
+  };
+
+  const handleEditService = (service: any) => {
+    setEditingService(service);
+    setIsEditDialogOpen(true);
+    
+    // Load existing document links
+    if (service.documents && Array.isArray(service.documents)) {
+      setEditingDocuments(service.documents);
+    }
+  };
+
+  const handleSaveDocument = async (index: number) => {
+    if (!editingService || !editingDocuments[index]?.trim()) {
+      toast.error("Masukkan link dokumen terlebih dahulu");
+      return;
+    }
+
+    // Validate URL
+    const urlSchema = z.string().url({ message: "Link tidak valid" });
+    const validation = urlSchema.safeParse(editingDocuments[index].trim());
+
+    if (!validation.success) {
+      toast.error("Link tidak valid. Pastikan menggunakan format yang benar (https://...)");
+      return;
+    }
+
+    setSavingDocuments(prev => new Set(prev).add(index));
+
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({ documents: editingDocuments })
+        .eq("id", editingService.id);
+
+      if (error) throw error;
+
+      toast.success("Dokumen berhasil disimpan");
+      setEditingService({ ...editingService, documents: editingDocuments });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan dokumen");
+    } finally {
+      setSavingDocuments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+    }
+  };
+
+  const handleUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!editingService) {
+      toast.error("Data usulan tidak ditemukan");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase
+      .from("services")
+      .update({
+        status: "submitted",
+        notes: [
+          ...(editingService.notes || []),
+          {
+            actor: user!.name,
+            role: user!.role,
+            note: "Usulan telah diperbaiki dan diajukan kembali",
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      })
+      .eq("id", editingService.id);
+
+    if (error) {
+      toast.error("Gagal mengajukan ulang usulan");
+      console.error(error);
+    } else {
+      toast.success("Usulan berhasil diajukan kembali");
+      setIsEditDialogOpen(false);
+      setEditingService(null);
+      setEditingDocuments([]);
       loadServices();
     }
 
@@ -410,7 +504,105 @@ export default function Cuti() {
           onReload={loadServices}
           showFilters={isAdmin}
           allowActions={isAdmin}
+          onEditService={user?.role === "user_unit" ? handleEditService : undefined}
         />
+
+        {/* Edit Dialog for Returned Services */}
+        {user?.role === "user_unit" && (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Perbaiki Usulan Cuti</DialogTitle>
+              </DialogHeader>
+              
+              {editingService && editingService.notes && editingService.notes.length > 0 && (
+                <Alert className="bg-orange-50 dark:bg-orange-950 border-orange-200">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription>
+                    <p className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                      Catatan dari Admin:
+                    </p>
+                    <div className="space-y-2">
+                      {editingService.notes.slice(-2).reverse().map((note: any, idx: number) => (
+                        <div key={idx} className="text-sm text-orange-800 dark:text-orange-200">
+                          <span className="font-medium">{note.actor}: </span>
+                          {note.note}
+                        </div>
+                      ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleUpdateService} className="flex flex-col flex-1 overflow-hidden">
+                <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label>Dokumen Pendukung</Label>
+                      <div className="space-y-3">
+                        {editingDocuments.map((link, index) => {
+                          const isSaved = editingService?.documents?.[index] === link;
+                          const hasChanges = editingService?.documents?.[index] !== link;
+                          
+                          return (
+                            <div key={index} className={`space-y-2 p-3 border rounded-lg ${isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
+                              <Label className="flex items-center justify-between">
+                                <span>Dokumen {index + 1}</span>
+                                {isSaved && (
+                                  <Badge variant="outline" className="border-green-500 text-green-700">Tersimpan</Badge>
+                                )}
+                              </Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="url"
+                                  placeholder="https://drive.google.com/..."
+                                  value={link}
+                                  onChange={(e) => {
+                                    const newLinks = [...editingDocuments];
+                                    newLinks[index] = e.target.value;
+                                    setEditingDocuments(newLinks);
+                                  }}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant={isSaved ? "outline" : "default"}
+                                  size="sm"
+                                  onClick={() => handleSaveDocument(index)}
+                                  disabled={!hasChanges || savingDocuments.has(index) || !link.trim()}
+                                >
+                                  {savingDocuments.has(index) ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+
+                <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                      setEditingService(null);
+                      setEditingDocuments([]);
+                    }}
+                    className="w-full sm:w-auto"
+                  >
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                    {isSubmitting ? "Mengajukan..." : "Ajukan Ulang"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   );

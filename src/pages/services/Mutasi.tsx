@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Users, AlertCircle } from "lucide-react";
@@ -19,9 +21,13 @@ export default function Mutasi() {
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TransferCategory | null>(null);
   const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
+  const [editingDocuments, setEditingDocuments] = useState<Record<string, string>>({});
+  const [savingDocuments, setSavingDocuments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadServices();
@@ -154,6 +160,113 @@ export default function Mutasi() {
     }
   };
 
+  const handleEditService = (service: any) => {
+    setEditingService(service);
+    setIsEditDialogOpen(true);
+    
+    const category = TRANSFER_CATEGORIES.find(c => c.name === service.title);
+    setSelectedCategory(category || null);
+    
+    // Load existing document links
+    const existingDocs: Record<string, string> = {};
+    (service.documents || []).forEach((doc: any) => {
+      existingDocs[doc.name] = doc.url;
+    });
+    setEditingDocuments(existingDocs);
+  };
+
+  const handleSaveDocument = async (docName: string) => {
+    if (!editingService || !editingDocuments[docName]?.trim()) {
+      toast.error("Masukkan link dokumen terlebih dahulu");
+      return;
+    }
+
+    setSavingDocuments(prev => new Set(prev).add(docName));
+
+    try {
+      const updatedDocuments = editingService.documents.map((doc: any) => {
+        if (doc.name === docName) {
+          return {
+            ...doc,
+            url: editingDocuments[docName],
+            verification_status: "menunggu_review",
+            verification_note: "",
+          };
+        }
+        return doc;
+      });
+
+      const { error } = await supabase
+        .from("services")
+        .update({ documents: updatedDocuments })
+        .eq("id", editingService.id);
+
+      if (error) throw error;
+
+      toast.success("Dokumen berhasil disimpan");
+      setEditingService({ ...editingService, documents: updatedDocuments });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan dokumen");
+    } finally {
+      setSavingDocuments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docName);
+        return newSet;
+      });
+    }
+  };
+
+  const handleUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!editingService) {
+      toast.error("Data usulan tidak ditemukan");
+      return;
+    }
+
+    const docsNeedingFix = editingService.documents?.filter((doc: any) => 
+      doc.verification_status === "perlu_perbaikan"
+    ) || [];
+
+    if (docsNeedingFix.length > 0) {
+      toast.error("Masih ada dokumen yang perlu diperbaiki. Simpan semua dokumen terlebih dahulu.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase
+      .from("services")
+      .update({
+        status: "submitted",
+        notes: [
+          ...(editingService.notes || []),
+          {
+            actor: user!.name,
+            role: user!.role,
+            note: "Usulan telah diperbaiki dan diajukan kembali",
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      })
+      .eq("id", editingService.id);
+
+    if (error) {
+      toast.error("Gagal mengajukan ulang usulan");
+      console.error(error);
+    } else {
+      toast.success("Usulan berhasil diajukan kembali");
+      setIsEditDialogOpen(false);
+      setEditingService(null);
+      setSelectedCategory(null);
+      setEditingDocuments({});
+      loadServices();
+    }
+
+    setIsSubmitting(false);
+  };
+
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
 
   return (
@@ -272,7 +385,6 @@ export default function Mutasi() {
           )}
         </div>
 
-        {/* Statistics for Admin */}
         {isAdmin && (
           <div className="grid md:grid-cols-4 gap-4">
             <Card>
@@ -321,7 +433,94 @@ export default function Mutasi() {
           onReload={loadServices}
           showFilters={isAdmin}
           allowActions={isAdmin}
+          onEditService={user?.role === "user_unit" ? handleEditService : undefined}
         />
+
+        {/* Edit Dialog */}
+        {user?.role === "user_unit" && (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Perbaiki Usulan Mutasi</DialogTitle>
+              </DialogHeader>
+              
+              {editingService && editingService.notes && editingService.notes.length > 0 && (
+                <Alert className="bg-orange-50 dark:bg-orange-950 border-orange-200">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription>
+                    <p className="font-semibold text-orange-900 dark:text-orange-100 mb-2">Catatan dari Admin:</p>
+                    <div className="space-y-2">
+                      {editingService.notes.slice(-2).reverse().map((note: any, idx: number) => (
+                        <div key={idx} className="text-sm text-orange-800 dark:text-orange-200">
+                          <span className="font-medium">{note.actor}: </span>{note.note}
+                        </div>
+                      ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleUpdateService} className="flex flex-col flex-1 overflow-hidden">
+                <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                  <div className="space-y-4 pb-4">
+                    {selectedCategory && selectedCategory.documents.map((doc, index) => {
+                      const existingDoc = editingService?.documents?.find((d: any) => d.name === doc.name);
+                      const needsRevision = existingDoc?.verification_status === "perlu_perbaikan";
+                      const isSaved = existingDoc?.verification_status === "menunggu_review" && existingDoc?.url === editingDocuments[doc.name];
+                      const hasChanges = editingDocuments[doc.name] !== existingDoc?.url;
+                      
+                      return (
+                        <div key={index} className={`space-y-2 p-3 border rounded-lg ${needsRevision ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
+                          <Label className="flex items-center justify-between">
+                            <span>{index + 1}. {doc.name}</span>
+                            <div className="flex gap-2">
+                              {isSaved && <Badge variant="outline" className="border-green-500 text-green-700">Tersimpan</Badge>}
+                              {needsRevision && !isSaved && <Badge variant="destructive">Perlu Perbaikan</Badge>}
+                            </div>
+                          </Label>
+                          {existingDoc?.verification_note && needsRevision && (
+                            <Alert className="bg-orange-100 dark:bg-orange-900">
+                              <AlertDescription className="text-xs text-orange-900 dark:text-orange-100">
+                                <span className="font-medium">Catatan Admin: </span>{existingDoc.verification_note}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <div className="flex gap-2">
+                            <Input
+                              type="url"
+                              placeholder="https://..."
+                              value={editingDocuments[doc.name] || ""}
+                              onChange={(e) => setEditingDocuments(prev => ({ ...prev, [doc.name]: e.target.value }))}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant={isSaved ? "outline" : "default"}
+                              size="sm"
+                              onClick={() => handleSaveDocument(doc.name)}
+                              disabled={!hasChanges || savingDocuments.has(doc.name) || !editingDocuments[doc.name]?.trim()}
+                            >
+                              {savingDocuments.has(doc.name) ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+
+                <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                    {isSubmitting ? "Mengajukan..." : "Ajukan Ulang"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   );

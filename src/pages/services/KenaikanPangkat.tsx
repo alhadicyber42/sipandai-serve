@@ -29,6 +29,8 @@ export default function KenaikanPangkat() {
   const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
   const [editingService, setEditingService] = useState<any | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingDocuments, setEditingDocuments] = useState<Record<string, string>>({});
+  const [savingDocuments, setSavingDocuments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadServices();
@@ -48,7 +50,6 @@ export default function KenaikanPangkat() {
     } else if (user.role === "admin_unit") {
       query = query.eq("work_unit_id", user.work_unit_id);
     }
-    // admin_pusat can see all
 
     const { data, error } = await query.order("created_at", { ascending: false });
 
@@ -121,7 +122,8 @@ export default function KenaikanPangkat() {
     const documents = category.documents.map(doc => ({
       name: doc.name,
       url: documentLinks[doc.name],
-      note: doc.note
+      note: doc.note,
+      verification_status: "menunggu_review",
     }));
 
     const period = `${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
@@ -178,36 +180,74 @@ export default function KenaikanPangkat() {
     setSelectedMonth(monthMatch?.value || "");
     setSelectedYear(yearMatch?.value || "");
     
-    // Set existing document links
+    // Set existing document links into editingDocuments
     const existingDocs: Record<string, string> = {};
     (service.documents || []).forEach((doc: any) => {
       existingDocs[doc.name] = doc.url;
     });
-    setDocumentLinks(existingDocs);
+    setEditingDocuments(existingDocs);
     
     setIsEditDialogOpen(true);
+  };
+
+  const handleSaveDocument = async (docName: string) => {
+    if (!editingService || !editingDocuments[docName]?.trim()) {
+      toast.error("Masukkan link dokumen terlebih dahulu");
+      return;
+    }
+
+    setSavingDocuments(prev => new Set(prev).add(docName));
+
+    try {
+      // Update the specific document in the service
+      const updatedDocuments = editingService.documents.map((doc: any) => {
+        if (doc.name === docName) {
+          return {
+            ...doc,
+            url: editingDocuments[docName],
+            verification_status: "menunggu_review",
+            verification_note: "",
+          };
+        }
+        return doc;
+      });
+
+      const { error } = await supabase
+        .from("services")
+        .update({ documents: updatedDocuments })
+        .eq("id", editingService.id);
+
+      if (error) throw error;
+
+      toast.success("Dokumen berhasil disimpan");
+      setEditingService({ ...editingService, documents: updatedDocuments });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan dokumen");
+    } finally {
+      setSavingDocuments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docName);
+        return newSet;
+      });
+    }
   };
 
   const handleUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!selectedCategory || !editingService) {
-      toast.error("Pilih kategori kenaikan pangkat");
+    if (!editingService) {
+      toast.error("Data usulan tidak ditemukan");
       return;
     }
 
-    if (!selectedMonth || !selectedYear) {
-      toast.error("Pilih periode pengajuan");
-      return;
-    }
+    // Check if all documents that need fixing have been saved
+    const docsNeedingFix = editingService.documents?.filter((doc: any) => 
+      doc.verification_status === "perlu_perbaikan"
+    ) || [];
 
-    const category = PROMOTION_CATEGORIES.find(c => c.id === selectedCategory);
-    if (!category) return;
-
-    // Validate all required documents are filled
-    const missingDocs = category.documents.filter(doc => !documentLinks[doc.name] || documentLinks[doc.name].trim() === "");
-    if (missingDocs.length > 0) {
-      toast.error(`Lengkapi semua dokumen persyaratan (${missingDocs.length} dokumen belum dilengkapi)`);
+    if (docsNeedingFix.length > 0) {
+      toast.error("Masih ada dokumen yang perlu diperbaiki. Simpan semua dokumen terlebih dahulu.");
       return;
     }
 
@@ -216,24 +256,11 @@ export default function KenaikanPangkat() {
     const formData = new FormData(e.currentTarget);
     const description = formData.get("description") as string;
 
-    // Prepare documents array with names and URLs
-    const documents = category.documents.map(doc => ({
-      name: doc.name,
-      url: documentLinks[doc.name],
-      note: doc.note,
-      verification_status: "menunggu_review", // Reset verification status
-    }));
-
-    const period = `${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
-    const title = `${category.name} - Periode ${period}`;
-
     const { error } = await supabase
       .from("services")
       .update({
-        status: "submitted", // Change status back to submitted
-        title,
-        description: `${description}\n\nKategori: ${category.name}\nPeriode: ${period}`,
-        documents,
+        status: "submitted",
+        description: description || editingService.description,
         notes: [
           ...(editingService.notes || []),
           {
@@ -247,15 +274,16 @@ export default function KenaikanPangkat() {
       .eq("id", editingService.id);
 
     if (error) {
-      toast.error("Gagal memperbarui usulan");
+      toast.error("Gagal mengajukan ulang usulan");
       console.error(error);
     } else {
-      toast.success("Usulan berhasil diperbaiki dan diajukan kembali");
+      toast.success("Usulan berhasil diajukan kembali");
       setIsEditDialogOpen(false);
       setEditingService(null);
       setSelectedCategory("");
       setSelectedMonth("");
       setSelectedYear("");
+      setEditingDocuments({});
       setDocumentLinks({});
       loadServices();
     }
@@ -405,15 +433,6 @@ export default function KenaikanPangkat() {
                           </div>
                         </div>
                       )}
-
-                      {!selectedCategoryData && (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            Pilih kategori kenaikan pangkat untuk melihat daftar dokumen persyaratan
-                          </AlertDescription>
-                        </Alert>
-                      )}
                     </div>
                   </ScrollArea>
 
@@ -527,7 +546,7 @@ export default function KenaikanPangkat() {
                     {/* Category Selection */}
                     <div className="space-y-2">
                       <Label htmlFor="edit-category">Kategori Kenaikan Pangkat *</Label>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
                         </SelectTrigger>
@@ -545,7 +564,7 @@ export default function KenaikanPangkat() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-month">Bulan Periode *</Label>
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled>
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih bulan" />
                           </SelectTrigger>
@@ -560,7 +579,7 @@ export default function KenaikanPangkat() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="edit-year">Tahun Periode *</Label>
-                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <Select value={selectedYear} onValueChange={setSelectedYear} disabled>
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih tahun" />
                           </SelectTrigger>
@@ -604,14 +623,21 @@ export default function KenaikanPangkat() {
                           {selectedCategoryData.documents.map((doc, index) => {
                             const existingDoc = editingService?.documents?.find((d: any) => d.name === doc.name);
                             const needsRevision = existingDoc?.verification_status === "perlu_perbaikan";
+                            const isSaved = existingDoc?.verification_status === "menunggu_review" && existingDoc?.url === editingDocuments[doc.name];
+                            const hasChanges = editingDocuments[doc.name] !== existingDoc?.url;
                             
                             return (
-                              <div key={index} className={`space-y-2 p-3 border rounded-lg ${needsRevision ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : ''}`}>
+                              <div key={index} className={`space-y-2 p-3 border rounded-lg ${needsRevision ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
                                 <Label htmlFor={`edit-doc-${index}`} className="flex items-start justify-between">
                                   <span className="font-medium">{index + 1}. {doc.name} *</span>
-                                  {needsRevision && (
-                                    <Badge variant="destructive" className="ml-2">Perlu Perbaikan</Badge>
-                                  )}
+                                  <div className="flex gap-2">
+                                    {isSaved && (
+                                      <Badge variant="outline" className="ml-2 border-green-500 text-green-700">Tersimpan</Badge>
+                                    )}
+                                    {needsRevision && !isSaved && (
+                                      <Badge variant="destructive" className="ml-2">Perlu Perbaikan</Badge>
+                                    )}
+                                  </div>
                                 </Label>
                                 {existingDoc?.verification_note && needsRevision && (
                                   <Alert className="bg-orange-100 dark:bg-orange-900">
@@ -629,14 +655,25 @@ export default function KenaikanPangkat() {
                                     </AlertDescription>
                                   </Alert>
                                 )}
-                                <Input
-                                  id={`edit-doc-${index}`}
-                                  type="url"
-                                  placeholder="https://drive.google.com/... atau link lainnya"
-                                  value={documentLinks[doc.name] || ""}
-                                  onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
-                                  required
-                                />
+                                <div className="flex gap-2">
+                                  <Input
+                                    id={`edit-doc-${index}`}
+                                    type="url"
+                                    placeholder="https://drive.google.com/... atau link lainnya"
+                                    value={editingDocuments[doc.name] || ""}
+                                    onChange={(e) => setEditingDocuments(prev => ({ ...prev, [doc.name]: e.target.value }))}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant={isSaved ? "outline" : "default"}
+                                    size="sm"
+                                    onClick={() => handleSaveDocument(doc.name)}
+                                    disabled={!hasChanges || savingDocuments.has(doc.name) || !editingDocuments[doc.name]?.trim()}
+                                  >
+                                    {savingDocuments.has(doc.name) ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
+                                  </Button>
+                                </div>
                               </div>
                             );
                           })}
@@ -656,6 +693,7 @@ export default function KenaikanPangkat() {
                       setSelectedCategory("");
                       setSelectedMonth("");
                       setSelectedYear("");
+                      setEditingDocuments({});
                       setDocumentLinks({});
                     }}
                     className="w-full sm:w-auto"
@@ -663,7 +701,7 @@ export default function KenaikanPangkat() {
                     Batal
                   </Button>
                   <Button type="submit" disabled={isSubmitting || !selectedCategoryData} className="w-full sm:w-auto">
-                    {isSubmitting ? "Mengirim..." : "Ajukan Ulang"}
+                    {isSubmitting ? "Mengajukan..." : "Ajukan Ulang"}
                   </Button>
                 </div>
               </form>
