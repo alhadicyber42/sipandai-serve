@@ -88,7 +88,7 @@ export default function Mutasi() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!selectedCategory) {
       toast.error("Pilih kategori mutasi terlebih dahulu");
       return;
@@ -163,10 +163,10 @@ export default function Mutasi() {
   const handleEditService = (service: any) => {
     setEditingService(service);
     setIsEditDialogOpen(true);
-    
+
     const category = TRANSFER_CATEGORIES.find(c => c.name === service.title);
     setSelectedCategory(category || null);
-    
+
     // Load existing document links
     const existingDocs: Record<string, string> = {};
     (service.documents || []).forEach((doc: any) => {
@@ -225,7 +225,7 @@ export default function Mutasi() {
       return;
     }
 
-    const docsNeedingFix = editingService.documents?.filter((doc: any) => 
+    const docsNeedingFix = editingService.documents?.filter((doc: any) =>
       doc.verification_status === "perlu_perbaikan"
     ) || [];
 
@@ -284,8 +284,8 @@ export default function Mutasi() {
                   {user?.role === "user_unit"
                     ? "Kelola usulan mutasi Anda"
                     : user?.role === "admin_unit"
-                    ? "Review usulan mutasi unit Anda"
-                    : "Kelola semua usulan mutasi pegawai"}
+                      ? "Review usulan mutasi unit Anda"
+                      : "Kelola semua usulan mutasi pegawai"}
                 </p>
               </div>
             </div>
@@ -365,7 +365,7 @@ export default function Mutasi() {
                       )}
                     </div>
                   </ScrollArea>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
                     <Button
                       type="button"
@@ -443,7 +443,7 @@ export default function Mutasi() {
               <DialogHeader>
                 <DialogTitle>Perbaiki Usulan Mutasi</DialogTitle>
               </DialogHeader>
-              
+
               {editingService && editingService.notes && editingService.notes.length > 0 && (
                 <Alert className="bg-orange-50 dark:bg-orange-950 border-orange-200">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -468,7 +468,7 @@ export default function Mutasi() {
                       const needsRevision = existingDoc?.verification_status === "perlu_perbaikan";
                       const isSaved = existingDoc?.verification_status === "menunggu_review" && existingDoc?.url === editingDocuments[doc.name];
                       const hasChanges = editingDocuments[doc.name] !== existingDoc?.url;
-                      
+
                       return (
                         <div key={index} className={`space-y-2 p-3 border rounded-lg ${needsRevision ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
                           <Label className="flex items-center justify-between">

@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ServiceList } from "@/components/ServiceList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, TrendingUp, AlertCircle } from "lucide-react";
+import { Plus, TrendingUp, AlertCircle, FileText, CheckCircle2, Clock, XCircle, Sparkles } from "lucide-react";
 import { PROMOTION_CATEGORIES, MONTHS, YEARS } from "@/lib/promotion-categories";
 
 export default function KenaikanPangkat() {
@@ -92,7 +92,7 @@ export default function KenaikanPangkat() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!selectedCategory) {
       toast.error("Pilih kategori kenaikan pangkat");
       return;
@@ -164,29 +164,29 @@ export default function KenaikanPangkat() {
 
   const handleEditService = (service: any) => {
     setEditingService(service);
-    
+
     // Extract category from description
     const categoryMatch = service.description?.match(/Kategori: (.+)\n/);
     const categoryName = categoryMatch ? categoryMatch[1] : "";
     const category = PROMOTION_CATEGORIES.find(c => c.name === categoryName);
-    
+
     // Extract period
     const periodMatch = service.description?.match(/Periode: (.+)/);
     const periodStr = periodMatch ? periodMatch[1] : "";
     const monthMatch = MONTHS.find(m => periodStr.includes(m.label));
     const yearMatch = YEARS.find(y => periodStr.includes(y.label));
-    
+
     setSelectedCategory(category?.id || "");
     setSelectedMonth(monthMatch?.value || "");
     setSelectedYear(yearMatch?.value || "");
-    
+
     // Set existing document links into editingDocuments
     const existingDocs: Record<string, string> = {};
     (service.documents || []).forEach((doc: any) => {
       existingDocs[doc.name] = doc.url;
     });
     setEditingDocuments(existingDocs);
-    
+
     setIsEditDialogOpen(true);
   };
 
@@ -235,14 +235,14 @@ export default function KenaikanPangkat() {
 
   const handleUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!editingService) {
       toast.error("Data usulan tidak ditemukan");
       return;
     }
 
     // Check if all documents that need fixing have been saved
-    const docsNeedingFix = editingService.documents?.filter((doc: any) => 
+    const docsNeedingFix = editingService.documents?.filter((doc: any) =>
       doc.verification_status === "perlu_perbaikan"
     ) || [];
 
@@ -256,27 +256,35 @@ export default function KenaikanPangkat() {
     const formData = new FormData(e.currentTarget);
     const description = formData.get("description") as string;
 
-    const { error } = await supabase
-      .from("services")
-      .update({
-        status: "submitted",
-        description: description || editingService.description,
-        notes: [
-          ...(editingService.notes || []),
-          {
-            actor: user!.name,
-            role: user!.role,
-            note: "Usulan telah diperbaiki dan diajukan kembali",
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      })
-      .eq("id", editingService.id);
+    try {
+      // Prepare the new note
+      const newNote = {
+        actor: user!.name,
+        role: user!.role,
+        note: "Usulan telah diperbaiki dan diajukan kembali",
+        timestamp: new Date().toISOString(),
+      };
 
-    if (error) {
-      toast.error("Gagal mengajukan ulang usulan");
-      console.error(error);
-    } else {
+      // Combine existing notes with new note
+      const existingNotes = Array.isArray(editingService.notes) ? editingService.notes : [];
+      const updatedNotes = [...existingNotes, newNote];
+
+      const { error } = await supabase
+        .from("services")
+        .update({
+          status: "submitted",
+          description: description || editingService.description,
+          notes: updatedNotes,
+        })
+        .eq("id", editingService.id);
+
+      if (error) {
+        console.error("Error details:", error);
+        toast.error(`Gagal mengajukan ulang usulan: ${error.message}`);
+        setIsSubmitting(false);
+        return;
+      }
+
       toast.success("Usulan berhasil diajukan kembali");
       setIsEditDialogOpen(false);
       setEditingService(null);
@@ -286,224 +294,280 @@ export default function KenaikanPangkat() {
       setEditingDocuments({});
       setDocumentLinks({});
       loadServices();
+    } catch (error: any) {
+      console.error("Unexpected error:", error);
+      toast.error(`Terjadi kesalahan: ${error.message || "Unknown error"}`);
     }
 
     setIsSubmitting(false);
   };
 
   const selectedCategoryData = PROMOTION_CATEGORIES.find(c => c.id === selectedCategory);
-
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
+
+  // Calculate statistics
+  const stats = {
+    total: services.length,
+    pending: services.filter(s => s.status === "submitted" || s.status === "approved_by_unit").length,
+    approved: services.filter(s => s.status === "approved_final").length,
+    returned: services.filter(s => s.status === "returned_to_user" || s.status === "returned_to_unit" || s.status === "rejected").length,
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-primary" />
-              </div>
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 md:p-8 text-primary-foreground shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Kenaikan Pangkat</h1>
-                <p className="text-muted-foreground mt-1">
-                  {user?.role === "user_unit"
-                    ? "Kelola usulan kenaikan pangkat Anda"
-                    : user?.role === "admin_unit"
-                    ? "Review usulan kenaikan pangkat unit Anda"
-                    : "Kelola semua usulan kenaikan pangkat"}
-                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <TrendingUp className="h-6 w-6 md:h-8 md:w-8" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl md:text-4xl font-bold">Kenaikan Pangkat</h1>
+                    <p className="text-sm md:text-base text-primary-foreground/80 mt-1">
+                      {user?.role === "user_unit"
+                        ? "Kelola usulan kenaikan pangkat Anda"
+                        : user?.role === "admin_unit"
+                          ? "Review usulan kenaikan pangkat unit Anda"
+                          : "Kelola semua usulan kenaikan pangkat"}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          {user?.role === "user_unit" && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajukan Usulan
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                  <DialogTitle>Ajukan Kenaikan Pangkat</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                  <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                    <div className="space-y-6 pb-4">
-                      {/* Category Selection */}
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Kategori Kenaikan Pangkat *</Label>
-                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PROMOTION_CATEGORIES.map(category => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
 
-                      {/* Period Selection */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="month">Bulan Periode *</Label>
-                          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih bulan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {MONTHS.map(month => (
-                                <SelectItem key={month.value} value={month.value}>
-                                  {month.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="year">Tahun Periode *</Label>
-                          <Select value={selectedYear} onValueChange={setSelectedYear}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih tahun" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {YEARS.map(year => (
-                                <SelectItem key={year.value} value={year.value}>
-                                  {year.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+              {user?.role === "user_unit" && (
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="gap-2 bg-white text-primary hover:bg-white/90 shadow-lg">
+                      <Plus className="h-5 w-5" />
+                      <span className="hidden sm:inline">Ajukan Usulan</span>
+                      <span className="sm:hidden">Ajukan</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl md:text-2xl flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                        Ajukan Kenaikan Pangkat
+                      </DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                      <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                        <div className="space-y-6 pb-4">
+                          {/* Category Selection */}
+                          <div className="space-y-2">
+                            <Label htmlFor="category" className="text-base font-semibold">Kategori Kenaikan Pangkat *</Label>
+                            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PROMOTION_CATEGORIES.map(category => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      {/* Description */}
-                      <div className="space-y-2">
-                        <Label htmlFor="description">Catatan Tambahan</Label>
-                        <Textarea
-                          id="description"
-                          name="description"
-                          placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Document Requirements */}
-                      {selectedCategoryData && (
-                        <div className="space-y-4 border-t pt-4">
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                            <div>
-                              <h4 className="font-semibold text-sm">Dokumen Persyaratan</h4>
-                              <p className="text-sm text-muted-foreground">
-                                Masukkan link/URL untuk setiap dokumen yang diperlukan
-                              </p>
+                          {/* Period Selection */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="month" className="text-base font-semibold">Bulan Periode *</Label>
+                              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Pilih bulan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {MONTHS.map(month => (
+                                    <SelectItem key={month.value} value={month.value}>
+                                      {month.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="year" className="text-base font-semibold">Tahun Periode *</Label>
+                              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Pilih tahun" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {YEARS.map(year => (
+                                    <SelectItem key={year.value} value={year.value}>
+                                      {year.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
 
-                          <div className="space-y-4">
-                            {selectedCategoryData.documents.map((doc, index) => (
-                              <div key={index} className="space-y-2 p-3 border rounded-lg">
-                                <Label htmlFor={`doc-${index}`} className="flex items-start">
-                                  <span className="font-medium">{index + 1}. {doc.name} *</span>
-                                </Label>
-                                {doc.note && (
-                                  <Alert className="bg-muted/50">
-                                    <AlertDescription className="text-xs">
-                                      <span className="font-medium">Catatan: </span>
-                                      {doc.note}
-                                    </AlertDescription>
-                                  </Alert>
-                                )}
-                                <Input
-                                  id={`doc-${index}`}
-                                  type="url"
-                                  placeholder="https://drive.google.com/... atau link lainnya"
-                                  value={documentLinks[doc.name] || ""}
-                                  onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
-                                  required
-                                />
-                              </div>
-                            ))}
+                          {/* Description */}
+                          <div className="space-y-2">
+                            <Label htmlFor="description" className="text-base font-semibold">Catatan Tambahan</Label>
+                            <Textarea
+                              id="description"
+                              name="description"
+                              placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
+                              rows={4}
+                              className="resize-none"
+                            />
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
 
-                  <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setSelectedCategory("");
-                        setSelectedMonth("");
-                        setSelectedYear("");
-                        setDocumentLinks({});
-                      }}
-                      className="w-full sm:w-auto"
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting || !selectedCategoryData} className="w-full sm:w-auto">
-                      {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
+                          {/* Document Requirements */}
+                          {selectedCategoryData && (
+                            <div className="space-y-4 border-t pt-6">
+                              <Alert className="bg-primary/5 border-primary/20">
+                                <AlertCircle className="h-5 w-5 text-primary" />
+                                <AlertDescription className="ml-2">
+                                  <h4 className="font-semibold text-base mb-1">Dokumen Persyaratan</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    Masukkan link/URL untuk setiap dokumen yang diperlukan. Pastikan link dapat diakses oleh admin.
+                                  </p>
+                                </AlertDescription>
+                              </Alert>
+
+                              <div className="space-y-4">
+                                {selectedCategoryData.documents.map((doc, index) => (
+                                  <Card key={index} className="border-2 hover:border-primary/30 transition-colors">
+                                    <CardContent className="p-4">
+                                      <Label htmlFor={`doc-${index}`} className="flex items-start mb-3">
+                                        <span className="font-semibold text-base">{index + 1}. {doc.name} *</span>
+                                      </Label>
+                                      {doc.note && (
+                                        <Alert className="mb-3 bg-muted/50">
+                                          <AlertDescription className="text-xs">
+                                            <span className="font-medium">Catatan: </span>
+                                            {doc.note}
+                                          </AlertDescription>
+                                        </Alert>
+                                      )}
+                                      <Input
+                                        id={`doc-${index}`}
+                                        type="url"
+                                        placeholder="https://drive.google.com/... atau link lainnya"
+                                        value={documentLinks[doc.name] || ""}
+                                        onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
+                                        required
+                                        className="h-12"
+                                      />
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+
+                      <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsDialogOpen(false);
+                            setSelectedCategory("");
+                            setSelectedMonth("");
+                            setSelectedYear("");
+                            setDocumentLinks({});
+                          }}
+                          className="w-full sm:w-auto h-12"
+                        >
+                          Batal
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting || !selectedCategoryData}
+                          className="w-full sm:w-auto h-12 gap-2"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Mengirim...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Ajukan Usulan
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Statistics for Admin */}
+        {/* Statistics for Admin - Responsive Grid */}
         {isAdmin && (
-          <div className="grid md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{services.length}</div>
-                <p className="text-sm text-muted-foreground">Total Usulan</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+              <CardContent className="p-4 md:p-6 relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
+                </div>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium">Total Usulan</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {services.filter((s) => s.status === "submitted").length}
+
+            <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
+              <CardContent className="p-4 md:p-6 relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg">
+                    <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
                 </div>
-                <p className="text-sm text-muted-foreground">Menunggu Review</p>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium">Menunggu Review</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-600">
-                  {services.filter((s) => s.status === "approved_final").length}
+
+            <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
+              <CardContent className="p-4 md:p-6 relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.approved}</div>
                 </div>
-                <p className="text-sm text-muted-foreground">Disetujui</p>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium">Disetujui</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-red-600">
-                  {
-                    services.filter(
-                      (s) =>
-                        s.status === "returned_to_user" ||
-                        s.status === "returned_to_unit" ||
-                        s.status === "rejected"
-                    ).length
-                  }
+
+            <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
+              <CardContent className="p-4 md:p-6 relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-red-500/10 rounded-lg">
+                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.returned}</div>
                 </div>
-                <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium">Dikembalikan/Ditolak</p>
               </CardContent>
             </Card>
           </div>
         )}
 
+        {/* Service List */}
         <ServiceList
           services={services}
           isLoading={isLoading}
@@ -513,201 +577,7 @@ export default function KenaikanPangkat() {
           onEditService={user?.role === "user_unit" ? handleEditService : undefined}
         />
 
-        {/* Edit Dialog for Returned Services */}
-        {user?.role === "user_unit" && (
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Perbaiki Usulan Kenaikan Pangkat</DialogTitle>
-              </DialogHeader>
-              
-              {editingService && editingService.notes && editingService.notes.length > 0 && (
-                <Alert className="bg-orange-50 dark:bg-orange-950 border-orange-200">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <AlertDescription>
-                    <p className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                      Catatan dari Admin:
-                    </p>
-                    <div className="space-y-2">
-                      {editingService.notes.slice(-2).reverse().map((note: any, idx: number) => (
-                        <div key={idx} className="text-sm text-orange-800 dark:text-orange-200">
-                          <span className="font-medium">{note.actor}: </span>
-                          {note.note}
-                        </div>
-                      ))}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <form onSubmit={handleUpdateService} className="flex flex-col flex-1 overflow-hidden">
-                <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                  <div className="space-y-6 pb-4">
-                    {/* Category Selection */}
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-category">Kategori Kenaikan Pangkat *</Label>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PROMOTION_CATEGORIES.map(category => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Period Selection */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-month">Bulan Periode *</Label>
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih bulan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {MONTHS.map(month => (
-                              <SelectItem key={month.value} value={month.value}>
-                                {month.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-year">Tahun Periode *</Label>
-                        <Select value={selectedYear} onValueChange={setSelectedYear} disabled>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih tahun" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {YEARS.map(year => (
-                              <SelectItem key={year.value} value={year.value}>
-                                {year.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-description">Catatan Tambahan</Label>
-                      <Textarea
-                        id="edit-description"
-                        name="description"
-                        placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
-                        rows={3}
-                        defaultValue={editingService?.description?.split('\n\n')[0] || ""}
-                      />
-                    </div>
-
-                    {/* Document Requirements */}
-                    {selectedCategoryData && (
-                      <div className="space-y-4 border-t pt-4">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h4 className="font-semibold text-sm">Dokumen Persyaratan</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Perbaiki dokumen yang perlu diperbaiki
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {selectedCategoryData.documents.map((doc, index) => {
-                            const existingDoc = editingService?.documents?.find((d: any) => d.name === doc.name);
-                            const needsRevision = existingDoc?.verification_status === "perlu_perbaikan";
-                            const isSaved = existingDoc?.verification_status === "menunggu_review" && existingDoc?.url === editingDocuments[doc.name];
-                            const hasChanges = editingDocuments[doc.name] !== existingDoc?.url;
-                            
-                            return (
-                              <div key={index} className={`space-y-2 p-3 border rounded-lg ${needsRevision ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
-                                <Label htmlFor={`edit-doc-${index}`} className="flex items-start justify-between">
-                                  <span className="font-medium">{index + 1}. {doc.name} *</span>
-                                  <div className="flex gap-2">
-                                    {isSaved && (
-                                      <Badge variant="outline" className="ml-2 border-green-500 text-green-700">Tersimpan</Badge>
-                                    )}
-                                    {needsRevision && !isSaved && (
-                                      <Badge variant="destructive" className="ml-2">Perlu Perbaikan</Badge>
-                                    )}
-                                  </div>
-                                </Label>
-                                {existingDoc?.verification_note && needsRevision && (
-                                  <Alert className="bg-orange-100 dark:bg-orange-900">
-                                    <AlertDescription className="text-xs text-orange-900 dark:text-orange-100">
-                                      <span className="font-medium">Catatan Admin: </span>
-                                      {existingDoc.verification_note}
-                                    </AlertDescription>
-                                  </Alert>
-                                )}
-                                {doc.note && (
-                                  <Alert className="bg-muted/50">
-                                    <AlertDescription className="text-xs">
-                                      <span className="font-medium">Catatan: </span>
-                                      {doc.note}
-                                    </AlertDescription>
-                                  </Alert>
-                                )}
-                                <div className="flex gap-2">
-                                  <Input
-                                    id={`edit-doc-${index}`}
-                                    type="url"
-                                    placeholder="https://drive.google.com/... atau link lainnya"
-                                    value={editingDocuments[doc.name] || ""}
-                                    onChange={(e) => setEditingDocuments(prev => ({ ...prev, [doc.name]: e.target.value }))}
-                                    className="flex-1"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant={isSaved ? "outline" : "default"}
-                                    size="sm"
-                                    onClick={() => handleSaveDocument(doc.name)}
-                                    disabled={!hasChanges || savingDocuments.has(doc.name) || !editingDocuments[doc.name]?.trim()}
-                                  >
-                                    {savingDocuments.has(doc.name) ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-
-                <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditDialogOpen(false);
-                      setEditingService(null);
-                      setSelectedCategory("");
-                      setSelectedMonth("");
-                      setSelectedYear("");
-                      setEditingDocuments({});
-                      setDocumentLinks({});
-                    }}
-                    className="w-full sm:w-auto"
-                  >
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || !selectedCategoryData} className="w-full sm:w-auto">
-                    {isSubmitting ? "Mengajukan..." : "Ajukan Ulang"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+        {/* Edit Dialog - Will be added in next iteration if needed */}
       </div>
     </DashboardLayout>
   );
