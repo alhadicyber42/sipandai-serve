@@ -39,6 +39,7 @@ export default function MyConsultations() {
         .from("consultations")
         .select("*")
         .eq("user_id", user?.id)
+        .in("status", ["resolved", "closed"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -161,8 +162,8 @@ export default function MyConsultations() {
                               consultation.priority === "high"
                                 ? "bg-red-100 text-red-800"
                                 : consultation.priority === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-blue-100 text-blue-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-blue-100 text-blue-800"
                             }
                           >
                             Prioritas: {getPriorityLabel(consultation.priority)}

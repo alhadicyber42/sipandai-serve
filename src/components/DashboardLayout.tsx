@@ -106,7 +106,7 @@ export const DashboardLayout = ({
           path: "/konsultasi/tereskalasi",
           label: "Konsultasi Tereskalasi"
         }, {
-          path: "/konsultasi/riwayat",
+          path: "/konsultasi/riwayat-unit",
           label: "Riwayat Konsultasi"
         }]
       }, {

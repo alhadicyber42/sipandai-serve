@@ -68,17 +68,34 @@ export default function UnitConsultations() {
 
   const loadConsultations = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get consultations without join
+      const { data: consultationsData, error } = await supabase
         .from("consultations")
-        .select(`
-          *,
-          profiles!consultations_user_id_fkey (name)
-        `)
+        .select("*")
         .eq("work_unit_id", user?.work_unit_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setConsultations(data as any || []);
+
+      // If we have consultations, fetch user names separately
+      if (consultationsData && consultationsData.length > 0) {
+        const userIds = [...new Set(consultationsData.map(c => c.user_id))];
+
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+
+        // Map profiles to consultations
+        const consultationsWithProfiles = consultationsData.map(consultation => ({
+          ...consultation,
+          profiles: profilesData?.find(p => p.id === consultation.user_id) || { name: "Unknown User" }
+        }));
+
+        setConsultations(consultationsWithProfiles as any);
+      } else {
+        setConsultations([]);
+      }
     } catch (error: any) {
       console.error("Error loading consultations:", error);
       toast.error("Gagal memuat konsultasi unit");

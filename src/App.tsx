@@ -19,6 +19,7 @@ import AllConsultations from "./pages/consultations/AllConsultations";
 import MyConsultations from "./pages/consultations/MyConsultations";
 import NewConsultation from "./pages/consultations/NewConsultation";
 import UnitConsultations from "./pages/consultations/UnitConsultations";
+import UnitConsultationHistory from "./pages/consultations/UnitConsultationHistory";
 import ConsultationDetail from "./pages/consultations/ConsultationDetail";
 import EmployeeOfTheMonth from "./pages/EmployeeOfTheMonth";
 import EmployeeRating from "./pages/EmployeeRating";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
             <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
             <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
+            <Route path="/konsultasi/riwayat-unit" element={<ProtectedRoute><UnitConsultationHistory /></ProtectedRoute>} />
             <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
             <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
             <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />

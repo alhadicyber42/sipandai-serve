@@ -123,23 +123,34 @@ export default function ConsultationDetail() {
 
   const loadMessages = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch messages without join
+      const { data: messagesData, error } = await supabase
         .from("consultation_messages")
-        .select(`
-          *,
-          profiles!consultation_messages_sender_id_fkey (name)
-        `)
+        .select("*")
         .eq("consultation_id", id)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      const enrichedMessages = (data || []).map((msg: any) => ({
-        ...msg,
-        sender_name: msg.profiles?.name || "Unknown",
-      }));
+      // If we have messages, fetch sender names separately
+      if (messagesData && messagesData.length > 0) {
+        const senderIds = [...new Set(messagesData.map(m => m.sender_id))];
 
-      setMessages(enrichedMessages);
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", senderIds);
+
+        // Map profiles to messages
+        const enrichedMessages = messagesData.map((msg: any) => ({
+          ...msg,
+          sender_name: profilesData?.find(p => p.id === msg.sender_id)?.name || "Unknown",
+        }));
+
+        setMessages(enrichedMessages);
+      } else {
+        setMessages([]);
+      }
     } catch (error: any) {
       console.error("Error loading messages:", error);
     }
@@ -157,7 +168,7 @@ export default function ConsultationDetail() {
           sender_id: user.id,
           sender_role: user.role as any,
           content: newMessage.trim(),
-          message_type: "text" as any,
+          message_type: "answer" as any,
           is_from_admin_pusat: user.role === "admin_pusat",
         });
 
