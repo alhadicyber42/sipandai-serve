@@ -26,6 +26,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -237,12 +239,34 @@ export default function ConsultationDetail() {
     }
   };
 
+  const getPriorityBadge = (priority: string) => {
+    const config = {
+      high: { label: "Tinggi", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+      medium: { label: "Sedang", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+      low: { label: "Rendah", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+    };
+    const { label, className } = config[priority as keyof typeof config] || config.medium;
+    return <Badge className={className}>{label}</Badge>;
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      submitted: "Baru",
+      in_progress: "Dalam Proses",
+      resolved: "Selesai",
+      closed: "Ditutup",
+    };
+    return labels[status] || status;
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Memuat...</p>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Memuat konsultasi...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -263,18 +287,21 @@ export default function ConsultationDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
+      <div className="space-y-4 md:space-y-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
+            className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{consultation.subject}</h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold truncate">{consultation.subject}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs md:text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               {format(new Date(consultation.created_at), "d MMMM yyyy HH:mm", {
                 locale: localeId,
@@ -284,15 +311,17 @@ export default function ConsultationDetail() {
 
           {/* Admin Actions */}
           {canManage && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
               {user?.role === "admin_unit" && !consultation.is_escalated && (
                 <Button
                   variant="outline"
                   onClick={handleEscalate}
-                  className="gap-2"
+                  className="gap-2 flex-1 md:flex-none"
+                  size="sm"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  Eskalasi ke Pusat
+                  <span className="hidden sm:inline">Eskalasi ke Pusat</span>
+                  <span className="sm:hidden">Eskalasi</span>
                 </Button>
               )}
 
@@ -300,7 +329,7 @@ export default function ConsultationDetail() {
                 value={consultation.status}
                 onValueChange={handleStatusChange}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -314,25 +343,29 @@ export default function ConsultationDetail() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Main Chat Area */}
           <div className="lg:col-span-2 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Percakapan</CardTitle>
+            <Card className="shadow-lg">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Percakapan
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-4 max-h-[500px] overflow-y-auto">
+              <CardContent className="p-0">
+                {/* Messages Container */}
+                <div className="h-[400px] md:h-[500px] overflow-y-auto p-4 md:p-6 space-y-4 bg-muted/20">
                   {/* Initial Message */}
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-primary" />
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <div className="bg-muted rounded-lg p-4">
-                        <p className="text-sm">{consultation.description}</p>
+                      <div className="bg-white dark:bg-card rounded-2xl rounded-tl-none p-4 shadow-sm border">
+                        <p className="text-sm md:text-base">{consultation.description}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 ml-2">
                         {format(new Date(consultation.created_at), "HH:mm", {
                           locale: localeId,
                         })}
@@ -340,7 +373,7 @@ export default function ConsultationDetail() {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-4" />
 
                   {/* Messages */}
                   {messages.map((message) => {
@@ -350,19 +383,21 @@ export default function ConsultationDetail() {
                         key={message.id}
                         className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isOwnMessage ? "bg-primary" : "bg-secondary"
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isOwnMessage ? "bg-primary" : "bg-secondary"
                           }`}>
-                          <User className={`h-4 w-4 ${isOwnMessage ? "text-primary-foreground" : ""}`} />
+                          <User className={`h-4 w-4 md:h-5 md:w-5 ${isOwnMessage ? "text-primary-foreground" : ""}`} />
                         </div>
-                        <div className={`flex-1 ${isOwnMessage ? "items-end" : ""}`}>
-                          <div className={`rounded-lg p-4 ${isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
+                        <div className={`flex-1 max-w-[85%] md:max-w-[75%] ${isOwnMessage ? "items-end" : ""}`}>
+                          <div className={`rounded-2xl p-4 shadow-sm ${isOwnMessage
+                              ? "bg-primary text-primary-foreground rounded-tr-none"
+                              : "bg-white dark:bg-card rounded-tl-none border"
                             }`}>
-                            <p className="text-sm font-medium mb-1">
+                            <p className="text-xs md:text-sm font-medium mb-1">
                               {message.sender_name}
                             </p>
-                            <p className="text-sm">{message.content}</p>
+                            <p className="text-sm md:text-base">{message.content}</p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className={`text-xs text-muted-foreground mt-1 ${isOwnMessage ? "text-right mr-2" : "ml-2"}`}>
                             {format(new Date(message.created_at), "HH:mm", {
                               locale: localeId,
                             })}
@@ -376,34 +411,44 @@ export default function ConsultationDetail() {
 
                 {/* Message Input */}
                 {consultation.status !== "closed" && (
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Ketik pesan Anda..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      rows={3}
-                      className="resize-none"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={isSending || !newMessage.trim()}
-                      className="gap-2"
-                    >
-                      <Send className="h-4 w-4" />
-                      Kirim
-                    </Button>
+                  <div className="p-4 md:p-6 border-t bg-background">
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Ketik pesan Anda..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        rows={2}
+                        className="resize-none"
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={isSending || !newMessage.trim()}
+                        className="gap-2 shrink-0"
+                        size="lg"
+                      >
+                        {isSending ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4" />
+                            <span className="hidden sm:inline">Kirim</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
 
                 {consultation.status === "closed" && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    Konsultasi ini telah ditutup
+                  <div className="text-center py-6 text-muted-foreground bg-muted/30 border-t">
+                    <XCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Konsultasi ini telah ditutup</p>
                   </div>
                 )}
               </CardContent>
@@ -412,42 +457,28 @@ export default function ConsultationDetail() {
 
           {/* Sidebar Info */}
           <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Informasi Ticket</CardTitle>
+            <Card className="shadow-lg">
+              <CardHeader className="border-b bg-muted/30">
+                <CardTitle className="text-base md:text-lg">Informasi Ticket</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 md:p-6">
                 <div>
-                  <p className="text-sm font-medium mb-1">Status</p>
+                  <p className="text-sm font-medium mb-2">Status</p>
                   <Badge
                     variant={
                       consultation.status === "resolved" ? "outline" : "default"
                     }
+                    className="text-sm"
                   >
-                    {consultation.status === "submitted" && "Baru"}
-                    {consultation.status === "in_progress" && "Dalam Proses"}
-                    {consultation.status === "resolved" && "Selesai"}
-                    {consultation.status === "closed" && "Ditutup"}
+                    {getStatusLabel(consultation.status)}
                   </Badge>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <p className="text-sm font-medium mb-1">Prioritas</p>
-                  <Badge
-                    className={
-                      consultation.priority === "high"
-                        ? "bg-red-100 text-red-800"
-                        : consultation.priority === "medium"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-blue-100 text-blue-800"
-                    }
-                  >
-                    {consultation.priority === "high" && "Tinggi"}
-                    {consultation.priority === "medium" && "Sedang"}
-                    {consultation.priority === "low" && "Rendah"}
-                  </Badge>
+                  <p className="text-sm font-medium mb-2">Prioritas</p>
+                  {getPriorityBadge(consultation.priority)}
                 </div>
 
                 <Separator />
@@ -455,7 +486,7 @@ export default function ConsultationDetail() {
                 <div>
                   <p className="text-sm font-medium mb-2">Ditujukan Kepada</p>
                   <div className="flex items-center gap-2">
-                    {consultation.is_escalated || consultation.status === "escalated" ? (
+                    {consultation.is_escalated ? (
                       <>
                         <Users className="h-4 w-4 text-blue-600" />
                         <span className="text-sm font-medium text-blue-600">
@@ -472,7 +503,7 @@ export default function ConsultationDetail() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {consultation.is_escalated || consultation.status === "escalated"
+                    {consultation.is_escalated
                       ? "Bagian SDM Aparatur Setditjen Binalavotas"
                       : "Pimpinan Unit Kerja"}
                   </p>
@@ -481,7 +512,7 @@ export default function ConsultationDetail() {
                 {consultation.is_escalated && (
                   <>
                     <Separator />
-                    <div className="flex items-center gap-2 text-sm text-destructive">
+                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">Tereskalasi ke Pusat</span>
                     </div>
@@ -514,15 +545,18 @@ export default function ConsultationDetail() {
 
             {/* Quick Actions for Admin */}
             {canManage && consultation.status !== "closed" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tindakan Cepat</CardTitle>
+              <Card className="shadow-lg border-primary/20">
+                <CardHeader className="border-b bg-primary/5">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Tindakan Cepat
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-2 p-4">
                   {consultation.status !== "resolved" && (
                     <Button
                       variant="outline"
-                      className="w-full gap-2"
+                      className="w-full gap-2 justify-start"
                       onClick={() => handleStatusChange("resolved")}
                     >
                       <CheckCircle className="h-4 w-4" />
@@ -533,7 +567,7 @@ export default function ConsultationDetail() {
                   {consultation.status === "resolved" && (
                     <Button
                       variant="outline"
-                      className="w-full gap-2"
+                      className="w-full gap-2 justify-start"
                       onClick={() => handleStatusChange("closed")}
                     >
                       <XCircle className="h-4 w-4" />
