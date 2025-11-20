@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ServiceList } from "@/components/ServiceList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +16,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarCheck, CalendarX, Info } from "lucide-react";
+import { format, differenceInDays, getYear } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { LEAVE_LABELS } from "@/lib/constants";
@@ -37,6 +37,16 @@ export default function Cuti() {
   const [currentLink, setCurrentLink] = useState("");
   const [editingDocuments, setEditingDocuments] = useState<string[]>([]);
   const [savingDocuments, setSavingDocuments] = useState<Set<number>>(new Set());
+  const [selectedLeaveType, setSelectedLeaveType] = useState<string>("");
+
+  // Leave Balance State
+  const [leaveStats, setLeaveStats] = useState({
+    quota: 12, // Default annual quota
+    carriedOver: 0, // N-1 quota (mocked for now as 0)
+    used: 0,
+    pending: 0,
+    remaining: 12
+  });
 
   useEffect(() => {
     loadServices();
@@ -67,7 +77,7 @@ export default function Cuti() {
     }
 
     const list = (data as any[]) || [];
-    
+
     if (list.length > 0) {
       // Load leave_details
       const ids = list.map((s) => s.id);
@@ -98,16 +108,50 @@ export default function Cuti() {
       const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
       const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
 
-      setServices(list.map((s) => ({
+      const enrichedServices = list.map((s) => ({
         ...s,
         leave_details: byService[s.id] || [],
         profiles: profilesMap.get(s.user_id),
         work_units: workUnitsMap.get(s.work_unit_id),
-      })));
+      }));
+
+      setServices(enrichedServices);
+
+      // Calculate Leave Stats for User
+      if (user.role === "user_unit") {
+        const currentYear = getYear(new Date());
+        let usedDays = 0;
+        let pendingDays = 0;
+
+        enrichedServices.forEach(service => {
+          const details = service.leave_details[0];
+          if (!details) return;
+
+          // Only count Annual Leave (Cuti Tahunan) for the quota
+          if (details.leave_type === 'tahunan') {
+            const serviceYear = getYear(new Date(details.start_date));
+            if (serviceYear === currentYear) {
+              if (service.status === 'approved_final') {
+                usedDays += details.total_days;
+              } else if (['submitted', 'under_review_unit', 'under_review_central', 'approved_by_unit'].includes(service.status)) {
+                pendingDays += details.total_days;
+              }
+            }
+          }
+        });
+
+        setLeaveStats(prev => ({
+          ...prev,
+          used: usedDays,
+          pending: pendingDays,
+          remaining: (prev.quota + prev.carriedOver) - usedDays
+        }));
+      }
+
     } else {
       setServices([]);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -136,12 +180,30 @@ export default function Cuti() {
     toast.success("Link dokumen dihapus");
   };
 
+  const getLeaveRequirements = (type: string) => {
+    switch (type) {
+      case "sakit":
+        return "Wajib melampirkan Surat Keterangan Dokter untuk cuti sakit lebih dari 1 hari.";
+      case "melahirkan":
+        return "Wajib melampirkan Surat Keterangan Dokter/Bidan (HPL). Diberikan untuk persalinan anak pertama sampai dengan ketiga.";
+      case "alasan_penting":
+        return "Wajib melampirkan dokumen pendukung (Surat Kematian, Surat Nikah, dll). Maksimal 1 bulan.";
+      case "besar":
+        return "Minimal telah bekerja 5 tahun secara terus menerus. Durasi maksimal 3 bulan.";
+      case "di_luar_tanggungan_negara":
+        return "Minimal telah bekerja 5 tahun secara terus menerus. Alasan mendesak/pribadi. Maksimal 3 tahun.";
+      case "tahunan":
+        return `Saldo cuti tahunan Anda: ${leaveStats.remaining} hari.`;
+      default:
+        return "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const title = formData.get("title") as string;
     const leaveType = formData.get("leave_type") as string;
     const reason = formData.get("reason") as string;
     const substituteEmployee = formData.get("substitute_employee") as string;
@@ -155,6 +217,27 @@ export default function Cuti() {
 
     const totalDays = differenceInDays(endDate, startDate) + 1;
 
+    // Validation Logic
+    if (leaveType === 'tahunan') {
+      if (totalDays > leaveStats.remaining) {
+        toast.error(`Saldo cuti tidak mencukupi. Sisa saldo: ${leaveStats.remaining} hari`);
+        setIsSubmitting(false);
+        return;
+      }
+    } else if (leaveType === 'sakit' && totalDays > 1 && documentLinks.length === 0) {
+      toast.error("Cuti sakit lebih dari 1 hari wajib melampirkan surat keterangan dokter");
+      setIsSubmitting(false);
+      return;
+    } else if ((leaveType === 'melahirkan' || leaveType === 'alasan_penting') && documentLinks.length === 0) {
+      toast.error("Wajib melampirkan dokumen pendukung");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Auto-generate title
+    const leaveLabel = LEAVE_LABELS[leaveType as keyof typeof LEAVE_LABELS];
+    const title = `${leaveLabel} - ${user?.name}`;
+
     // Insert service
     const { data: serviceData, error: serviceError } = await supabase
       .from("services")
@@ -164,7 +247,7 @@ export default function Cuti() {
         service_type: "cuti",
         status: "submitted",
         title,
-        description: `${LEAVE_LABELS[leaveType as keyof typeof LEAVE_LABELS]} - ${totalDays} hari`,
+        description: `${leaveLabel} - ${totalDays} hari`,
         documents: documentLinks,
       })
       .select()
@@ -197,6 +280,7 @@ export default function Cuti() {
       setEndDate(undefined);
       setDocumentLinks([]);
       setCurrentLink("");
+      setSelectedLeaveType("");
       loadServices();
     }
 
@@ -206,7 +290,7 @@ export default function Cuti() {
   const handleEditService = (service: any) => {
     setEditingService(service);
     setIsEditDialogOpen(true);
-    
+
     // Load existing document links
     if (service.documents && Array.isArray(service.documents)) {
       setEditingDocuments(service.documents);
@@ -301,7 +385,7 @@ export default function Cuti() {
           <div>
             <h1 className="text-3xl font-bold">Cuti Pegawai</h1>
             <p className="text-muted-foreground mt-1">
-              {user?.role === "user_unit" ? "Kelola permohonan cuti Anda" : "Review permohonan cuti"}
+              {user?.role === "user_unit" ? "Kelola permohonan dan saldo cuti Anda" : "Review permohonan cuti"}
             </p>
           </div>
           {user?.role === "user_unit" && (
@@ -320,12 +404,12 @@ export default function Cuti() {
                   <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
                     <div className="space-y-4 pb-4">
                       <div className="space-y-2">
-                        <Label htmlFor="title">Judul Permohonan</Label>
-                        <Input id="title" name="title" placeholder="Contoh: Cuti Tahunan Bulan Februari" required />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="leave_type">Jenis Cuti</Label>
-                        <Select name="leave_type" required>
+                        <Select
+                          name="leave_type"
+                          required
+                          onValueChange={(value) => setSelectedLeaveType(value)}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih jenis cuti" />
                           </SelectTrigger>
@@ -337,6 +421,14 @@ export default function Cuti() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedLeaveType && (
+                          <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 mt-2">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
+                              {getLeaveRequirements(selectedLeaveType)}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -459,6 +551,67 @@ export default function Cuti() {
           )}
         </div>
 
+        {user?.role === "user_unit" && (
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Saldo Cuti Tahunan
+                </CardTitle>
+                <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{leaveStats.remaining} Hari</div>
+                <p className="text-xs text-blue-600 dark:text-blue-300">
+                  Dari total {leaveStats.quota + leaveStats.carriedOver} hari
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Cuti Terpakai
+                </CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{leaveStats.used} Hari</div>
+                <p className="text-xs text-muted-foreground">
+                  Tahun {getYear(new Date())}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Menunggu Persetujuan
+                </CardTitle>
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{leaveStats.pending} Hari</div>
+                <p className="text-xs text-muted-foreground">
+                  Sedang diproses
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Saldo Penangguhan
+                </CardTitle>
+                <CalendarX className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{leaveStats.carriedOver} Hari</div>
+                <p className="text-xs text-muted-foreground">
+                  Sisa tahun lalu
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {isAdmin && (
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
@@ -498,14 +651,17 @@ export default function Cuti() {
           </div>
         )}
 
-        <ServiceList
-          services={services}
-          isLoading={isLoading}
-          onReload={loadServices}
-          showFilters={isAdmin}
-          allowActions={isAdmin}
-          onEditService={user?.role === "user_unit" ? handleEditService : undefined}
-        />
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Cuti</h2>
+          <ServiceList
+            services={services}
+            isLoading={isLoading}
+            onReload={loadServices}
+            showFilters={isAdmin}
+            allowActions={isAdmin}
+            onEditService={user?.role === "user_unit" ? handleEditService : undefined}
+          />
+        </div>
 
         {/* Edit Dialog for Returned Services */}
         {user?.role === "user_unit" && (
@@ -514,7 +670,7 @@ export default function Cuti() {
               <DialogHeader>
                 <DialogTitle>Perbaiki Usulan Cuti</DialogTitle>
               </DialogHeader>
-              
+
               {editingService && editingService.notes && editingService.notes.length > 0 && (
                 <Alert className="bg-orange-50 dark:bg-orange-950 border-orange-200">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -543,7 +699,7 @@ export default function Cuti() {
                         {editingDocuments.map((link, index) => {
                           const isSaved = editingService?.documents?.[index] === link;
                           const hasChanges = editingService?.documents?.[index] !== link;
-                          
+
                           return (
                             <div key={index} className={`space-y-2 p-3 border rounded-lg ${isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
                               <Label className="flex items-center justify-between">
