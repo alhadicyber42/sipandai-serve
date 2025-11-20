@@ -21,6 +21,8 @@ import NewConsultation from "./pages/consultations/NewConsultation";
 import UnitConsultations from "./pages/consultations/UnitConsultations";
 import ConsultationDetail from "./pages/consultations/ConsultationDetail";
 import EmployeeOfTheMonth from "./pages/EmployeeOfTheMonth";
+import EmployeeRating from "./pages/EmployeeRating";
+import AdminEmployeeRatings from "./pages/admin/EmployeeRatings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +77,8 @@ const App = () => (
             <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
             <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
             <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
+            <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
+            <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

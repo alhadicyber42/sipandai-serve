@@ -172,6 +172,10 @@ export const DashboardLayout = ({
         label: "Daftar Pegawai Unit",
         icon: Users
       }, {
+        path: "/admin/employee-ratings",
+        label: "Penilaian Employee of The Month",
+        icon: Trophy
+      }, {
         path: "/profile",
         label: "Profil",
         icon: User
