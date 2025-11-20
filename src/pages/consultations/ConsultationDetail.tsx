@@ -21,6 +21,7 @@ import {
   Send,
   Clock,
   User,
+  Users,
   Building2,
   AlertTriangle,
   CheckCircle,
@@ -59,7 +60,7 @@ export default function ConsultationDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -183,7 +184,7 @@ export default function ConsultationDetail() {
   const handleStatusChange = async (newStatus: string) => {
     try {
       const updateData: any = { status: newStatus };
-      
+
       if (newStatus === "resolved") {
         updateData.resolved_at = new Date().toISOString();
       } else if (newStatus === "closed") {
@@ -209,9 +210,9 @@ export default function ConsultationDetail() {
     try {
       const { error } = await supabase
         .from("consultations")
-        .update({ 
+        .update({
           is_escalated: true,
-          current_handler_id: user?.id 
+          current_handler_id: user?.id
         })
         .eq("id", id);
 
@@ -283,7 +284,7 @@ export default function ConsultationDetail() {
                   Eskalasi ke Pusat
                 </Button>
               )}
-              
+
               <Select
                 value={consultation.status}
                 onValueChange={handleStatusChange}
@@ -338,15 +339,13 @@ export default function ConsultationDetail() {
                         key={message.id}
                         className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          isOwnMessage ? "bg-primary" : "bg-secondary"
-                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isOwnMessage ? "bg-primary" : "bg-secondary"
+                          }`}>
                           <User className={`h-4 w-4 ${isOwnMessage ? "text-primary-foreground" : ""}`} />
                         </div>
                         <div className={`flex-1 ${isOwnMessage ? "items-end" : ""}`}>
-                          <div className={`rounded-lg p-4 ${
-                            isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
-                          }`}>
+                          <div className={`rounded-lg p-4 ${isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
+                            }`}>
                             <p className="text-sm font-medium mb-1">
                               {message.sender_name}
                             </p>
@@ -430,14 +429,42 @@ export default function ConsultationDetail() {
                       consultation.priority === "high"
                         ? "bg-red-100 text-red-800"
                         : consultation.priority === "medium"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-blue-100 text-blue-800"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-blue-100 text-blue-800"
                     }
                   >
                     {consultation.priority === "high" && "Tinggi"}
                     {consultation.priority === "medium" && "Sedang"}
                     {consultation.priority === "low" && "Rendah"}
                   </Badge>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-medium mb-2">Ditujukan Kepada</p>
+                  <div className="flex items-center gap-2">
+                    {consultation.is_escalated || consultation.status === "escalated" ? (
+                      <>
+                        <Users className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">
+                          Admin Pusat
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Building2 className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-600">
+                          Admin Unit
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {consultation.is_escalated || consultation.status === "escalated"
+                      ? "Bagian SDM Aparatur Setditjen Binalavotas"
+                      : "Pimpinan Unit Kerja"}
+                  </p>
                 </div>
 
                 {consultation.is_escalated && (
@@ -491,7 +518,7 @@ export default function ConsultationDetail() {
                       Tandai Selesai
                     </Button>
                   )}
-                  
+
                   {consultation.status === "resolved" && (
                     <Button
                       variant="outline"

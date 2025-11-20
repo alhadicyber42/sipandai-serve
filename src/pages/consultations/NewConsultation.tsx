@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -16,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Building2, Users } from "lucide-react";
 
 export default function NewConsultation() {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ export default function NewConsultation() {
     description: "",
     priority: "medium",
     category: "kepegawaian",
+    recipient: "admin_unit", // admin_unit or admin_pusat
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +41,9 @@ export default function NewConsultation() {
 
     setIsLoading(true);
     try {
+      // Determine if consultation should be escalated to admin_pusat
+      const isEscalated = formData.recipient === "admin_pusat";
+
       const { data, error } = await supabase
         .from("consultations")
         .insert({
@@ -48,14 +53,19 @@ export default function NewConsultation() {
           description: formData.description,
           priority: formData.priority as any,
           category: formData.category as any,
-          status: "submitted" as any,
+          status: isEscalated ? "escalated" : "submitted" as any,
+          is_escalated: isEscalated,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Konsultasi berhasil dibuat");
+      const recipientText = formData.recipient === "admin_unit"
+        ? "Admin Unit (Pimpinan Unit Kerja)"
+        : "Admin Pusat (Bagian SDM Aparatur Setditjen Binalavotas)";
+
+      toast.success(`Konsultasi berhasil dikirim ke ${recipientText}`);
       navigate(`/konsultasi/${data.id}`);
     } catch (error: any) {
       console.error("Error creating consultation:", error);
@@ -89,9 +99,69 @@ export default function NewConsultation() {
         <Card>
           <CardHeader>
             <CardTitle>Form Konsultasi</CardTitle>
+            <CardDescription>
+              Pilih tujuan konsultasi dan isi detail pertanyaan Anda
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Recipient Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">
+                  Tujuan Konsultasi <span className="text-destructive">*</span>
+                </Label>
+                <RadioGroup
+                  value={formData.recipient}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, recipient: value })
+                  }
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <RadioGroupItem
+                      value="admin_unit"
+                      id="admin_unit"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="admin_unit"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                    >
+                      <Building2 className="mb-3 h-6 w-6" />
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-medium leading-none">
+                          Admin Unit
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Pimpinan Unit Kerja Anda
+                        </p>
+                      </div>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem
+                      value="admin_pusat"
+                      id="admin_pusat"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="admin_pusat"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                    >
+                      <Users className="mb-3 h-6 w-6" />
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-medium leading-none">
+                          Admin Pusat
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Bagian SDM Aparatur Setditjen Binalavotas
+                        </p>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="subject">
                   Judul Konsultasi <span className="text-destructive">*</span>
