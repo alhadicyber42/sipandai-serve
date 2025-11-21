@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const DashboardLayout = ({
   children
@@ -268,5 +269,7 @@ export const DashboardLayout = ({
     <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
       <div className="p-4 md:p-6 lg:p-8">{children}</div>
     </main>
+
+    <InstallPrompt />
   </div>;
 };
