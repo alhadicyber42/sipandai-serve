@@ -8,6 +8,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { DashboardSkeleton } from "./components/skeletons";
 
+import ReloadPrompt from "./components/ReloadPrompt";
+
 // Lazy load all pages for code splitting
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -72,6 +74,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <ReloadPrompt />
           <BrowserRouter>
             <Suspense fallback={<DashboardSkeleton />}>
               <Routes>
