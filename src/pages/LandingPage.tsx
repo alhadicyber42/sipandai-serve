@@ -194,10 +194,17 @@ export default function LandingPage() {
                             </div>
                             <span className="text-lg font-bold">SIPANDAI</span>
                         </div>
-                        <p className="text-sm text-muted-foreground text-center md:text-right">
-                            &copy; 2024 SIPANDAI - Sistem Pelayanan Administrasi Digital ASN. <br />
-                            Hak Cipta Dilindungi Undang-Undang.
-                        </p>
+                        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                            <p className="text-sm text-muted-foreground text-center md:text-right">
+                                &copy; 2024 SIPANDAI. Hak Cipta Dilindungi.
+                            </p>
+                            <button
+                                onClick={() => navigate("/privacy")}
+                                className="text-sm text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
+                            >
+                                Kebijakan Privasi
+                            </button>
+                        </div>
                     </div>
                 </div>
             </footer>
