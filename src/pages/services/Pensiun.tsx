@@ -82,7 +82,7 @@ export default function Pensiun() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!selectedCategory) {
       toast.error("Pilih kategori pensiun terlebih dahulu");
       return;
@@ -148,115 +148,123 @@ export default function Pensiun() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <UserX className="h-6 w-6 text-primary" />
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-600 via-slate-500 to-slate-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <UserX className="h-6 w-6 md:h-8 md:w-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-4xl font-bold">Pensiun</h1>
+                  <p className="text-sm md:text-base text-white/80 mt-1">
+                    {user?.role === "user_unit"
+                      ? "Kelola usulan pensiun Anda"
+                      : user?.role === "admin_unit"
+                        ? "Review usulan pensiun unit Anda"
+                        : "Kelola semua usulan pensiun"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Pensiun</h1>
-                <p className="text-muted-foreground mt-1">
-                  {user?.role === "user_unit"
-                    ? "Kelola usulan pensiun Anda"
-                    : user?.role === "admin_unit"
-                    ? "Review usulan pensiun unit Anda"
-                    : "Kelola semua usulan pensiun"}
-                </p>
-              </div>
+
+              {user?.role === "user_unit" && (
+                <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="gap-2 bg-white text-slate-600 hover:bg-white/90 shadow-lg">
+                      <Plus className="h-5 w-5" />
+                      <span className="hidden sm:inline">Ajukan Pensiun</span>
+                      <span className="sm:hidden">Ajukan</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                      <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                        <div className="space-y-6 pb-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="category">Kategori Pensiun *</Label>
+                            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih kategori pensiun" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RETIREMENT_CATEGORIES.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {selectedCategoryData && (
+                            <div className="space-y-4">
+                              <div className="bg-muted/50 p-4 rounded-lg">
+                                <h3 className="font-semibold mb-3">Dokumen Persyaratan</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Masukkan link/URL untuk setiap dokumen yang diperlukan
+                                </p>
+                                <div className="space-y-4">
+                                  {selectedCategoryData.documents.map((doc, index) => (
+                                    <div key={index} className="space-y-2 p-3 border rounded-lg bg-background">
+                                      <Label htmlFor={`doc-${index}`} className="flex items-start gap-2">
+                                        <span className="flex-1">
+                                          {index + 1}. {doc.name}
+                                        </span>
+                                      </Label>
+                                      {doc.note && (
+                                        <div className="flex items-start gap-2 text-xs text-muted-foreground mb-2">
+                                          <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                          <span>{doc.note}</span>
+                                        </div>
+                                      )}
+                                      <Input
+                                        id={`doc-${index}`}
+                                        type="url"
+                                        placeholder="https://..."
+                                        value={documentLinks[doc.name] || ""}
+                                        onChange={(e) =>
+                                          setDocumentLinks({
+                                            ...documentLinks,
+                                            [doc.name]: e.target.value,
+                                          })
+                                        }
+                                        required
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+
+                      <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleDialogOpenChange(false)}
+                          className="w-full sm:w-auto"
+                        >
+                          Batal
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
+                          {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
-          {user?.role === "user_unit" && (
-            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajukan Pensiun
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                  <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                  <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                    <div className="space-y-6 pb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Kategori Pensiun *</Label>
-                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih kategori pensiun" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {RETIREMENT_CATEGORIES.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {selectedCategoryData && (
-                        <div className="space-y-4">
-                          <div className="bg-muted/50 p-4 rounded-lg">
-                            <h3 className="font-semibold mb-3">Dokumen Persyaratan</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                              Masukkan link/URL untuk setiap dokumen yang diperlukan
-                            </p>
-                            <div className="space-y-4">
-                              {selectedCategoryData.documents.map((doc, index) => (
-                                <div key={index} className="space-y-2 p-3 border rounded-lg bg-background">
-                                  <Label htmlFor={`doc-${index}`} className="flex items-start gap-2">
-                                    <span className="flex-1">
-                                      {index + 1}. {doc.name}
-                                    </span>
-                                  </Label>
-                                  {doc.note && (
-                                    <div className="flex items-start gap-2 text-xs text-muted-foreground mb-2">
-                                      <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                                      <span>{doc.note}</span>
-                                    </div>
-                                  )}
-                                  <Input
-                                    id={`doc-${index}`}
-                                    type="url"
-                                    placeholder="https://..."
-                                    value={documentLinks[doc.name] || ""}
-                                    onChange={(e) =>
-                                      setDocumentLinks({
-                                        ...documentLinks,
-                                        [doc.name]: e.target.value,
-                                      })
-                                    }
-                                    required
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-
-                  <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleDialogOpenChange(false)}
-                      className="w-full sm:w-auto"
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
-                      {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
         </div>
 
         {/* Statistics for Admin */}

@@ -272,117 +272,125 @@ export default function Mutasi() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Users className="h-6 w-6 text-primary" />
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 via-teal-500 to-teal-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Users className="h-6 w-6 md:h-8 md:w-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-4xl font-bold">Mutasi Pegawai</h1>
+                  <p className="text-sm md:text-base text-white/80 mt-1">
+                    {user?.role === "user_unit"
+                      ? "Kelola usulan mutasi Anda"
+                      : user?.role === "admin_unit"
+                        ? "Review usulan mutasi unit Anda"
+                        : "Kelola semua usulan mutasi pegawai"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Mutasi Pegawai</h1>
-                <p className="text-muted-foreground mt-1">
-                  {user?.role === "user_unit"
-                    ? "Kelola usulan mutasi Anda"
-                    : user?.role === "admin_unit"
-                      ? "Review usulan mutasi unit Anda"
-                      : "Kelola semua usulan mutasi pegawai"}
-                </p>
-              </div>
+
+              {user?.role === "user_unit" && (
+                <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+                  <DialogTrigger asChild>
+                    <Button size="lg" className="gap-2 bg-white text-teal-600 hover:bg-white/90 shadow-lg">
+                      <Plus className="h-5 w-5" />
+                      <span className="hidden sm:inline">Ajukan Mutasi</span>
+                      <span className="sm:hidden">Ajukan</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                      <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                        <div className="space-y-6 pb-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="category">Kategori Mutasi *</Label>
+                            <Select
+                              value={selectedCategory?.id || ""}
+                              onValueChange={handleCategoryChange}
+                            >
+                              <SelectTrigger id="category">
+                                <SelectValue placeholder="Pilih kategori mutasi" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {TRANSFER_CATEGORIES.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedCategory && (
+                              <p className="text-sm text-muted-foreground">
+                                {selectedCategory.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {selectedCategory && (
+                            <div className="space-y-4">
+                              <div className="border-t pt-4">
+                                <h3 className="font-semibold mb-4">
+                                  Dokumen Persyaratan ({selectedCategory.documents.length})
+                                </h3>
+                                <div className="space-y-4">
+                                  {selectedCategory.documents.map((doc, index) => (
+                                    <div key={index} className="space-y-2 p-3 border rounded-lg">
+                                      <Label htmlFor={`doc-${index}`}>
+                                        {index + 1}. {doc.name} *
+                                      </Label>
+                                      {doc.note && (
+                                        <p className="text-xs text-muted-foreground flex items-start gap-1">
+                                          <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                          {doc.note}
+                                        </p>
+                                      )}
+                                      <Input
+                                        id={`doc-${index}`}
+                                        type="url"
+                                        placeholder="Masukkan link dokumen"
+                                        value={documentLinks[doc.name] || ""}
+                                        onChange={(e) =>
+                                          handleDocumentLinkChange(doc.name, e.target.value)
+                                        }
+                                        required
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+
+                      <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleDialogOpenChange(false)}
+                          className="w-full sm:w-auto"
+                        >
+                          Batal
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
+                          {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
-          {user?.role === "user_unit" && (
-            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajukan Mutasi
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                  <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                  <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                    <div className="space-y-6 pb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Kategori Mutasi *</Label>
-                        <Select
-                          value={selectedCategory?.id || ""}
-                          onValueChange={handleCategoryChange}
-                        >
-                          <SelectTrigger id="category">
-                            <SelectValue placeholder="Pilih kategori mutasi" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TRANSFER_CATEGORIES.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {selectedCategory && (
-                          <p className="text-sm text-muted-foreground">
-                            {selectedCategory.description}
-                          </p>
-                        )}
-                      </div>
-
-                      {selectedCategory && (
-                        <div className="space-y-4">
-                          <div className="border-t pt-4">
-                            <h3 className="font-semibold mb-4">
-                              Dokumen Persyaratan ({selectedCategory.documents.length})
-                            </h3>
-                            <div className="space-y-4">
-                              {selectedCategory.documents.map((doc, index) => (
-                                <div key={index} className="space-y-2 p-3 border rounded-lg">
-                                  <Label htmlFor={`doc-${index}`}>
-                                    {index + 1}. {doc.name} *
-                                  </Label>
-                                  {doc.note && (
-                                    <p className="text-xs text-muted-foreground flex items-start gap-1">
-                                      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                      {doc.note}
-                                    </p>
-                                  )}
-                                  <Input
-                                    id={`doc-${index}`}
-                                    type="url"
-                                    placeholder="Masukkan link dokumen"
-                                    value={documentLinks[doc.name] || ""}
-                                    onChange={(e) =>
-                                      handleDocumentLinkChange(doc.name, e.target.value)
-                                    }
-                                    required
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-
-                  <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleDialogOpenChange(false)}
-                      className="w-full sm:w-auto"
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
-                      {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
         </div>
 
         {isAdmin && (

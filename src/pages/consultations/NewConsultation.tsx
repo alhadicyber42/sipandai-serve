@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Send, Building2, Users } from "lucide-react";
+import { ArrowLeft, Send, Building2, Users, MessageSquarePlus } from "lucide-react";
 
 export default function NewConsultation() {
   const { user } = useAuth();
@@ -78,32 +78,39 @@ export default function NewConsultation() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/konsultasi/riwayat")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Konsultasi Baru
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Ajukan konsultasi kepada admin unit atau admin pusat
-            </p>
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/konsultasi/riwayat")}
+                className="bg-white/20 hover:bg-white/30 text-white"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <MessageSquarePlus className="h-6 w-6 md:h-8 md:w-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Baru</h1>
+                  <p className="text-sm md:text-base text-white/80 mt-1">
+                    Ajukan konsultasi kepada admin unit atau admin pusat
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Konsultasi</CardTitle>
-            <CardDescription>
-              Pilih tujuan konsultasi dan isi detail pertanyaan Anda
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Form Card */}
+        <Card className="shadow-lg">
+          <CardContent className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Recipient Selection */}
               <div className="space-y-3">
@@ -125,11 +132,13 @@ export default function NewConsultation() {
                     />
                     <Label
                       htmlFor="admin_unit"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
                     >
-                      <Building2 className="mb-3 h-6 w-6" />
+                      <div className="p-3 bg-blue-100 dark:bg-blue-950 rounded-full mb-3">
+                        <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
                       <div className="space-y-1 text-center">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm font-semibold leading-none">
                           Admin Unit
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -146,11 +155,13 @@ export default function NewConsultation() {
                     />
                     <Label
                       htmlFor="admin_pusat"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
                     >
-                      <Users className="mb-3 h-6 w-6" />
+                      <div className="p-3 bg-purple-100 dark:bg-purple-950 rounded-full mb-3">
+                        <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                      </div>
                       <div className="space-y-1 text-center">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm font-semibold leading-none">
                           Admin Pusat
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -162,62 +173,65 @@ export default function NewConsultation() {
                 </RadioGroup>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="subject">
-                  Judul Konsultasi <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="subject"
-                  placeholder="Masukkan judul konsultasi"
-                  value={formData.subject}
-                  onChange={(e) =>
-                    setFormData({ ...formData, subject: e.target.value })
-                  }
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="subject" className="text-base font-semibold">
+                    Judul Konsultasi <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="subject"
+                    placeholder="Masukkan judul konsultasi"
+                    value={formData.subject}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subject: e.target.value })
+                    }
+                    required
+                    className="h-12"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-base font-semibold">Kategori</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category: value })
+                    }
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kepegawaian">Kepegawaian</SelectItem>
+                      <SelectItem value="administrasi">Administrasi</SelectItem>
+                      <SelectItem value="teknis">Teknis Aplikasi</SelectItem>
+                      <SelectItem value="lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="priority" className="text-base font-semibold">Prioritas</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, priority: value })
+                    }
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Rendah</SelectItem>
+                      <SelectItem value="medium">Sedang</SelectItem>
+                      <SelectItem value="high">Tinggi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Kategori</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kepegawaian">Kepegawaian</SelectItem>
-                    <SelectItem value="administrasi">Administrasi</SelectItem>
-                    <SelectItem value="teknis">Teknis Aplikasi</SelectItem>
-                    <SelectItem value="lainnya">Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="priority">Prioritas</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, priority: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Rendah</SelectItem>
-                    <SelectItem value="medium">Sedang</SelectItem>
-                    <SelectItem value="high">Tinggi</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">
+                <Label htmlFor="description" className="text-base font-semibold">
                   Deskripsi <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
@@ -229,6 +243,7 @@ export default function NewConsultation() {
                   }
                   rows={8}
                   required
+                  className="resize-none"
                 />
                 <p className="text-sm text-muted-foreground">
                   Jelaskan permasalahan Anda sejelas mungkin agar admin dapat
@@ -236,16 +251,21 @@ export default function NewConsultation() {
                 </p>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/konsultasi/riwayat")}
                   disabled={isLoading}
+                  className="w-full sm:w-auto h-12"
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isLoading} className="gap-2">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full sm:w-auto h-12 gap-2"
+                >
                   {isLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
