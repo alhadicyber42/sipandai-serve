@@ -317,7 +317,7 @@ export default function KenaikanPangkat() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Modern Header with Gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 md:p-8 text-primary-foreground shadow-xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 via-orange-500 to-orange-400 p-6 md:p-8 text-white shadow-xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
 
@@ -330,7 +330,7 @@ export default function KenaikanPangkat() {
                   </div>
                   <div>
                     <h1 className="text-2xl md:text-4xl font-bold">Kenaikan Pangkat</h1>
-                    <p className="text-sm md:text-base text-primary-foreground/80 mt-1">
+                    <p className="text-sm md:text-base text-white/80 mt-1">
                       {user?.role === "user_unit"
                         ? "Kelola usulan kenaikan pangkat Anda"
                         : user?.role === "admin_unit"
@@ -344,7 +344,7 @@ export default function KenaikanPangkat() {
               {user?.role === "user_unit" && (
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="lg" className="gap-2 bg-white text-primary hover:bg-white/90 shadow-lg">
+                    <Button size="lg" className="gap-2 bg-white text-orange-600 hover:bg-white/90 shadow-lg">
                       <Plus className="h-5 w-5" />
                       <span className="hidden sm:inline">Ajukan Usulan</span>
                       <span className="sm:hidden">Ajukan</span>

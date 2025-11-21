@@ -24,9 +24,24 @@ export default function Profile() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Profil Pengguna</h1>
-          <p className="text-muted-foreground mt-1">Informasi akun Anda</p>
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <User className="h-6 w-6 md:h-8 md:w-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-4xl font-bold">Profil Pengguna</h1>
+                <p className="text-sm md:text-base text-white/80 mt-1">
+                  Informasi akun dan kepegawaian Anda
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <Card>

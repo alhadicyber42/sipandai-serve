@@ -103,20 +103,31 @@ export default function EmployeeOfTheMonth() {
     return (
         <DashboardLayout>
             <div className="space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-400 bg-clip-text text-transparent">
-                            Employee of The Month
-                        </h1>
-                        <p className="text-muted-foreground mt-1">
-                            Berikan apresiasi "Good Point" kepada rekan kerja terbaik Anda!
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 px-4 py-2 rounded-full border border-yellow-200 dark:border-yellow-700">
-                        <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                        <span className="font-semibold text-yellow-800 dark:text-yellow-200">
-                            Periode: November 2025
-                        </span>
+                {/* Modern Header with Gradient */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-6 md:p-8 text-white shadow-xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+                    <div className="relative z-10">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <Trophy className="h-6 w-6 md:h-8 md:w-8 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl md:text-4xl font-bold text-white">Employee of The Month</h1>
+                                    <p className="text-sm md:text-base text-white/90 mt-1">
+                                        Berikan apresiasi "Good Point" kepada rekan kerja terbaik Anda!
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 shadow-sm">
+                                <Trophy className="h-5 w-5 text-white" />
+                                <span className="font-semibold text-white">
+                                    Periode: November 2025
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
