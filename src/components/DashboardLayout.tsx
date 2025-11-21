@@ -206,7 +206,7 @@ export const DashboardLayout = ({
     </div>
 
     {/* Sidebar */}
-    <aside className={cn("fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-white transition-all duration-300 z-40 flex flex-col", isSidebarOpen ? "w-64 translate-x-0" : "w-0 lg:w-64 -translate-x-full lg:translate-x-0", "border-r border-white/10 shadow-2xl")}>
+    <aside className={cn("fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-white transition-all duration-300 z-40 flex flex-col w-64", isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0", "border-r border-white/10 shadow-2xl")}>
       {/* Logo */}
       <div className="p-6 border-b border-white/10 hidden lg:block relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
