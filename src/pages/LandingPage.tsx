@@ -3,24 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Building2, FileText, Users, Award, MessageSquare, ShieldCheck, Clock, CheckCircle2, TrendingUp, Briefcase, UserCheck, Calendar } from "lucide-react";
+
 export default function LandingPage() {
-  const navigate = useNavigate();
-  return <div className="min-h-screen bg-background flex flex-col">
+    const navigate = useNavigate();
+    return (
+        <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
             {/* Navigation */}
             <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-                <div className="container flex h-16 items-center justify-between">
+                <div className="container flex h-16 items-center justify-between px-4 md:px-6">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
                         <div className="p-2 bg-primary rounded-lg">
                             <Building2 className="h-6 w-6 text-primary-foreground" />
                         </div>
                         <span className="text-xl font-bold text-primary">SIPANDAI</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" onClick={() => navigate("/auth")}>
+                    <div className="flex items-center gap-2 md:gap-4">
+                        <Button variant="ghost" size="sm" className="text-sm md:text-base" onClick={() => navigate("/auth")}>
                             Masuk
                         </Button>
-                        <Button onClick={() => navigate("/auth?tab=register")} className="gap-2">
-                            Daftar Sekarang
+                        <Button onClick={() => navigate("/auth?tab=register")} size="sm" className="gap-2 text-sm md:text-base">
+                            <span className="hidden sm:inline">Daftar Sekarang</span>
+                            <span className="sm:hidden">Daftar</span>
                             <ArrowRight className="h-4 w-4" />
                         </Button>
                     </div>
@@ -39,7 +42,7 @@ export default function LandingPage() {
                                 <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl xl:text-7xl">
                                     SIPANDAI <br />
                                     <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                                        Sistem Pelayanan Administrasi Digital ASN Terintegrasi  
+                                        Sistem Pelayanan Administrasi Digital ASN Terintegrasi
                                     </span>
                                 </h1>
                                 <p className="text-xl text-muted-foreground max-w-[600px]">
@@ -69,8 +72,8 @@ export default function LandingPage() {
                         <div className="relative lg:ml-auto animate-in fade-in slide-in-from-right duration-700">
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl border bg-gradient-to-br from-background to-muted/50 backdrop-blur-sm p-2">
                                 <img src="/hero-illustration.png" alt="SIPANDAI Dashboard Preview" className="rounded-xl w-full h-auto object-cover" onError={e => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3";
-              }} />
+                                    e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3";
+                                }} />
                             </div>
                             {/* Decorative elements */}
                             <div className="absolute -z-10 -top-12 -right-12 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -198,30 +201,36 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
-        </div>;
+        </div>
+    );
 }
+
 function StatCard({
-  number,
-  label
+    number,
+    label
 }: {
-  number: string;
-  label: string;
+    number: string;
+    label: string;
 }) {
-  return <div className="text-center space-y-2">
+    return (
+        <div className="text-center space-y-2">
             <div className="text-4xl md:text-5xl font-bold">{number}</div>
             <div className="text-sm md:text-base text-primary-foreground/80">{label}</div>
-        </div>;
+        </div>
+    );
 }
+
 function FeatureCard({
-  icon,
-  title,
-  description
+    icon,
+    title,
+    description
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
 }) {
-  return <Card className="border-none shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 duration-300">
+    return (
+        <Card className="border-none shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 duration-300">
             <CardContent className="pt-8">
                 <div className="mb-6 inline-block p-4 bg-primary/5 rounded-2xl text-primary">
                     {icon}
@@ -231,22 +240,26 @@ function FeatureCard({
                     {description}
                 </p>
             </CardContent>
-        </Card>;
+        </Card>
+    );
 }
+
 function BenefitItem({
-  icon,
-  title,
-  description
+    icon,
+    title,
+    description
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
 }) {
-  return <div className="flex gap-4">
+    return (
+        <div className="flex gap-4">
             <div className="flex-shrink-0 mt-1">{icon}</div>
             <div>
                 <h4 className="font-semibold mb-1">{title}</h4>
                 <p className="text-sm text-muted-foreground">{description}</p>
             </div>
-        </div>;
+        </div>
+    );
 }
