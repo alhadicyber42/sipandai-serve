@@ -6,6 +6,8 @@ import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, Chev
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { NetworkStatus } from "@/components/NetworkStatus";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const DashboardLayout = ({
   children
@@ -194,14 +196,17 @@ export const DashboardLayout = ({
           <Building2 className="h-6 w-6" />
           <span className="font-bold text-lg">SIPANDAI</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-primary-foreground hover:bg-primary-glow/20">
-          {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-primary-foreground hover:bg-primary-glow/20">
+            {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+        </div>
       </div>
     </div>
 
     {/* Sidebar */}
-    <aside className={cn("fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 text-white transition-all duration-300 z-40 flex flex-col", isSidebarOpen ? "w-64 translate-x-0" : "w-0 lg:w-64 -translate-x-full lg:translate-x-0", "border-r border-white/10 shadow-2xl")}>
+    <aside className={cn("fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-white transition-all duration-300 z-40 flex flex-col", isSidebarOpen ? "w-64 translate-x-0" : "w-0 lg:w-64 -translate-x-full lg:translate-x-0", "border-r border-white/10 shadow-2xl")}>
       {/* Logo */}
       <div className="p-6 border-b border-white/10 hidden lg:block relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
@@ -253,8 +258,11 @@ export const DashboardLayout = ({
         </Link>)}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10">
+      {/* Logout & Theme Toggle */}
+      <div className="p-4 border-t border-white/10 space-y-2">
+        <div className="hidden lg:block">
+          <ThemeToggle />
+        </div>
         <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-3 hover:bg-red-500/20 hover:text-red-400 text-white/70 transition-colors">
           <LogOut className="h-5 w-5" />
           <span>Keluar</span>
@@ -271,5 +279,6 @@ export const DashboardLayout = ({
     </main>
 
     <InstallPrompt />
+    <NetworkStatus />
   </div>;
 };
