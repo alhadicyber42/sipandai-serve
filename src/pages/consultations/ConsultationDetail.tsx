@@ -347,15 +347,15 @@ export default function ConsultationDetail() {
           {/* Main Chat Area */}
           <div className="lg:col-span-2 space-y-4">
             <Card className="shadow-lg">
-              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MessageSquare className="h-5 w-5 text-primary" />
+              <CardHeader className="border-b bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 text-white">
+                <CardTitle className="flex items-center gap-2 text-lg text-white">
+                  <MessageSquare className="h-5 w-5 text-white" />
                   Percakapan
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {/* Messages Container */}
-                <div className="h-[400px] md:h-[500px] overflow-y-auto p-4 md:p-6 space-y-4 bg-muted/20">
+                <div className="h-[500px] md:h-[600px] overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/50 scroll-smooth">
                   {/* Initial Message */}
                   <div className="flex gap-3">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -389,8 +389,8 @@ export default function ConsultationDetail() {
                         </div>
                         <div className={`flex-1 max-w-[85%] md:max-w-[75%] ${isOwnMessage ? "items-end" : ""}`}>
                           <div className={`rounded-2xl p-4 shadow-sm ${isOwnMessage
-                              ? "bg-primary text-primary-foreground rounded-tr-none"
-                              : "bg-white dark:bg-card rounded-tl-none border"
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-white dark:bg-card rounded-tl-none border"
                             }`}>
                             <p className="text-xs md:text-sm font-medium mb-1">
                               {message.sender_name}
