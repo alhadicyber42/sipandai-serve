@@ -2,27 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-    ArrowRight,
-    Building2,
-    FileText,
-    Users,
-    Award,
-    MessageSquare,
-    ShieldCheck,
-    Clock,
-    CheckCircle2,
-    TrendingUp,
-    Briefcase,
-    UserCheck,
-    Calendar
-} from "lucide-react";
-
+import { ArrowRight, Building2, FileText, Users, Award, MessageSquare, ShieldCheck, Clock, CheckCircle2, TrendingUp, Briefcase, UserCheck, Calendar } from "lucide-react";
 export default function LandingPage() {
-    const navigate = useNavigate();
-
-    return (
-        <div className="min-h-screen bg-background flex flex-col">
+  const navigate = useNavigate();
+  return <div className="min-h-screen bg-background flex flex-col">
             {/* Navigation */}
             <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
                 <div className="container flex h-16 items-center justify-between">
@@ -54,9 +37,9 @@ export default function LandingPage() {
                             </Badge>
                             <div className="space-y-4">
                                 <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl xl:text-7xl">
-                                    Sistem Pelayanan <br />
+                                    SIPANDAI <br />
                                     <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                                        Administrasi Digital
+                                        Sistem Pelayanan Administrasi Digital ASN Terintegrasi  
                                     </span>
                                 </h1>
                                 <p className="text-xl text-muted-foreground max-w-[600px]">
@@ -64,20 +47,11 @@ export default function LandingPage() {
                                 </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Button
-                                    size="lg"
-                                    className="text-lg px-8 h-12 shadow-lg hover:shadow-xl transition-all"
-                                    onClick={() => navigate("/auth?tab=register")}
-                                >
+                                <Button size="lg" className="text-lg px-8 h-12 shadow-lg hover:shadow-xl transition-all" onClick={() => navigate("/auth?tab=register")}>
                                     Mulai Sekarang
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    className="text-lg px-8 h-12"
-                                    onClick={() => navigate("/auth")}
-                                >
+                                <Button size="lg" variant="outline" className="text-lg px-8 h-12" onClick={() => navigate("/auth")}>
                                     Masuk ke Akun
                                 </Button>
                             </div>
@@ -94,14 +68,9 @@ export default function LandingPage() {
                         </div>
                         <div className="relative lg:ml-auto animate-in fade-in slide-in-from-right duration-700">
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl border bg-gradient-to-br from-background to-muted/50 backdrop-blur-sm p-2">
-                                <img
-                                    src="/hero-illustration.png"
-                                    alt="SIPANDAI Dashboard Preview"
-                                    className="rounded-xl w-full h-auto object-cover"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3";
-                                    }}
-                                />
+                                <img src="/hero-illustration.png" alt="SIPANDAI Dashboard Preview" className="rounded-xl w-full h-auto object-cover" onError={e => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3";
+              }} />
                             </div>
                             {/* Decorative elements */}
                             <div className="absolute -z-10 -top-12 -right-12 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
@@ -136,36 +105,12 @@ export default function LandingPage() {
                         </p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <FeatureCard
-                            icon={<FileText className="h-10 w-10" />}
-                            title="Pengajuan Cuti"
-                            description="Proses pengajuan cuti yang lebih cepat dan transparan dengan notifikasi real-time dan tracking status."
-                        />
-                        <FeatureCard
-                            icon={<Award className="h-10 w-10" />}
-                            title="Kenaikan Pangkat"
-                            description="Pantau status usulan kenaikan pangkat dan lengkapi berkas secara digital dengan mudah."
-                        />
-                        <FeatureCard
-                            icon={<MessageSquare className="h-10 w-10" />}
-                            title="Konsultasi Online"
-                            description="Layanan konsultasi langsung dengan admin unit maupun pusat terkait kepegawaian."
-                        />
-                        <FeatureCard
-                            icon={<Briefcase className="h-10 w-10" />}
-                            title="Mutasi Pegawai"
-                            description="Kelola proses mutasi pegawai dengan sistem yang terintegrasi dan transparan."
-                        />
-                        <FeatureCard
-                            icon={<UserCheck className="h-10 w-10" />}
-                            title="Pensiun"
-                            description="Proses pengajuan pensiun yang terstruktur dengan panduan lengkap."
-                        />
-                        <FeatureCard
-                            icon={<Calendar className="h-10 w-10" />}
-                            title="Employee Recognition"
-                            description="Sistem penilaian dan penghargaan pegawai terbaik setiap bulan."
-                        />
+                        <FeatureCard icon={<FileText className="h-10 w-10" />} title="Pengajuan Cuti" description="Proses pengajuan cuti yang lebih cepat dan transparan dengan notifikasi real-time dan tracking status." />
+                        <FeatureCard icon={<Award className="h-10 w-10" />} title="Kenaikan Pangkat" description="Pantau status usulan kenaikan pangkat dan lengkapi berkas secara digital dengan mudah." />
+                        <FeatureCard icon={<MessageSquare className="h-10 w-10" />} title="Konsultasi Online" description="Layanan konsultasi langsung dengan admin unit maupun pusat terkait kepegawaian." />
+                        <FeatureCard icon={<Briefcase className="h-10 w-10" />} title="Mutasi Pegawai" description="Kelola proses mutasi pegawai dengan sistem yang terintegrasi dan transparan." />
+                        <FeatureCard icon={<UserCheck className="h-10 w-10" />} title="Pensiun" description="Proses pengajuan pensiun yang terstruktur dengan panduan lengkap." />
+                        <FeatureCard icon={<Calendar className="h-10 w-10" />} title="Employee Recognition" description="Sistem penilaian dan penghargaan pegawai terbaik setiap bulan." />
                     </div>
                 </div>
             </section>
@@ -180,26 +125,10 @@ export default function LandingPage() {
                                 Mengapa Memilih SIPANDAI?
                             </h2>
                             <div className="space-y-4">
-                                <BenefitItem
-                                    icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
-                                    title="Efisiensi Waktu"
-                                    description="Proses administrasi yang lebih cepat tanpa perlu datang ke kantor."
-                                />
-                                <BenefitItem
-                                    icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
-                                    title="Transparansi Penuh"
-                                    description="Lacak status pengajuan Anda secara real-time kapan saja."
-                                />
-                                <BenefitItem
-                                    icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
-                                    title="Keamanan Data"
-                                    description="Data Anda dilindungi dengan enkripsi tingkat enterprise."
-                                />
-                                <BenefitItem
-                                    icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
-                                    title="Mudah Digunakan"
-                                    description="Interface yang intuitif dan user-friendly untuk semua kalangan."
-                                />
+                                <BenefitItem icon={<CheckCircle2 className="h-5 w-5 text-primary" />} title="Efisiensi Waktu" description="Proses administrasi yang lebih cepat tanpa perlu datang ke kantor." />
+                                <BenefitItem icon={<CheckCircle2 className="h-5 w-5 text-primary" />} title="Transparansi Penuh" description="Lacak status pengajuan Anda secara real-time kapan saja." />
+                                <BenefitItem icon={<CheckCircle2 className="h-5 w-5 text-primary" />} title="Keamanan Data" description="Data Anda dilindungi dengan enkripsi tingkat enterprise." />
+                                <BenefitItem icon={<CheckCircle2 className="h-5 w-5 text-primary" />} title="Mudah Digunakan" description="Interface yang intuitif dan user-friendly untuk semua kalangan." />
                             </div>
                         </div>
                         <div className="relative">
@@ -240,21 +169,11 @@ export default function LandingPage() {
                             Bergabunglah dengan ribuan ASN yang telah merasakan kemudahan SIPANDAI.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Button
-                                size="lg"
-                                variant="secondary"
-                                className="text-lg px-8 h-12"
-                                onClick={() => navigate("/auth?tab=register")}
-                            >
+                            <Button size="lg" variant="secondary" className="text-lg px-8 h-12" onClick={() => navigate("/auth?tab=register")}>
                                 Daftar Gratis
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                className="text-lg px-8 h-12 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10"
-                                onClick={() => navigate("/auth")}
-                            >
+                            <Button size="lg" variant="outline" className="text-lg px-8 h-12 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/auth")}>
                                 Masuk
                             </Button>
                         </div>
@@ -279,22 +198,30 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
-        </div>
-    );
+        </div>;
 }
-
-function StatCard({ number, label }: { number: string; label: string }) {
-    return (
-        <div className="text-center space-y-2">
+function StatCard({
+  number,
+  label
+}: {
+  number: string;
+  label: string;
+}) {
+  return <div className="text-center space-y-2">
             <div className="text-4xl md:text-5xl font-bold">{number}</div>
             <div className="text-sm md:text-base text-primary-foreground/80">{label}</div>
-        </div>
-    );
+        </div>;
 }
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-    return (
-        <Card className="border-none shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 duration-300">
+function FeatureCard({
+  icon,
+  title,
+  description
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return <Card className="border-none shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 duration-300">
             <CardContent className="pt-8">
                 <div className="mb-6 inline-block p-4 bg-primary/5 rounded-2xl text-primary">
                     {icon}
@@ -304,18 +231,22 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
                     {description}
                 </p>
             </CardContent>
-        </Card>
-    );
+        </Card>;
 }
-
-function BenefitItem({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-    return (
-        <div className="flex gap-4">
+function BenefitItem({
+  icon,
+  title,
+  description
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return <div className="flex gap-4">
             <div className="flex-shrink-0 mt-1">{icon}</div>
             <div>
                 <h4 className="font-semibold mb-1">{title}</h4>
                 <p className="text-sm text-muted-foreground">{description}</p>
             </div>
-        </div>
-    );
+        </div>;
 }
