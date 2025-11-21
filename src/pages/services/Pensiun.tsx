@@ -149,7 +149,7 @@ export default function Pensiun() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Modern Header with Gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-600 via-slate-500 to-slate-400 p-6 md:p-8 text-white shadow-xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-violet-400 p-6 md:p-8 text-white shadow-xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
 
@@ -161,7 +161,7 @@ export default function Pensiun() {
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-4xl font-bold">Pensiun</h1>
-                  <p className="text-sm md:text-base text-white/80 mt-1">
+                  <p className="text-sm md:text-base text-white/90 mt-1">
                     {user?.role === "user_unit"
                       ? "Kelola usulan pensiun Anda"
                       : user?.role === "admin_unit"
@@ -174,7 +174,7 @@ export default function Pensiun() {
               {user?.role === "user_unit" && (
                 <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
-                    <Button size="lg" className="gap-2 bg-white text-slate-600 hover:bg-white/90 shadow-lg">
+                    <Button size="lg" className="gap-2 bg-white text-purple-600 hover:bg-white/90 shadow-lg border-none">
                       <Plus className="h-5 w-5" />
                       <span className="hidden sm:inline">Ajukan Pensiun</span>
                       <span className="sm:hidden">Ajukan</span>
