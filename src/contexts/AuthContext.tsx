@@ -10,15 +10,38 @@ interface Profile {
   phone: string | null;
 }
 
-interface User extends Profile {
+export interface EmploymentHistory {
+  jabatan: string;
+  tmt: string;
+}
+
+export interface MutationHistory {
+  jenis_mutasi: string;
+  tmt: string;
+}
+
+export interface DocumentItem {
+  name: string;
+  url: string;
+}
+
+export interface User extends Profile {
   id: string;
   email: string;
+  jabatan?: string;
+  pangkat_golongan?: string;
+  tmt_pns?: string;
+  tmt_pensiun?: string;
+  riwayat_jabatan?: EmploymentHistory[];
+  riwayat_mutasi?: MutationHistory[];
+  documents?: Record<string, string | string[] | DocumentItem | DocumentItem[]>;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -77,6 +100,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to profile.role if user_roles query fails or returns nothing
       const userRole = roleError ? profile.role : (roleData?.role || profile.role || "user_unit");
 
+      // Get metadata from auth user
+      const metadata = authUser.user_metadata || {};
+
       setUser({
         id: authUser.id,
         email: authUser.email!,
@@ -85,6 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         work_unit_id: profile.work_unit_id,
         nip: profile.nip,
         phone: profile.phone,
+        // Load additional fields from metadata
+        jabatan: metadata.jabatan,
+        pangkat_golongan: metadata.pangkat_golongan,
+        tmt_pns: metadata.tmt_pns,
+        tmt_pensiun: metadata.tmt_pensiun,
+        riwayat_jabatan: metadata.riwayat_jabatan,
+        riwayat_mutasi: metadata.riwayat_mutasi,
+        documents: metadata.documents,
       });
     }
   };
@@ -122,6 +156,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             work_unit_id: userData.work_unit_id,
             nip: userData.nip,
             phone: userData.phone,
+            // Store additional fields in metadata
+            jabatan: userData.jabatan,
+            pangkat_golongan: userData.pangkat_golongan,
+            tmt_pns: userData.tmt_pns,
+            tmt_pensiun: userData.tmt_pensiun,
+            riwayat_jabatan: userData.riwayat_jabatan,
+            riwayat_mutasi: userData.riwayat_mutasi,
+            documents: {},
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -141,13 +183,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (data: Partial<User>) => {
+    try {
+      if (!user) throw new Error("No user logged in");
+
+      // 1. Update Supabase Auth Metadata (for new fields)
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          jabatan: data.jabatan,
+          pangkat_golongan: data.pangkat_golongan,
+          tmt_pns: data.tmt_pns,
+          tmt_pensiun: data.tmt_pensiun,
+          riwayat_jabatan: data.riwayat_jabatan,
+          riwayat_mutasi: data.riwayat_mutasi,
+          documents: data.documents,
+          // Also sync basic info to metadata as backup
+          name: data.name,
+          nip: data.nip,
+          phone: data.phone,
+          work_unit_id: data.work_unit_id,
+        }
+      });
+
+      if (authError) throw authError;
+
+      // 2. Update profiles table (for basic info)
+      // We attempt this, but if it fails due to RLS, we still have metadata
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: data.name,
+          phone: data.phone,
+          nip: data.nip,
+          work_unit_id: data.work_unit_id,
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.warn("Profile table update failed, falling back to metadata:", profileError);
+      }
+
+      // 3. Update local state
+      setUser((prev) => prev ? ({ ...prev, ...data }) : null);
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, updateProfile, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

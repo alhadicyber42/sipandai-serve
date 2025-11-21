@@ -131,3 +131,63 @@ export const STATUS_LABELS = {
   resolved: "Selesai",
   closed: "Ditutup",
 };
+
+export const REQUIRED_DOCUMENTS = [
+  // Dokumen Dasar
+  { id: "sk_cpns", label: "SK CPNS", allowMultiple: true },
+  { id: "sk_pns", label: "SK PNS", allowMultiple: true },
+  { id: "sk_pangkat_terakhir", label: "SK Pangkat Terakhir", allowMultiple: true },
+  { id: "sk_jabatan_terakhir", label: "SK Jabatan Terakhir", allowMultiple: true },
+  { id: "ijazah_terakhir", label: "Ijazah Terakhir", allowMultiple: true },
+  { id: "transkrip_nilai", label: "Transkrip Nilai", allowMultiple: true },
+  { id: "ktp", label: "KTP", allowMultiple: true },
+  { id: "kk", label: "Kartu Keluarga", allowMultiple: true },
+  { id: "npwp", label: "NPWP", allowMultiple: true },
+  { id: "bpjs", label: "BPJS / KIS", allowMultiple: true },
+  { id: "karpeg", label: "Kartu Pegawai (Karpeg)", allowMultiple: true },
+  { id: "pas_foto", label: "Pas Foto Terbaru", allowMultiple: true },
+
+  // Dokumen untuk Kenaikan Pangkat
+  { id: "skp_2_tahun", label: "SKP 2 Tahun Terakhir", allowMultiple: true },
+  { id: "pak", label: "PAK (Penetapan Angka Kredit)", allowMultiple: true },
+  { id: "nota_dinas", label: "Nota Dinas", allowMultiple: true },
+  { id: "surat_lulus_ujian_penyesuaian", label: "Surat Tanda Lulus Ujian Penyesuaian Kenaikan Pangkat", allowMultiple: true },
+  { id: "surat_lulus_ujian_dinas", label: "Surat Tanda Lulus Ujian Dinas", allowMultiple: true },
+  { id: "uraian_tugas", label: "Uraian Tugas", allowMultiple: true },
+  { id: "sertifikat_uji_kompetensi", label: "Sertifikat Uji Kompetensi", allowMultiple: true },
+  { id: "ba_sumpah_pns", label: "Berita Acara Pengambilan Sumpah Jabatan PNS", allowMultiple: true },
+  { id: "surat_pernyataan_pelantikan", label: "Surat Pernyataan Pelantikan", allowMultiple: true },
+  { id: "surat_pernyataan_tugas", label: "Surat Pernyataan Melaksanakan Tugas", allowMultiple: true },
+  { id: "surat_pernyataan_jabatan", label: "Surat Pernyataan Menduduki Jabatan", allowMultiple: true },
+  { id: "diklat_pim_3", label: "Diklat PIM III", allowMultiple: true },
+
+  // Dokumen untuk Mutasi
+  { id: "surat_lolos_butuh", label: "Surat Pernyataan Lolos Butuh dari PPK Instansi Asal", allowMultiple: true },
+  { id: "surat_tidak_hukuman", label: "Surat Keterangan Tidak Sedang Menjalani Hukuman Disiplin", allowMultiple: true },
+  { id: "surat_tidak_tugas_belajar", label: "Surat Keterangan Tidak Sedang Menjalani Tugas Belajar/Ikatan Dinas", allowMultiple: true },
+  { id: "surat_tidak_hutang", label: "Surat Keterangan Tidak Mempunyai Hutang Piutang dengan Pihak Bank", allowMultiple: true },
+  { id: "surat_bebas_temuan", label: "Surat Pernyataan Bebas Temuan ITJEN", allowMultiple: true },
+  { id: "anjab_abk", label: "ANJAB dan ABK", allowMultiple: true },
+  { id: "surat_permohonan_mutasi", label: "Surat Permohonan Mutasi", allowMultiple: true },
+  { id: "drh", label: "Daftar Riwayat Hidup (DRH)", allowMultiple: true },
+
+  // Dokumen untuk Pensiun
+  { id: "surat_permohonan_pensiun", label: "Surat Permohonan Pensiun", allowMultiple: true },
+  { id: "daftar_keluarga", label: "Daftar Susunan Keluarga", allowMultiple: true },
+  { id: "surat_nikah", label: "Surat Nikah", allowMultiple: true },
+  { id: "akte_kelahiran_anak", label: "Akte Kelahiran Anak", allowMultiple: true },
+  { id: "kgb_terakhir", label: "Kenaikan Gaji Berkala Terakhir", allowMultiple: true },
+  { id: "surat_tidak_hukuman_disiplin", label: "Surat Pernyataan Tidak Pernah Dijatuhi Hukuman Disiplin Sedang/Berat", allowMultiple: true },
+  { id: "surat_tidak_pidana", label: "Surat Pernyataan Tidak Sedang Menjalani Proses Pidana", allowMultiple: true },
+  { id: "dpcpp", label: "Data Perorangan Calon Penerimaan Pensiun (DPCPP)", allowMultiple: true },
+  { id: "buku_tabungan", label: "Buku Tabungan", allowMultiple: true },
+  { id: "karis_karsu", label: "Karis/Karsu", allowMultiple: true },
+  { id: "surat_kematian", label: "Surat Keterangan Kematian", allowMultiple: true },
+  { id: "surat_anak_sekolah", label: "Surat Keterangan Anak Masih Sekolah/Kuliah", allowMultiple: true },
+  { id: "surat_janda_duda", label: "Surat Keterangan Janda/Duda dari Kelurahan", allowMultiple: true },
+  { id: "berita_acara_kematian", label: "Berita Acara (Kejadian Kematian)", allowMultiple: true },
+  { id: "visum", label: "Visum et Repertum", allowMultiple: true },
+  { id: "surat_tugas", label: "Surat Tugas", allowMultiple: true },
+  { id: "laporan_pimpinan", label: "Laporan Dari Pimpinan Unit Kerja", allowMultiple: true },
+  { id: "kp_anumerta", label: "Kenaikan Pangkat Anumerta Sementara", allowMultiple: true },
+] as const;
