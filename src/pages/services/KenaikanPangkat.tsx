@@ -16,9 +16,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, TrendingUp, AlertCircle, FileText, CheckCircle2, Clock, XCircle, Sparkles } from "lucide-react";
 import { PROMOTION_CATEGORIES, MONTHS, YEARS } from "@/lib/promotion-categories";
+import { DocumentSelector } from "@/components/DocumentSelector";
+import { getRepositoryId } from "@/lib/document-mapping";
 
 export default function KenaikanPangkat() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -117,6 +119,55 @@ export default function KenaikanPangkat() {
 
     const formData = new FormData(e.currentTarget);
     const description = formData.get("description") as string;
+
+    // AUTO-SAVE: Sync documents to repository
+    const updatedDocs = { ...user!.documents };
+    let savedCount = 0;
+
+    category.documents.forEach(doc => {
+      const repoId = getRepositoryId('kenaikan_pangkat', doc.name);
+      const url = documentLinks[doc.name];
+
+      if (repoId && url) {
+        const existing = updatedDocs[repoId];
+        const newDoc = { name: doc.name, url };
+
+        if (Array.isArray(existing)) {
+          // Check if URL already exists
+          const urlExists = existing.some(d =>
+            (typeof d === 'string' ? d : d.url) === url
+          );
+          if (!urlExists) {
+            // Normalize array to DocumentItem[]
+            const normalized = existing.map(d =>
+              typeof d === 'string' ? { name: repoId, url: d } : d
+            );
+            updatedDocs[repoId] = [...normalized, newDoc];
+            savedCount++;
+          }
+        } else if (existing) {
+          // Convert to array if not already
+          const existingUrl = typeof existing === 'string' ? existing : existing.url;
+          if (existingUrl !== url) {
+            updatedDocs[repoId] = [
+              typeof existing === 'string' ? { name: repoId, url: existing } : existing,
+              newDoc
+            ];
+            savedCount++;
+          }
+        } else {
+          // New document
+          updatedDocs[repoId] = [newDoc];
+          savedCount++;
+        }
+      }
+    });
+
+    // Update user profile with new documents
+    if (savedCount > 0) {
+      await updateProfile({ documents: updatedDocs });
+      toast.success(`${savedCount} dokumen baru tersimpan ke Repository`);
+    }
 
     // Prepare documents array with names and URLs
     const documents = category.documents.map(doc => ({
@@ -451,14 +502,13 @@ export default function KenaikanPangkat() {
                                           </AlertDescription>
                                         </Alert>
                                       )}
-                                      <Input
-                                        id={`doc-${index}`}
-                                        type="url"
-                                        placeholder="https://drive.google.com/... atau link lainnya"
+                                      <DocumentSelector
+                                        label=""
+                                        repositoryId={getRepositoryId('kenaikan_pangkat', doc.name) || ""}
                                         value={documentLinks[doc.name] || ""}
-                                        onChange={(e) => handleDocumentLinkChange(doc.name, e.target.value)}
-                                        required
-                                        className="h-12"
+                                        onChange={(url) => handleDocumentLinkChange(doc.name, url)}
+                                        note={undefined}
+                                        required={true}
                                       />
                                     </CardContent>
                                   </Card>
