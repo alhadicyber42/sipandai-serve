@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WORK_UNITS, REQUIRED_DOCUMENTS } from "@/lib/constants";
-import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText } from "lucide-react";
+import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText, Search } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -38,6 +38,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);
 
@@ -392,18 +393,56 @@ export default function Profile() {
                 <CardDescription>
                   Simpan link dokumen penting Anda di sini. Klik ikon Edit untuk mengubah atau menambahkan link.
                 </CardDescription>
+                <div className="mt-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cari dokumen (misal: SK Pangkat, Ijazah, KTP...)"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  {searchQuery && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Menampilkan {REQUIRED_DOCUMENTS.filter(doc =>
+                        doc.label.toLowerCase().includes(searchQuery.toLowerCase())
+                      ).length} dari {REQUIRED_DOCUMENTS.length} dokumen
+                    </p>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-6">
-                  {REQUIRED_DOCUMENTS.map((doc) => (
-                    <DocumentField
-                      key={doc.id}
-                      doc={doc}
-                      initialValue={user.documents?.[doc.id] || ""}
-                      onSave={handleSaveDocument}
-                    />
-                  ))}
+                  {REQUIRED_DOCUMENTS
+                    .filter(doc =>
+                      searchQuery === "" ||
+                      doc.label.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((doc) => (
+                      <DocumentField
+                        key={doc.id}
+                        doc={doc}
+                        initialValue={user.documents?.[doc.id] || ""}
+                        onSave={handleSaveDocument}
+                      />
+                    ))}
                 </div>
+                {searchQuery && REQUIRED_DOCUMENTS.filter(doc =>
+                  doc.label.toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0 && (
+                    <div className="text-center py-12">
+                      <Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">Tidak ada dokumen yang cocok dengan "{searchQuery}"</p>
+                      <Button
+                        variant="link"
+                        onClick={() => setSearchQuery("")}
+                        className="mt-2"
+                      >
+                        Hapus pencarian
+                      </Button>
+                    </div>
+                  )}
               </CardContent>
             </Card>
           </TabsContent>

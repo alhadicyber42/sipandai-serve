@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Edit2, ExternalLink, Link as LinkIcon, Plus, Save, Trash2, X, FileText } from "lucide-react";
 import { DocumentItem } from "@/contexts/AuthContext";
+import { getServicesUsingDocument } from "@/lib/document-mapping";
 
 interface DocumentFieldProps {
     doc: {
@@ -211,9 +213,28 @@ export function DocumentField({ doc, initialValue, onSave }: DocumentFieldProps)
         <div className="p-4 border rounded-lg hover:bg-muted/20 transition-colors group">
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Label className="text-base font-medium cursor-pointer" onClick={handleEdit}>{doc.label}</Label>
                         {hasValue && <CheckCircle2 className="h-4 w-4 text-success" />}
+
+                        {/* Service badges */}
+                        <div className="flex items-center gap-1 ml-2">
+                            {getServicesUsingDocument(doc.id).map((serviceInfo) => (
+                                <Badge
+                                    key={serviceInfo.service}
+                                    variant="secondary"
+                                    className={`text-[10px] px-1.5 py-0 h-5 ${serviceInfo.color === 'green'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                            : serviceInfo.color === 'teal'
+                                                ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
+                                                : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                        }`}
+                                    title={`Digunakan untuk layanan ${serviceInfo.service === 'kenaikan_pangkat' ? 'Kenaikan Pangkat' : serviceInfo.service === 'mutasi' ? 'Mutasi' : 'Pensiun'}`}
+                                >
+                                    {serviceInfo.label}
+                                </Badge>
+                            ))}
+                        </div>
                     </div>
 
                     {hasValue ? (

@@ -103,6 +103,7 @@ export function getRepositoryId(
     return SERVICE_DOCUMENT_MAPPING[serviceType]?.[docName] || null;
 }
 
+
 /**
  * Get all repository IDs for a service type
  * @param serviceType - Type of service
@@ -114,4 +115,34 @@ export function getServiceRepositoryIds(
     const mapping = SERVICE_DOCUMENT_MAPPING[serviceType];
     if (!mapping) return [];
     return [...new Set(Object.values(mapping))];
+}
+
+/**
+ * REVERSE MAPPING: Get all services that use a specific repository document
+ * @param repositoryId - Repository document ID (e.g., "sk_cpns", "ijazah_terakhir")
+ * @returns Array of service types that use this document
+ */
+export function getServicesUsingDocument(repositoryId: string): Array<{
+    service: keyof typeof SERVICE_DOCUMENT_MAPPING;
+    label: string;
+    color: string;
+}> {
+    const services: Array<{ service: keyof typeof SERVICE_DOCUMENT_MAPPING; label: string; color: string }> = [];
+
+    // Check each service type
+    for (const [serviceType, mapping] of Object.entries(SERVICE_DOCUMENT_MAPPING)) {
+        const docIds = Object.values(mapping) as string[];
+        if (docIds.includes(repositoryId)) {
+            // Map service type to display label and color
+            if (serviceType === 'kenaikan_pangkat') {
+                services.push({ service: 'kenaikan_pangkat', label: 'KP', color: 'green' });
+            } else if (serviceType === 'mutasi') {
+                services.push({ service: 'mutasi', label: 'Mutasi', color: 'teal' });
+            } else if (serviceType === 'pensiun') {
+                services.push({ service: 'pensiun', label: 'Pensiun', color: 'purple' });
+            }
+        }
+    }
+
+    return services;
 }
