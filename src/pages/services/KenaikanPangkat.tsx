@@ -18,6 +18,7 @@ import { Plus, TrendingUp, AlertCircle, FileText, CheckCircle2, Clock, XCircle, 
 import { PROMOTION_CATEGORIES, MONTHS, YEARS } from "@/lib/promotion-categories";
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
+import { StatCardSkeleton } from "@/components/skeletons";
 
 export default function KenaikanPangkat() {
   const { user, updateProfile } = useAuth();
@@ -563,57 +564,68 @@ export default function KenaikanPangkat() {
         {/* Statistics for Admin - Responsive Grid */}
         {isAdmin && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
-              <CardContent className="p-4 md:p-6 relative z-10">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
-                </div>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium">Total Usulan</p>
-              </CardContent>
-            </Card>
+            {isLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+                  <CardContent className="p-4 md:p-6 relative z-10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
+                    </div>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Total Usulan</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
-              <CardContent className="p-4 md:p-6 relative z-10">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-yellow-500/10 rounded-lg">
-                    <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
-                </div>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium">Menunggu Review</p>
-              </CardContent>
-            </Card>
+                <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
+                  <CardContent className="p-4 md:p-6 relative z-10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-yellow-500/10 rounded-lg">
+                        <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
+                    </div>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Menunggu Review</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
-              <CardContent className="p-4 md:p-6 relative z-10">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-green-500/10 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.approved}</div>
-                </div>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium">Disetujui</p>
-              </CardContent>
-            </Card>
+                <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
+                  <CardContent className="p-4 md:p-6 relative z-10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.approved}</div>
+                    </div>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Disetujui</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
-              <CardContent className="p-4 md:p-6 relative z-10">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-red-500/10 rounded-lg">
-                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.returned}</div>
-                </div>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium">Dikembalikan/Ditolak</p>
-              </CardContent>
-            </Card>
+                <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
+                  <CardContent className="p-4 md:p-6 relative z-10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-red-500/10 rounded-lg">
+                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.returned}</div>
+                    </div>
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium">Dikembalikan/Ditolak</p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         )}
 

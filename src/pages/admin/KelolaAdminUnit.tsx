@@ -32,6 +32,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, Search, UserCog, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TableSkeleton, StatCardSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface UserWithRole {
   id: string;
@@ -76,7 +78,7 @@ export default function KelolaAdminUnit() {
         .from("work_units")
         .select("*")
         .order("name");
-      
+
       if (units) setWorkUnits(units);
 
       // Load all users with their profiles and roles
@@ -102,14 +104,14 @@ export default function KelolaAdminUnit() {
           // Get user email from metadata since admin API requires service role
           // We'll use a simpler approach by creating an edge function later
           // For now, we get from profiles which should have all data
-          
+
           // Get user role from user_roles table, fallback to profiles.role
           const { data: roleData, error: roleError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", profile.id)
             .maybeSingle();
-          
+
           userList.push({
             id: profile.id,
             name: profile.name,
@@ -246,36 +248,47 @@ export default function KelolaAdminUnit() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-sm text-muted-foreground">Total Pengguna</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-primary">
-                {stats.admin_pusat}
-              </div>
-              <p className="text-sm text-muted-foreground">Admin Pusat</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-secondary">
-                {stats.admin_unit}
-              </div>
-              <p className="text-sm text-muted-foreground">Admin Unit</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-muted-foreground">
-                {stats.user_unit}
-              </div>
-              <p className="text-sm text-muted-foreground">User Unit</p>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-sm text-muted-foreground">Total Pengguna</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">
+                    {stats.admin_pusat}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Admin Pusat</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-secondary">
+                    {stats.admin_unit}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Admin Unit</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-muted-foreground">
+                    {stats.user_unit}
+                  </div>
+                  <p className="text-sm text-muted-foreground">User Unit</p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <Card>
@@ -331,11 +344,8 @@ export default function KelolaAdminUnit() {
             </div>
 
             {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Memuat data...
-                </p>
+              <div className="py-4">
+                <TableSkeleton rows={5} />
               </div>
             ) : (
               <div className="rounded-md border">
@@ -356,9 +366,15 @@ export default function KelolaAdminUnit() {
                       <TableRow>
                         <TableCell
                           colSpan={7}
-                          className="text-center py-8 text-muted-foreground"
+                          className="p-0 border-none"
                         >
-                          Tidak ada data pengguna
+                          <div className="py-12">
+                            {searchQuery || roleFilter !== "all" || workUnitFilter !== "all" ? (
+                              <SearchState message="Tidak ada pengguna yang sesuai dengan filter pencarian" />
+                            ) : (
+                              <NoDataState message="Belum ada data pengguna" />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -449,6 +465,6 @@ export default function KelolaAdminUnit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

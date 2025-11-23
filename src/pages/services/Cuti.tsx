@@ -22,6 +22,7 @@ import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { LEAVE_LABELS } from "@/lib/constants";
 import { z } from "zod";
+import { StatCardSkeleton } from "@/components/skeletons";
 
 export default function Cuti() {
   const { user } = useAuth();
@@ -573,101 +574,123 @@ export default function Cuti() {
 
         {user?.role === "user_unit" && (
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  Saldo Cuti Tahunan
-                </CardTitle>
-                <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{leaveStats.remaining} Hari</div>
-                <p className="text-xs text-blue-600 dark:text-blue-300">
-                  Dari total {leaveStats.quota + leaveStats.carriedOver} hari
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Cuti Terpakai
-                </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{leaveStats.used} Hari</div>
-                <p className="text-xs text-muted-foreground">
-                  Tahun {getYear(new Date())}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Menunggu Persetujuan
-                </CardTitle>
-                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{leaveStats.pending} Hari</div>
-                <p className="text-xs text-muted-foreground">
-                  Sedang diproses
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Saldo Penangguhan
-                </CardTitle>
-                <CalendarX className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{leaveStats.carriedOver} Hari</div>
-                <p className="text-xs text-muted-foreground">
-                  Sisa tahun lalu
-                </p>
-              </CardContent>
-            </Card>
+            {isLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Saldo Cuti Tahunan
+                    </CardTitle>
+                    <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{leaveStats.remaining} Hari</div>
+                    <p className="text-xs text-blue-600 dark:text-blue-300">
+                      Dari total {leaveStats.quota + leaveStats.carriedOver} hari
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Cuti Terpakai
+                    </CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{leaveStats.used} Hari</div>
+                    <p className="text-xs text-muted-foreground">
+                      Tahun {getYear(new Date())}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Menunggu Persetujuan
+                    </CardTitle>
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{leaveStats.pending} Hari</div>
+                    <p className="text-xs text-muted-foreground">
+                      Sedang diproses
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Saldo Penangguhan
+                    </CardTitle>
+                    <CalendarX className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{leaveStats.carriedOver} Hari</div>
+                    <p className="text-xs text-muted-foreground">
+                      Sisa tahun lalu
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         )}
 
         {isAdmin && (
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{services.length}</div>
-                <p className="text-sm text-muted-foreground">Total Usulan</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-warning">
-                  {services.filter((s) => s.status === "submitted" || s.status === "approved_by_unit").length}
-                </div>
-                <p className="text-sm text-muted-foreground">Diproses</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-success">
-                  {services.filter((s) => s.status === "approved_final").length}
-                </div>
-                <p className="text-sm text-muted-foreground">Disetujui</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-destructive">
-                  {
-                    services.filter(
-                      (s) => s.status === "returned_to_user" || s.status === "returned_to_unit"
-                    ).length
-                  }
-                </div>
-                <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
-              </CardContent>
-            </Card>
+            {isLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{services.length}</div>
+                    <p className="text-sm text-muted-foreground">Total Usulan</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-warning">
+                      {services.filter((s) => s.status === "submitted" || s.status === "approved_by_unit").length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Diproses</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-success">
+                      {services.filter((s) => s.status === "approved_final").length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Disetujui</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-destructive">
+                      {
+                        services.filter(
+                          (s) => s.status === "returned_to_user" || s.status === "returned_to_unit"
+                        ).length
+                      }
+                    </div>
+                    <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         )}
 

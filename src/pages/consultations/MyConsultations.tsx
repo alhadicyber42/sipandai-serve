@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Plus, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { CardSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Consultation {
   id: string;
@@ -180,26 +182,15 @@ export default function MyConsultations() {
           <h2 className="text-xl md:text-2xl font-semibold">Daftar Konsultasi</h2>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p className="text-sm text-muted-foreground">Memuat data...</p>
-              </div>
+            <div className="grid gap-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
           ) : consultations.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Belum Ada Riwayat</h3>
-                <p className="text-sm text-muted-foreground text-center mb-4">
-                  Anda belum memiliki riwayat konsultasi yang selesai
-                </p>
-                <Button onClick={() => navigate("/konsultasi/baru")} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Buat Konsultasi Baru
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="py-12">
+              <NoDataState message="Belum ada riwayat konsultasi" />
+            </div>
           ) : (
             <div className="grid gap-4">
               {consultations.map((consultation) => (
@@ -257,7 +248,7 @@ export default function MyConsultations() {
             </div>
           )}
         </div>
-      </div>
-    </DashboardLayout>
+      </div >
+    </DashboardLayout >
   );
 }

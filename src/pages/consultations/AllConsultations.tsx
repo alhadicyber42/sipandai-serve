@@ -18,6 +18,8 @@ import {
 import { MessageSquare, Search, Clock, AlertCircle, CheckCircle2, XCircle, TrendingUp, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { CardSkeleton, StatCardSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Consultation {
   id: string;
@@ -189,57 +191,68 @@ export default function AllConsultations() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Konsultasi</p>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+                <CardContent className="p-4 md:p-6 relative z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
+                  </div>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Konsultasi</p>
+                </CardContent>
+              </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.submitted}</div>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Konsultasi Baru</p>
-            </CardContent>
-          </Card>
+              <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
+                <CardContent className="p-4 md:p-6 relative z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.submitted}</div>
+                  </div>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Konsultasi Baru</p>
+                </CardContent>
+              </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-yellow-500/10 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.in_progress}</div>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Dalam Proses</p>
-            </CardContent>
-          </Card>
+              <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
+                <CardContent className="p-4 md:p-6 relative z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-yellow-500/10 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.in_progress}</div>
+                  </div>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Dalam Proses</p>
+                </CardContent>
+              </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-red-500/10 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.escalated}</div>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Tereskalasi</p>
-            </CardContent>
-          </Card>
+              <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
+                <CardContent className="p-4 md:p-6 relative z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-red-500/10 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.escalated}</div>
+                  </div>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Tereskalasi</p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* Consultations List */}
@@ -284,88 +297,91 @@ export default function AllConsultations() {
             </div>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                  <p className="text-sm text-muted-foreground">Memuat data...</p>
-                </div>
-              </div>
-            ) : filteredConsultations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Tidak Ada Konsultasi</h3>
-                <p className="text-sm text-muted-foreground">Tidak ada konsultasi yang sesuai dengan filter</p>
+              <div className="grid gap-4">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredConsultations.map((consultation) => (
-                  <Card
-                    key={consultation.id}
-                    className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                    onClick={() => navigate(`/konsultasi/${consultation.id}`)}
-                  >
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                              <MessageSquare className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-base md:text-lg group-hover:text-primary transition-colors">
-                                  {consultation.subject}
-                                </h3>
-                                {consultation.is_escalated && (
-                                  <Badge variant="destructive" className="gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    Tereskalasi
-                                  </Badge>
-                                )}
+              <div className="grid gap-4">
+                {filteredConsultations.length === 0 ? (
+                  <div className="py-12">
+                    {searchQuery || statusFilter !== "all" || priorityFilter !== "all" ? (
+                      <SearchState message="Tidak ada konsultasi yang sesuai dengan filter pencarian" />
+                    ) : (
+                      <NoDataState message="Belum ada data konsultasi" />
+                    )}
+                  </div>
+                ) : (
+                  filteredConsultations.map((consultation) => (
+                    <Card
+                      key={consultation.id}
+                      className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                      onClick={() => navigate(`/konsultasi/${consultation.id}`)}
+                    >
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-primary/10 rounded-lg mt-1">
+                                <MessageSquare className="h-5 w-5 text-primary" />
                               </div>
-
-                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                {consultation.description}
-                              </p>
-
-                              <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />
-                                  <span>{(consultation.profiles as any)?.name}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-base md:text-lg group-hover:text-primary transition-colors">
+                                    {consultation.subject}
+                                  </h3>
+                                  {consultation.is_escalated && (
+                                    <Badge variant="destructive" className="gap-1">
+                                      <AlertCircle className="h-3 w-3" />
+                                      Tereskalasi
+                                    </Badge>
+                                  )}
                                 </div>
-                                <span>•</span>
-                                <span>{(consultation.work_units as any)?.name}</span>
-                                <span>•</span>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  <span>
-                                    {format(new Date(consultation.created_at), "d MMM yyyy HH:mm", {
-                                      locale: localeId,
-                                    })}
-                                  </span>
+
+                                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                  {consultation.description}
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    <span>{(consultation.profiles as any)?.name}</span>
+                                  </div>
+                                  <span>•</span>
+                                  <span>{(consultation.work_units as any)?.name}</span>
+                                  <span>•</span>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>
+                                      {format(new Date(consultation.created_at), "d MMM yyyy HH:mm", {
+                                        locale: localeId,
+                                      })}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex flex-row md:flex-col items-start gap-2">
-                          <Badge className={getStatusColor(consultation.status)}>
-                            {getStatusLabel(consultation.status)}
-                          </Badge>
-                          <Badge className={getPriorityColor(consultation.priority)}>
-                            {getPriorityLabel(consultation.priority)}
-                          </Badge>
+                          <div className="flex flex-row md:flex-col items-start gap-2">
+                            <Badge className={getStatusColor(consultation.status)}>
+                              {getStatusLabel(consultation.status)}
+                            </Badge>
+                            <Badge className={getPriorityColor(consultation.priority)}>
+                              {getPriorityLabel(consultation.priority)}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

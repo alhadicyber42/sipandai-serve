@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TableSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Employee {
   id: string;
@@ -115,7 +117,7 @@ export default function DaftarPegawaiUnit() {
       }
     } catch (error: any) {
       console.error("Error loading data:", error);
-      toast.error("Gagal memuat data");
+      toast.error("Gagal memuat data pegawai");
     } finally {
       setIsLoading(false);
     }
@@ -210,11 +212,8 @@ export default function DaftarPegawaiUnit() {
             </div>
 
             {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Memuat data...
-                </p>
+              <div className="py-4">
+                <TableSkeleton rows={5} />
               </div>
             ) : (
               <div className="rounded-md border">
@@ -234,9 +233,15 @@ export default function DaftarPegawaiUnit() {
                       <TableRow>
                         <TableCell
                           colSpan={6}
-                          className="text-center py-8 text-muted-foreground"
+                          className="p-0 border-none"
                         >
-                          Tidak ada data pegawai
+                          <div className="py-12">
+                            {searchQuery || workUnitFilter !== "all" ? (
+                              <SearchState message="Tidak ada pegawai yang sesuai dengan filter pencarian" />
+                            ) : (
+                              <NoDataState message="Belum ada data pegawai" />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -270,6 +275,6 @@ export default function DaftarPegawaiUnit() {
           </p>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

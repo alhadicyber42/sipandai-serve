@@ -36,7 +36,9 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentVerification, type VerifiedDocument } from "@/components/DocumentVerification";
+import { TableSkeleton } from "@/components/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Service {
   id: string;
@@ -261,7 +263,7 @@ export function ServiceList({
       if (error) throw error;
 
       toast.success("Hasil verifikasi berhasil disimpan");
-      
+
       // Check if any document needs revision
       const hasDocumentsNeedingRevision = verifiedDocuments.some(
         doc => doc.verification_status === "perlu_perbaikan"
@@ -279,7 +281,7 @@ export function ServiceList({
         ...selectedService,
         documents: verifiedDocuments,
       });
-      
+
       onReload();
     } catch (error: any) {
       console.error("Error saving verification:", error);
@@ -369,17 +371,15 @@ export function ServiceList({
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-sm text-muted-foreground">Memuat data...</p>
+            <div className="py-4">
+              <TableSkeleton rows={5} />
             </div>
           ) : filteredServices.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">
-                {services.length === 0 ? "Belum ada usulan" : "Tidak ada hasil yang sesuai"}
-              </p>
-            </div>
+            services.length === 0 ? (
+              <NoDataState message="Belum ada usulan yang diajukan" />
+            ) : (
+              <SearchState message="Tidak ada usulan yang sesuai dengan filter pencarian" />
+            )
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -564,7 +564,7 @@ export function ServiceList({
                       onUpdate={setVerifiedDocuments}
                       readOnly={!canTakeAction(selectedService)}
                     />
-                    
+
                     {canTakeAction(selectedService) && (
                       <div className="flex gap-2 pt-4 border-t sticky bottom-0 bg-background pb-2">
                         <Button
@@ -659,8 +659,8 @@ export function ServiceList({
               {isSubmitting
                 ? "Memproses..."
                 : actionType === "approve"
-                ? "Setujui"
-                : "Kembalikan"}
+                  ? "Setujui"
+                  : "Kembalikan"}
             </Button>
           </DialogFooter>
         </DialogContent>

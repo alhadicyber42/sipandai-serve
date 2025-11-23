@@ -32,6 +32,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Building2, Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TableSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface WorkUnit {
   id: number;
@@ -295,9 +297,8 @@ export default function KelolaUnitKerja() {
             </div>
 
             {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">Memuat data...</p>
+              <div className="py-4">
+                <TableSkeleton rows={5} />
               </div>
             ) : (
               <div className="rounded-md border">
@@ -314,8 +315,14 @@ export default function KelolaUnitKerja() {
                   <TableBody>
                     {filteredUnits.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          Tidak ada data unit kerja
+                        <TableCell colSpan={5} className="p-0 border-none">
+                          <div className="py-12">
+                            {searchQuery ? (
+                              <SearchState message="Tidak ada unit kerja yang sesuai dengan pencarian" />
+                            ) : (
+                              <NoDataState message="Belum ada data unit kerja" />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -456,6 +463,6 @@ export default function KelolaUnitKerja() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

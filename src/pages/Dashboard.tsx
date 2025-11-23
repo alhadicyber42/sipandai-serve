@@ -41,7 +41,7 @@ export default function Dashboard() {
 
     if (servicesError) {
       console.error("Error loading services:", servicesError);
-      toast.error("Gagal memuat data usulan");
+      toast.error("Gagal memuat data usulan layanan");
       setServices([]);
       setIsLoading(false);
       return;

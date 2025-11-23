@@ -178,7 +178,7 @@ export default function EmployeeRating() {
             const rating = {
                 id: crypto.randomUUID(),
                 rater_id: user.id,
-                rater_name: user.user_metadata?.name || user.email,
+                rater_name: user.name || user.email,
                 rated_employee_id: employeeId,
                 rated_employee_name: employee.name,
                 rating_period: ratingPeriod,

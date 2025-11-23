@@ -17,6 +17,8 @@ import {
 import { MessageSquare, Search, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { CardSkeleton, StatCardSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Consultation {
     id: string;
@@ -115,28 +117,38 @@ export default function UnitConsultationHistory() {
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-2xl font-bold">{stats.total}</div>
-                            <p className="text-sm text-muted-foreground">Total Riwayat</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-2xl font-bold text-green-600">
-                                {stats.resolved}
-                            </div>
-                            <p className="text-sm text-muted-foreground">Selesai</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-2xl font-bold text-gray-600">
-                                {stats.closed}
-                            </div>
-                            <p className="text-sm text-muted-foreground">Ditutup</p>
-                        </CardContent>
-                    </Card>
+                    {isLoading ? (
+                        <>
+                            <StatCardSkeleton />
+                            <StatCardSkeleton />
+                            <StatCardSkeleton />
+                        </>
+                    ) : (
+                        <>
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="text-2xl font-bold">{stats.total}</div>
+                                    <p className="text-sm text-muted-foreground">Total Riwayat</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="text-2xl font-bold text-green-600">
+                                        {stats.resolved}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">Selesai</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="text-2xl font-bold text-gray-600">
+                                        {stats.closed}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">Ditutup</p>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
                 </div>
 
                 <Card>
@@ -172,16 +184,18 @@ export default function UnitConsultationHistory() {
                         </div>
 
                         {isLoading ? (
-                            <div className="text-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                    Memuat data...
-                                </p>
+                            <div className="grid gap-4">
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
                             </div>
                         ) : filteredConsultations.length === 0 ? (
-                            <div className="text-center py-12">
-                                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <p className="text-muted-foreground">Tidak ada riwayat konsultasi</p>
+                            <div className="py-12">
+                                {searchQuery || statusFilter !== "all" ? (
+                                    <SearchState message="Tidak ada riwayat konsultasi yang sesuai dengan filter pencarian" />
+                                ) : (
+                                    <NoDataState message="Tidak ada riwayat konsultasi" />
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-4">

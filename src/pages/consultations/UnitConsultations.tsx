@@ -18,6 +18,8 @@ import {
 import { MessageSquare, Search, Clock, AlertCircle, CheckCircle2, ArrowRight, Sparkles, User, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { CardSkeleton, StatCardSkeleton } from "@/components/skeletons";
+import { NoDataState, SearchState } from "@/components/EmptyState";
 
 interface Consultation {
   id: string;
@@ -151,10 +153,36 @@ export default function UnitConsultations() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">Memuat konsultasi...</p>
+        <div className="space-y-6">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 p-6 md:p-8 text-white shadow-xl">
+            {/* Keep header static or skeletonize it too if dynamic, but static is fine for perceived performance */}
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <MessageSquare className="h-6 w-6 md:h-8 md:w-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Masuk</h1>
+                  <p className="text-sm md:text-base text-white/80 mt-1">
+                    Kelola konsultasi dari pegawai unit Anda
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+
+          <div className="grid gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         </div>
       </DashboardLayout>
@@ -301,15 +329,12 @@ export default function UnitConsultations() {
 
             {/* Consultations List */}
             {filteredConsultations.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                  <MessageSquare className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/50" />
-                </div>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                    ? "Tidak ada konsultasi yang sesuai filter"
-                    : "Belum ada konsultasi masuk"}
-                </p>
+              <div className="py-12">
+                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" ? (
+                  <SearchState message="Tidak ada konsultasi yang sesuai dengan filter pencarian" />
+                ) : (
+                  <NoDataState message="Belum ada konsultasi masuk" />
+                )}
               </div>
             ) : (
               <div className="space-y-3">

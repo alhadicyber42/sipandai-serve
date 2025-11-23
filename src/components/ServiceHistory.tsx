@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ export function ServiceHistory({ serviceId, serviceType }: ServiceHistoryProps) 
       setHistory(enrichedHistory);
     } catch (error) {
       console.error("Error loading history:", error);
+      toast.error("Gagal memuat riwayat layanan");
     } finally {
       setIsLoading(false);
     }

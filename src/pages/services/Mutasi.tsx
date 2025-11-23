@@ -17,6 +17,7 @@ import { Plus, Users, AlertCircle } from "lucide-react";
 import { TRANSFER_CATEGORIES, type TransferCategory } from "@/lib/transfer-categories";
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
+import { StatCardSkeleton } from "@/components/skeletons";
 
 export default function Mutasi() {
     const { user, updateProfile } = useAuth();
@@ -440,43 +441,54 @@ export default function Mutasi() {
 
                 {isAdmin && (
                     <div className="grid md:grid-cols-4 gap-4">
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-2xl font-bold">{services.length}</div>
-                                <p className="text-sm text-muted-foreground">Total Usulan</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-2xl font-bold text-yellow-600">
-                                    {services.filter((s) => s.status === "submitted").length}
-                                </div>
-                                <p className="text-sm text-muted-foreground">Menunggu Review</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-2xl font-bold text-green-600">
-                                    {services.filter((s) => s.status === "approved_final").length}
-                                </div>
-                                <p className="text-sm text-muted-foreground">Disetujui</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="text-2xl font-bold text-red-600">
-                                    {
-                                        services.filter(
-                                            (s) =>
-                                                s.status === "returned_to_user" ||
-                                                s.status === "returned_to_unit" ||
-                                                s.status === "rejected"
-                                        ).length
-                                    }
-                                </div>
-                                <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
-                            </CardContent>
-                        </Card>
+                        {isLoading ? (
+                            <>
+                                <StatCardSkeleton />
+                                <StatCardSkeleton />
+                                <StatCardSkeleton />
+                                <StatCardSkeleton />
+                            </>
+                        ) : (
+                            <>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-2xl font-bold">{services.length}</div>
+                                        <p className="text-sm text-muted-foreground">Total Usulan</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-2xl font-bold text-yellow-600">
+                                            {services.filter((s) => s.status === "submitted").length}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">Menunggu Review</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-2xl font-bold text-green-600">
+                                            {services.filter((s) => s.status === "approved_final").length}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">Disetujui</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-2xl font-bold text-red-600">
+                                            {
+                                                services.filter(
+                                                    (s) =>
+                                                        s.status === "returned_to_user" ||
+                                                        s.status === "returned_to_unit" ||
+                                                        s.status === "rejected"
+                                                ).length
+                                            }
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+                                    </CardContent>
+                                </Card>
+                            </>
+                        )}
                     </div>
                 )}
 
