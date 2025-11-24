@@ -84,7 +84,7 @@ export default function LandingPage() {
                                     <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-1000 text-7xl">
                                         Sistem Pelayanan 
                                     </span>
-                                    <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-1000 delay-150 text-4xl">
+                                    <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-1000 delay-150 text-4xl py-[3px]">
                                         Administrasi Digital ASN Terintegrasi 
                                     </span>
                                 </h1>
