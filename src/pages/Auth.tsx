@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MultiStepForm } from "@/components/ui/multi-step-form";
 import { toast } from "sonner";
-import { Building2, Mail, Lock, User, Phone, IdCard, Briefcase, Calendar, Plus, Trash2, GitCompare } from "lucide-react";
+import { Building2, Mail, Lock, User, Phone, IdCard, Briefcase, Calendar, Plus, Trash2, GitCompare, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { WORK_UNITS } from "@/lib/constants";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -98,6 +99,7 @@ export default function Auth() {
   const { login, register, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [registerStep, setRegisterStep] = useState(1);
 
   // Login Form
   const loginForm = useForm<LoginFormValues>({
@@ -111,6 +113,7 @@ export default function Auth() {
   // Register Form
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -163,6 +166,50 @@ export default function Auth() {
     setIsLoading(false);
   };
 
+  const validateStep = async (step: number): Promise<boolean> => {
+    let fieldsToValidate: (keyof RegisterFormValues)[] = [];
+
+    switch (step) {
+      case 1:
+        fieldsToValidate = ["name", "email", "nip", "phone", "work_unit"];
+        break;
+      case 2:
+        fieldsToValidate = ["jabatan", "pangkat_golongan", "tmt_pns", "tmt_pensiun"];
+        break;
+      case 3:
+        // Riwayat is optional, always valid
+        return true;
+      case 4:
+        fieldsToValidate = ["password", "confirmPassword"];
+        break;
+    }
+
+    const result = await registerForm.trigger(fieldsToValidate);
+    return result;
+  };
+
+  const handleNext = async () => {
+    const isValid = await validateStep(registerStep);
+
+    if (!isValid) {
+      toast.error("Mohon lengkapi semua field yang diperlukan");
+      return;
+    }
+
+    if (registerStep < 4) {
+      setRegisterStep(registerStep + 1);
+    } else {
+      // Submit form
+      registerForm.handleSubmit(onRegisterSubmit)();
+    }
+  };
+
+  const handleBack = () => {
+    if (registerStep > 1) {
+      setRegisterStep(registerStep - 1);
+    }
+  };
+
   const onRegisterSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     const userData = {
@@ -190,290 +237,491 @@ export default function Auth() {
     setIsLoading(false);
   };
 
+  const getStepTitle = () => {
+    switch (registerStep) {
+      case 1: return "Data Pribadi";
+      case 2: return "Data Kepegawaian";
+      case 3: return "Riwayat (Opsional)";
+      case 4: return "Keamanan & Review";
+      default: return "";
+    }
+  };
+
+  const getStepDescription = () => {
+    switch (registerStep) {
+      case 1: return "Masukkan informasi pribadi Anda";
+      case 2: return "Lengkapi data kepegawaian Anda";
+      case 3: return "Tambahkan riwayat jabatan dan mutasi (opsional)";
+      case 4: return "Buat password dan review data Anda";
+      default: return "";
+    }
+  };
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary via-primary-glow to-accent p-4 py-8">
-      <Card className="w-full max-w-2xl shadow-2xl my-8">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary rounded-xl">
-              <Building2 className="h-10 w-10 text-primary-foreground" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 p-4 py-8 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl top-0 -left-48 animate-pulse" />
+        <div className="absolute w-[600px] h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl bottom-0 -right-48 animate-pulse delay-1000" />
+      </div>
+
+      {/* Back to Home Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute top-4 left-4 z-10 gap-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-900/80"
+        onClick={() => navigate("/")}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="hidden sm:inline">Kembali</span>
+      </Button>
+
+      {activeTab === "login" ? (
+        <Card className="w-full max-w-md shadow-2xl border-2 border-white/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl my-8 relative z-10">
+          <CardHeader className="space-y-1 text-center pb-8">
+            <div className="flex justify-center mb-4">
+              <div className="relative p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/50 group hover:shadow-blue-500/70 transition-all">
+                <Building2 className="h-12 w-12 text-white" />
+                <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">SIPANDAI</CardTitle>
-          <CardDescription>Sistem Pelayanan Administrasi Digital ASN Terintegrasi</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Daftar</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 max-w-md mx-auto">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="login-email" type="email" placeholder="nama@email.com" className="pl-9" {...loginForm.register("email")} />
-                  </div>
-                  {loginForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="login-password" type="password" placeholder="••••••••" className="pl-9" {...loginForm.register("password")} />
-                  </div>
-                  {loginForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-                <Button type="submit" className="w-full" isLoading={isLoading}>
+            <CardTitle className="text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              SIPANDAI
+            </CardTitle>
+            <CardDescription className="text-base">
+              Sistem Pelayanan Administrasi Digital ASN Terintegrasi
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8 h-12 bg-muted/50 p-1">
+                <TabsTrigger
+                  value="login"
+                  className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                >
                   Login
-                </Button>
-              </form>
-            </TabsContent>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="register"
+                  className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                >
+                  Daftar
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="register">
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Basic Info */}
+              <TabsContent value="login" className="data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Nama Lengkap</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-name" placeholder="Nama lengkap Anda" className="pl-9" {...registerForm.register("name")} />
-                    </div>
-                    {registerForm.formState.errors.name && <p className="text-sm text-destructive">{registerForm.formState.errors.name.message}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-email" type="email" placeholder="nama@email.com" className="pl-9" {...registerForm.register("email")} />
-                    </div>
-                    {registerForm.formState.errors.email && <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-nip">NIP</Label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-nip" placeholder="Nomor Induk Pegawai" className="pl-9" {...registerForm.register("nip")} />
-                    </div>
-                    {registerForm.formState.errors.nip && <p className="text-sm text-destructive">{registerForm.formState.errors.nip.message}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-phone">No. Telepon</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-phone" type="tel" placeholder="08xxxxxxxxxx" className="pl-9" {...registerForm.register("phone")} />
-                    </div>
-                    {registerForm.formState.errors.phone && <p className="text-sm text-destructive">{registerForm.formState.errors.phone.message}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-unit">Unit Kerja</Label>
-                    <Controller
-                      control={registerForm.control}
-                      name="work_unit"
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih unit kerja" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {WORK_UNITS.map(unit => (
-                              <SelectItem key={unit.id} value={unit.id.toString()}>
-                                {unit.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {registerForm.formState.errors.work_unit && <p className="text-sm text-destructive">{registerForm.formState.errors.work_unit.message}</p>}
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    Data Kepegawaian
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="register-jabatan">Jabatan Saat Ini</Label>
-                      <Input id="register-jabatan" placeholder="Sesuai SK Terakhir" {...registerForm.register("jabatan")} />
-                      {registerForm.formState.errors.jabatan && <p className="text-sm text-destructive">{registerForm.formState.errors.jabatan.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="register-pangkat">Pangkat/Golongan</Label>
-                      <Controller
-                        control={registerForm.control}
-                        name="pangkat_golongan"
-                        render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih Pangkat/Golongan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PANGKAT_GOLONGAN_OPTIONS.map((group) => (
-                                <SelectGroup key={group.label}>
-                                  <SelectLabel>{group.label}</SelectLabel>
-                                  {group.options.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                      {option}
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                    <Label htmlFor="login-email" className="text-base font-semibold">Email</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="nama@email.com"
+                        className="pl-10 h-12 text-base border-2 focus:border-blue-600 transition-all"
+                        {...loginForm.register("email")}
                       />
-                      {registerForm.formState.errors.pangkat_golongan && <p className="text-sm text-destructive">{registerForm.formState.errors.pangkat_golongan.message}</p>}
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="register-tmt-pns">TMT PNS</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input id="register-tmt-pns" type="date" className="pl-9" {...registerForm.register("tmt_pns")} />
-                      </div>
-                      {registerForm.formState.errors.tmt_pns && <p className="text-sm text-destructive">{registerForm.formState.errors.tmt_pns.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="register-tmt-pensiun">TMT Pensiun</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input id="register-tmt-pensiun" type="date" className="pl-9" {...registerForm.register("tmt_pensiun")} />
-                      </div>
-                      {registerForm.formState.errors.tmt_pensiun && <p className="text-sm text-destructive">{registerForm.formState.errors.tmt_pensiun.message}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Riwayat Jabatan */}
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Riwayat Jabatan (Opsional)
-                    </h3>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendJabatan({ jabatan: "", tmt: "" })}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Tambah Riwayat
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {jabatanFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end p-4 border rounded-lg bg-muted/20">
-                        <div className="flex-1 space-y-2">
-                          <Label>Nama Jabatan</Label>
-                          <Input placeholder="Nama Jabatan" {...registerForm.register(`riwayat_jabatan.${index}.jabatan`)} />
-                          {registerForm.formState.errors.riwayat_jabatan?.[index]?.jabatan && (
-                            <p className="text-sm text-destructive">{registerForm.formState.errors.riwayat_jabatan[index]?.jabatan?.message}</p>
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <Label>TMT Jabatan</Label>
-                          <Input type="date" {...registerForm.register(`riwayat_jabatan.${index}.tmt`)} />
-                          {registerForm.formState.errors.riwayat_jabatan?.[index]?.tmt && (
-                            <p className="text-sm text-destructive">{registerForm.formState.errors.riwayat_jabatan[index]?.tmt?.message}</p>
-                          )}
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => removeJabatan(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {jabatanFields.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-lg">
-                        Belum ada riwayat jabatan ditambahkan
-                      </p>
+                    {loginForm.formState.errors.email && (
+                      <p className="text-sm text-destructive font-medium">{loginForm.formState.errors.email.message}</p>
                     )}
                   </div>
-                </div>
-
-                {/* Riwayat Mutasi */}
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <GitCompare className="h-5 w-5" />
-                      Riwayat Mutasi (Opsional)
-                    </h3>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendMutasi({ jenis_mutasi: "", tmt: "" })}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Tambah Mutasi
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {mutasiFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end p-4 border rounded-lg bg-muted/20">
-                        <div className="flex-1 space-y-2">
-                          <Label>Jenis Mutasi / Unit Kerja</Label>
-                          <Input placeholder="Contoh: Mutasi ke Dinas X" {...registerForm.register(`riwayat_mutasi.${index}.jenis_mutasi`)} />
-                          {registerForm.formState.errors.riwayat_mutasi?.[index]?.jenis_mutasi && (
-                            <p className="text-sm text-destructive">{registerForm.formState.errors.riwayat_mutasi[index]?.jenis_mutasi?.message}</p>
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <Label>TMT Mutasi</Label>
-                          <Input type="date" {...registerForm.register(`riwayat_mutasi.${index}.tmt`)} />
-                          {registerForm.formState.errors.riwayat_mutasi?.[index]?.tmt && (
-                            <p className="text-sm text-destructive">{registerForm.formState.errors.riwayat_mutasi[index]?.tmt?.message}</p>
-                          )}
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => removeMutasi(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {mutasiFields.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-lg">
-                        Belum ada riwayat mutasi ditambahkan
-                      </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password" className="text-base font-semibold">Password</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10 h-12 text-base border-2 focus:border-blue-600 transition-all"
+                        {...loginForm.register("password")}
+                      />
+                    </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-sm text-destructive font-medium">{loginForm.formState.errors.password.message}</p>
                     )}
                   </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
+                    isLoading={isLoading}
+                  >
+                    Login
+                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("register")}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                    >
+                      Belum punya akun? Daftar sekarang
+                    </button>
+                  </div>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      ) : (
+        <MultiStepForm
+          currentStep={registerStep}
+          totalSteps={4}
+          title={getStepTitle()}
+          description={getStepDescription()}
+          onBack={handleBack}
+          onNext={handleNext}
+          onClose={() => setActiveTab("login")}
+          nextButtonText={registerStep === 4 ? "Daftar Sekarang" : "Lanjut"}
+          isLoading={isLoading}
+          size="lg"
+          className="w-full my-8 relative z-10"
+        >
+          {/* Step 1: Data Pribadi */}
+          {registerStep === 1 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-name" className="text-sm font-semibold">Nama Lengkap</Label>
+                  <div className="relative group">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-name"
+                      placeholder="Nama lengkap Anda"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("name")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.name && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.name.message}</p>}
                 </div>
 
-                <div className="border-t pt-4 grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-password" type="password" placeholder="Min. 6 karakter" className="pl-9" {...registerForm.register("password")} />
-                    </div>
-                    {registerForm.formState.errors.password && <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>}
+                <div className="space-y-2">
+                  <Label htmlFor="register-email" className="text-sm font-semibold">Email</Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-email"
+                      type="email"
+                      placeholder="nama@email.com"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("email")}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-confirm">Konfirmasi Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="register-confirm" type="password" placeholder="Ulangi password" className="pl-9" {...registerForm.register("confirmPassword")} />
-                    </div>
-                    {registerForm.formState.errors.confirmPassword && <p className="text-sm text-destructive">{registerForm.formState.errors.confirmPassword.message}</p>}
-                  </div>
+                  {registerForm.formState.errors.email && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.email.message}</p>}
                 </div>
 
-                <Button type="submit" className="w-full" isLoading={isLoading}>
-                  Daftar Sekarang
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="register-nip" className="text-sm font-semibold">NIP</Label>
+                  <div className="relative group">
+                    <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-nip"
+                      placeholder="Nomor Induk Pegawai"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("nip")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.nip && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.nip.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-phone" className="text-sm font-semibold">No. Telepon</Label>
+                  <div className="relative group">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-phone"
+                      type="tel"
+                      placeholder="08xxxxxxxxxx"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("phone")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.phone && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.phone.message}</p>}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="register-unit" className="text-sm font-semibold">Unit Kerja</Label>
+                  <Controller
+                    control={registerForm.control}
+                    name="work_unit"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all">
+                          <SelectValue placeholder="Pilih unit kerja" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WORK_UNITS.map(unit => (
+                            <SelectItem key={unit.id} value={unit.id.toString()}>
+                              {unit.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {registerForm.formState.errors.work_unit && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.work_unit.message}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Data Kepegawaian */}
+          {registerStep === 2 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-jabatan" className="text-sm font-semibold">Jabatan Saat Ini</Label>
+                  <Input
+                    id="register-jabatan"
+                    placeholder="Sesuai SK Terakhir"
+                    className="border-2 focus:border-blue-600 transition-all"
+                    {...registerForm.register("jabatan")}
+                  />
+                  {registerForm.formState.errors.jabatan && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.jabatan.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-pangkat" className="text-sm font-semibold">Pangkat/Golongan</Label>
+                  <Controller
+                    control={registerForm.control}
+                    name="pangkat_golongan"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all">
+                          <SelectValue placeholder="Pilih Pangkat/Golongan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PANGKAT_GOLONGAN_OPTIONS.map((group) => (
+                            <SelectGroup key={group.label}>
+                              <SelectLabel>{group.label}</SelectLabel>
+                              {group.options.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {registerForm.formState.errors.pangkat_golongan && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.pangkat_golongan.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-tmt-pns" className="text-sm font-semibold">TMT PNS</Label>
+                  <div className="relative group">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-tmt-pns"
+                      type="date"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("tmt_pns")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.tmt_pns && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pns.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-tmt-pensiun" className="text-sm font-semibold">TMT Pensiun</Label>
+                  <div className="relative group">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-tmt-pensiun"
+                      type="date"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("tmt_pensiun")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.tmt_pensiun && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pensiun.message}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Riwayat */}
+          {registerStep === 3 && (
+            <div className="space-y-8">
+              {/* Riwayat Jabatan */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <Briefcase className="h-5 w-5 text-blue-600" />
+                    Riwayat Jabatan
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendJabatan({ jabatan: "", tmt: "" })}
+                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {jabatanFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-4 items-end p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm font-semibold">Nama Jabatan</Label>
+                        <Input
+                          placeholder="Nama Jabatan"
+                          className="border-2 focus:border-blue-600 transition-all"
+                          {...registerForm.register(`riwayat_jabatan.${index}.jabatan`)}
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm font-semibold">TMT Jabatan</Label>
+                        <Input
+                          type="date"
+                          className="border-2 focus:border-blue-600 transition-all"
+                          {...registerForm.register(`riwayat_jabatan.${index}.tmt`)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        onClick={() => removeJabatan(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {jabatanFields.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-xl bg-muted/20">
+                      Belum ada riwayat jabatan ditambahkan
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Riwayat Mutasi */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <GitCompare className="h-5 w-5 text-blue-600" />
+                    Riwayat Mutasi
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendMutasi({ jenis_mutasi: "", tmt: "" })}
+                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {mutasiFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-4 items-end p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm font-semibold">Jenis Mutasi / Unit Kerja</Label>
+                        <Input
+                          placeholder="Contoh: Mutasi ke Dinas X"
+                          className="border-2 focus:border-blue-600 transition-all"
+                          {...registerForm.register(`riwayat_mutasi.${index}.jenis_mutasi`)}
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm font-semibold">TMT Mutasi</Label>
+                        <Input
+                          type="date"
+                          className="border-2 focus:border-blue-600 transition-all"
+                          {...registerForm.register(`riwayat_mutasi.${index}.tmt`)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        onClick={() => removeMutasi(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {mutasiFields.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-xl bg-muted/20">
+                      Belum ada riwayat mutasi ditambahkan
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Keamanan & Review */}
+          {registerStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-sm font-semibold">Password</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-password"
+                      type="password"
+                      placeholder="Min. 6 karakter"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("password")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.password && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.password.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-confirm" className="text-sm font-semibold">Konfirmasi Password</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      id="register-confirm"
+                      type="password"
+                      placeholder="Ulangi password"
+                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      {...registerForm.register("confirmPassword")}
+                    />
+                  </div>
+                  {registerForm.formState.errors.confirmPassword && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.confirmPassword.message}</p>}
+                </div>
+              </div>
+
+              {/* Review Summary */}
+              <div className="mt-8 p-6 border-2 border-dashed rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Review Data Anda
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Nama</p>
+                    <p className="font-semibold">{registerForm.watch("name") || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-semibold">{registerForm.watch("email") || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">NIP</p>
+                    <p className="font-semibold">{registerForm.watch("nip") || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Jabatan</p>
+                    <p className="font-semibold">{registerForm.watch("jabatan") || "-"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </MultiStepForm>
+      )}
     </div>
   );
 }

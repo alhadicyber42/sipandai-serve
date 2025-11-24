@@ -58,12 +58,12 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(239 84% 24%), hsl(239 84% 40%));
     --gradient-accent: linear-gradient(135deg, hsl(160 84% 39%), hsl(160 84% 55%));
     --gradient-subtle: linear-gradient(180deg, hsl(210 40% 98%), hsl(220 14% 96%));
-    
+
     --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1);
     --shadow-glow: 0 0 20px hsl(239 84% 67% / 0.3);
-    
+
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -122,4 +122,20 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Smooth Tab Transitions */
+[data-radix-tabs-content] {
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+[data-radix-tabs-content][data-state="inactive"] {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+[data-radix-tabs-content][data-state="active"] {
+  opacity: 1;
+  transform: translateY(0);
 }
