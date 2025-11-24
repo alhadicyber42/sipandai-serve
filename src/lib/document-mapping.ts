@@ -23,6 +23,11 @@ export const SERVICE_DOCUMENT_MAPPING = {
         "Surat Pernyataan Melaksanakan Tugas": "surat_pernyataan_tugas",
         "Surat Pernyataan Menduduki Jabatan": "surat_pernyataan_jabatan",
         "Diklat PIM III": "diklat_pim_3",
+
+        "Transkrip Nilai": "transkrip_nilai",
+        "SK Jabatan": "sk_jabatan_terakhir",
+        "Ijazah + Transkrip Nilai terakhir": "ijazah_terakhir",
+        "Ijazah + Transkrip Nilai terakhir yang telah dilegalisir": "ijazah_terakhir",
     },
     mutasi: {
         "Surat Pernyataan Lolos Butuh dari PPK Instansi Asal (Asli)": "surat_lolos_butuh",
@@ -40,6 +45,8 @@ export const SERVICE_DOCUMENT_MAPPING = {
         "SKP 2 tahun terakhir (Fotokopi legalisir)": "skp_2_tahun",
         "Surat permohonan mutasi dari ybs": "surat_permohonan_mutasi",
         "Daftar Riwayat Hidup (DRH) sesuai Keputusan Kepala BKN Nomor 11 Tahun 2002": "drh",
+        "Transkrip Nilai": "transkrip_nilai",
+        "Kartu Keluarga": "kk",
     },
     pensiun: {
         "Surat Permohonan Pensiun dari Ybs": "surat_permohonan_pensiun",
@@ -87,6 +94,8 @@ export const SERVICE_DOCUMENT_MAPPING = {
         "Laporan Dari Pimpinan Unit Kerja": "laporan_pimpinan",
         "Kenaikan Pangkat Anumerta Sementara": "kp_anumerta",
         "Surat Kematian": "surat_kematian",
+        "Kartu Keluarga": "kk",
+        "BPJS / KIS": "bpjs",
     },
 } as const;
 
