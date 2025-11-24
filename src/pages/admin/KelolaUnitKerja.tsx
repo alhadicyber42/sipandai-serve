@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTableWrapper } from "@/components/ui/responsive-table";
 import {
   Dialog,
   DialogContent,
@@ -301,7 +302,7 @@ export default function KelolaUnitKerja() {
                 <TableSkeleton rows={5} />
               </div>
             ) : (
-              <div className="rounded-md border">
+              <ResponsiveTableWrapper>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -366,7 +367,7 @@ export default function KelolaUnitKerja() {
                     )}
                   </TableBody>
                 </Table>
-              </div>
+              </ResponsiveTableWrapper>
             )}
           </CardContent>
         </Card>

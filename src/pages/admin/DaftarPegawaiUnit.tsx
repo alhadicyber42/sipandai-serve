@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTableWrapper } from "@/components/ui/responsive-table";
 import {
   Select,
   SelectContent,
@@ -216,7 +217,7 @@ export default function DaftarPegawaiUnit() {
                 <TableSkeleton rows={5} />
               </div>
             ) : (
-              <div className="rounded-md border">
+              <ResponsiveTableWrapper>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -264,7 +265,7 @@ export default function DaftarPegawaiUnit() {
                     )}
                   </TableBody>
                 </Table>
-              </div>
+              </ResponsiveTableWrapper>
             )}
           </CardContent>
         </Card>
