@@ -428,18 +428,13 @@ export default function ConsultationDetail() {
                       />
                       <Button
                         onClick={handleSendMessage}
-                        disabled={isSending || !newMessage.trim()}
+                        isLoading={isSending}
+                        disabled={!newMessage.trim()}
                         className="gap-2 shrink-0"
                         size="lg"
                       >
-                        {isSending ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4" />
-                            <span className="hidden sm:inline">Kirim</span>
-                          </>
-                        )}
+                        <Send className="h-4 w-4" />
+                        <span className="hidden sm:inline">Kirim</span>
                       </Button>
                     </div>
                   </div>

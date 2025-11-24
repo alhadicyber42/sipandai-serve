@@ -231,8 +231,8 @@ export default function Auth() {
                     <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Memproses..." : "Login"}
+                <Button type="submit" className="w-full" isLoading={isLoading}>
+                  Login
                 </Button>
               </form>
             </TabsContent>
@@ -466,8 +466,8 @@ export default function Auth() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Memproses..." : "Daftar Sekarang"}
+                <Button type="submit" className="w-full" isLoading={isLoading}>
+                  Daftar Sekarang
                 </Button>
               </form>
             </TabsContent>

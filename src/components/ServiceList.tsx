@@ -653,14 +653,12 @@ export function ServiceList({
             </Button>
             <Button
               onClick={actionType === "approve" ? handleApprove : handleReturn}
-              disabled={isSubmitting}
+              isLoading={isSubmitting}
               variant={actionType === "approve" ? "default" : "destructive"}
             >
-              {isSubmitting
-                ? "Memproses..."
-                : actionType === "approve"
-                  ? "Setujui"
-                  : "Kembalikan"}
+              {actionType === "approve"
+                ? "Setujui"
+                : "Kembalikan"}
             </Button>
           </DialogFooter>
         </DialogContent>
