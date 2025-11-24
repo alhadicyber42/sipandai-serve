@@ -35,6 +35,7 @@ export interface User extends Profile {
   riwayat_jabatan?: EmploymentHistory[];
   riwayat_mutasi?: MutationHistory[];
   documents?: Record<string, string | string[] | DocumentItem | DocumentItem[]>;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -119,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         riwayat_jabatan: metadata.riwayat_jabatan,
         riwayat_mutasi: metadata.riwayat_mutasi,
         documents: metadata.documents,
+        avatar_url: metadata.avatar_url,
       });
     }
   };

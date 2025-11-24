@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { WORK_UNITS, REQUIRED_DOCUMENTS } from "@/lib/constants";
 import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText, Search } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
@@ -39,6 +41,29 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleAvatarChange = async (url: string | null) => {
+    // Avatar is already updated in Supabase by useAvatarUpload
+    // Just refresh the user context
+    if (user) {
+      const updatedUser = { ...user, avatar_url: url || undefined };
+      setUser(updatedUser as AuthUser);
+    }
+  };
+
+  const setUser = (updatedUser: AuthUser) => {
+    // This will trigger a re-render with the new avatar
+    window.location.reload();
+  };
 
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);
 
@@ -102,15 +127,18 @@ export default function Profile() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
 
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <User className="h-6 w-6 md:h-8 md:w-8" />
-              </div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-white/30 shadow-xl">
+                <AvatarImage src={user.avatar_url || undefined} alt={user.name} />
+                <AvatarFallback className="bg-white/20 backdrop-blur-sm text-white text-2xl md:text-3xl font-bold">
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
               <div>
-                <h1 className="text-2xl md:text-4xl font-bold">Profil Pengguna</h1>
+                <h1 className="text-2xl md:text-4xl font-bold">{user.name}</h1>
                 <p className="text-sm md:text-base text-white/80 mt-1">
-                  Kelola informasi akun, data kepegawaian, dan dokumen Anda
+                  {user.jabatan || 'ASN'} • {user.nip}
                 </p>
               </div>
             </div>
@@ -137,6 +165,22 @@ export default function Profile() {
             {isEditing ? (
               <form onSubmit={form.handleSubmit(handleSaveProfile)} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Edit Mode */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Foto Profil</CardTitle>
+                    <CardDescription>Upload foto profil Anda (akan dikompres otomatis)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AvatarUpload
+                      currentAvatarUrl={user.avatar_url}
+                      userName={user.name}
+                      userId={user.id}
+                      onAvatarChange={handleAvatarChange}
+                      size="lg"
+                    />
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Edit Informasi Pribadi</CardTitle>
