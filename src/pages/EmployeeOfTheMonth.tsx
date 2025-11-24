@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trophy, ThumbsUp, Star, Medal, Search, User } from "lucide-react";
+import { WORK_UNITS } from "@/lib/constants";
+import { Trophy, ThumbsUp, Star, Medal, Search, User, Briefcase, Building2 } from "lucide-react";
 
 export default function EmployeeOfTheMonth() {
     const { user } = useAuth();
@@ -153,12 +154,32 @@ export default function EmployeeOfTheMonth() {
                                         <AvatarFallback className="text-2xl">{topEmployee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                     </Avatar>
                                 </div>
-                                <div className="text-center md:text-left space-y-2 flex-1">
+                                <div className="space-y-2 flex-1">
                                     <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white border-none mb-2">
                                         🏆 Peringkat #1
                                     </Badge>
                                     <h2 className="text-3xl font-bold">{topEmployee.name}</h2>
-                                    <p className="text-lg text-muted-foreground">{topEmployee.nip}</p>
+                                    <p className="text-lg text-muted-foreground">NIP: {topEmployee.nip}</p>
+
+                                    {/* Jabatan dan Unit Kerja */}
+                                    <div className="flex flex-col gap-2 mt-3">
+                                        {topEmployee.jabatan && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                                <span className="font-medium">{topEmployee.jabatan}</span>
+                                            </div>
+                                        )}
+                                        {topEmployee.work_unit_id && (() => {
+                                            const workUnit = WORK_UNITS.find(u => u.id === topEmployee.work_unit_id);
+                                            return workUnit ? (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="font-medium">{workUnit.name}</span>
+                                                </div>
+                                            ) : null;
+                                        })()}
+                                    </div>
+
                                     <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 mt-4">
                                         <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-bold text-xl">
                                             <Star className="h-6 w-6 fill-current" />

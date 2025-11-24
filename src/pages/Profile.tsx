@@ -53,15 +53,7 @@ export default function Profile() {
 
   const handleAvatarChange = async (url: string | null) => {
     // Avatar is already updated in Supabase by useAvatarUpload
-    // Just refresh the user context
-    if (user) {
-      const updatedUser = { ...user, avatar_url: url || undefined };
-      setUser(updatedUser as AuthUser);
-    }
-  };
-
-  const setUser = (updatedUser: AuthUser) => {
-    // This will trigger a re-render with the new avatar
+    // Reload page to refresh user context with new avatar
     window.location.reload();
   };
 

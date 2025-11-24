@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import imageCompression from 'browser-image-compression';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UseAvatarUploadReturn {
