@@ -149,19 +149,19 @@ export function InstallPrompt() {
                     </div>
                 )}
 
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                    <Button type="button" variant="secondary" onClick={handleDismiss} className="w-full sm:w-auto">
-                        Nanti Saja
-                    </Button>
-                    {!isIOS && deferredPrompt && (
-                        <Button type="button" onClick={handleInstall} className="gap-2 w-full sm:w-auto">
-                            <Download className="h-4 w-4" />
+                <DialogFooter className="flex justify-center">
+                    {!isIOS && deferredPrompt ? (
+                        <Button type="button" onClick={handleInstall} className="gap-2 w-full sm:w-auto" size="lg">
+                            <Download className="h-5 w-5" />
                             Install Sekarang
                         </Button>
-                    )}
-                    {isIOS && (
-                        <Button type="button" onClick={handleDismiss} variant="outline" className="w-full sm:w-auto">
-                            Mengerti
+                    ) : isIOS ? (
+                        <Button type="button" onClick={handleDismiss} className="w-full sm:w-auto" size="lg">
+                            Mengerti, Saya Akan Install
+                        </Button>
+                    ) : (
+                        <Button type="button" onClick={handleDismiss} className="w-full sm:w-auto" size="lg">
+                            Tutup
                         </Button>
                     )}
                 </DialogFooter>
