@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -21,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Search, Filter } from "lucide-react";
+import { Users, Search, Filter, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableSkeleton } from "@/components/skeletons";
 import { NoDataState, SearchState } from "@/components/EmptyState";
@@ -45,6 +47,7 @@ interface WorkUnit {
 
 export default function DaftarPegawaiUnit() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,13 +230,14 @@ export default function DaftarPegawaiUnit() {
                       <TableHead>Telepon</TableHead>
                       <TableHead>Unit Kerja</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredEmployees.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={7}
                           className="p-0 border-none"
                         >
                           <div className="py-12">
@@ -259,6 +263,17 @@ export default function DaftarPegawaiUnit() {
                             <Badge variant={getRoleBadgeVariant(emp.role)}>
                               {getRoleName(emp.role)}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/admin/employee/${emp.id}`)}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="hidden md:inline">Lihat Detail</span>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))

@@ -149,8 +149,13 @@ export default function Auth() {
   }, [searchParams]);
 
   // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   if (user) {
-    navigate("/dashboard");
     return null;
   }
 

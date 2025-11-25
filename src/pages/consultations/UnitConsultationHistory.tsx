@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, Search, Clock, CheckCircle } from "lucide-react";
+import { MessageSquare, Search, Clock, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { CardSkeleton, StatCardSkeleton } from "@/components/skeletons";
@@ -106,17 +106,28 @@ export default function UnitConsultationHistory() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        Riwayat Konsultasi Unit
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Konsultasi yang telah selesai atau ditutup dari unit Anda
-                    </p>
+                {/* Modern Header with Gradient */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-purple-400 p-6 md:p-8 text-white shadow-xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <CheckCircle className="h-6 w-6 md:h-8 md:w-8" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-4xl font-bold">Riwayat Konsultasi Unit</h1>
+                                <p className="text-sm md:text-base text-white/80 mt-1">
+                                    Konsultasi yang telah selesai atau ditutup dari unit Anda
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                     {isLoading ? (
                         <>
                             <StatCardSkeleton />
@@ -125,26 +136,40 @@ export default function UnitConsultationHistory() {
                         </>
                     ) : (
                         <>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="text-2xl font-bold">{stats.total}</div>
-                                    <p className="text-sm text-muted-foreground">Total Riwayat</p>
+                            <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+                                <CardContent className="p-4 md:p-6 relative z-10">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <MessageSquare className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
+                                    </div>
+                                    <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Riwayat</p>
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {stats.resolved}
+                            <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
+                                <CardContent className="p-4 md:p-6 relative z-10">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-green-500/10 rounded-lg">
+                                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">Selesai</p>
+                                    <p className="text-xs md:text-sm font-medium text-muted-foreground">Selesai</p>
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="text-2xl font-bold text-gray-600">
-                                        {stats.closed}
+                            <Card className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950/30 dark:to-gray-900/30 border-gray-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-gray-500/10 rounded-full blur-2xl"></div>
+                                <CardContent className="p-4 md:p-6 relative z-10">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-gray-500/10 rounded-lg">
+                                            <XCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                        </div>
+                                        <div className="text-2xl md:text-3xl font-bold text-gray-600 dark:text-gray-400">{stats.closed}</div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">Ditutup</p>
+                                    <p className="text-xs md:text-sm font-medium text-muted-foreground">Ditutup</p>
                                 </CardContent>
                             </Card>
                         </>

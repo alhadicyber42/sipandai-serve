@@ -35,6 +35,8 @@ const ConsultationDetail = lazy(() => import("./pages/consultations/Consultation
 const EmployeeOfTheMonth = lazy(() => import("./pages/EmployeeOfTheMonth"));
 const EmployeeRating = lazy(() => import("./pages/EmployeeRating"));
 const AdminEmployeeRatings = lazy(() => import("./pages/admin/EmployeeRatings"));
+const EmployeeProfile = lazy(() => import("./pages/admin/EmployeeProfile"));
+const Pengumuman = lazy(() => import("./pages/admin/Pengumuman"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -98,15 +100,18 @@ const App = () => (
                 <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
                 <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
                 <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
+                <Route path="/pengumuman" element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
                 <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
                 <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
                 <Route path="/konsultasi/riwayat-unit" element={<ProtectedRoute><UnitConsultationHistory /></ProtectedRoute>} />
+                <Route path="/konsultasi/tereskalasi" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
                 <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
                 <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
                 <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
                 <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
                 <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
                 <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
+                <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
                 </Routes>

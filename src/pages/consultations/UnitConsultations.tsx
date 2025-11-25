@@ -42,6 +42,7 @@ export default function UnitConsultations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [escalationFilter, setEscalationFilter] = useState<string>("all"); // all, escalated, not_escalated
 
   useEffect(() => {
     if (user?.work_unit_id) {
@@ -116,8 +117,12 @@ export default function UnitConsultations() {
       statusFilter === "all" || consultation.status === statusFilter;
     const matchesPriority =
       priorityFilter === "all" || consultation.priority === priorityFilter;
+    const matchesEscalation =
+      escalationFilter === "all" ||
+      (escalationFilter === "escalated" && consultation.is_escalated) ||
+      (escalationFilter === "not_escalated" && !consultation.is_escalated);
 
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus && matchesPriority && matchesEscalation;
   });
 
   const stats = {
@@ -290,7 +295,7 @@ export default function UnitConsultations() {
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             {/* Filters - Responsive Grid */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -300,6 +305,17 @@ export default function UnitConsultations() {
                   className="pl-10 h-12"
                 />
               </div>
+
+              <Select value={escalationFilter} onValueChange={setEscalationFilter}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Filter Eskalasi" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Konsultasi</SelectItem>
+                  <SelectItem value="not_escalated">Konsultasi Biasa</SelectItem>
+                  <SelectItem value="escalated">Diteruskan ke Pusat</SelectItem>
+                </SelectContent>
+              </Select>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-12">
@@ -330,7 +346,7 @@ export default function UnitConsultations() {
             {/* Consultations List */}
             {filteredConsultations.length === 0 ? (
               <div className="py-12">
-                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" ? (
+                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" || escalationFilter !== "all" ? (
                   <SearchState message="Tidak ada konsultasi yang sesuai dengan filter pencarian" />
                 ) : (
                   <NoDataState message="Belum ada konsultasi masuk" />

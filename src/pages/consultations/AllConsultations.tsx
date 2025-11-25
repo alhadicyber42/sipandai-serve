@@ -75,14 +75,22 @@ export default function AllConsultations() {
 
   const loadConsultations = async () => {
     try {
-      const { data, error } = await supabase
+      // Load escalated consultations
+      let query = supabase
         .from("consultations")
         .select(`
           *,
           profiles!consultations_user_id_fkey (name),
           work_units (name)
         `)
-        .order("created_at", { ascending: false });
+        .eq("is_escalated", true);
+
+      // If admin_unit, only show escalated consultations from their unit
+      if (user?.role === "admin_unit" && user?.work_unit_id) {
+        query = query.eq("work_unit_id", user.work_unit_id);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setConsultations(data as any || []);
@@ -144,15 +152,16 @@ export default function AllConsultations() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Statistics
+  // Statistics (all are escalated since we filter by is_escalated=true)
   const stats = {
     total: consultations.length,
-    submitted: consultations.filter((c) => c.status === "submitted").length,
-    in_progress: consultations.filter((c) => c.status === "in_progress").length,
-    escalated: consultations.filter((c) => c.is_escalated).length,
+    pending: consultations.filter((c) => c.status === "escalated" || c.status === "submitted").length,
+    in_progress: consultations.filter((c) => c.status === "under_review" || c.status === "escalated_responded").length,
+    resolved: consultations.filter((c) => c.status === "resolved" || c.status === "closed").length,
   };
 
-  if (user?.role !== "admin_pusat") {
+  // Allow both admin_pusat and admin_unit to access this page
+  if (user?.role !== "admin_pusat" && user?.role !== "admin_unit") {
     return (
       <DashboardLayout>
         <Card>
@@ -180,9 +189,11 @@ export default function AllConsultations() {
                 <MessageSquare className="h-6 w-6 md:h-8 md:w-8" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-4xl font-bold">Semua Konsultasi</h1>
+                <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Tereskalasi</h1>
                 <p className="text-sm md:text-base text-white/80 mt-1">
-                  Kelola semua konsultasi dari berbagai unit kerja
+                  {user?.role === "admin_pusat"
+                    ? "Kelola konsultasi yang memerlukan perhatian Admin Pusat"
+                    : "Konsultasi dari unit Anda yang diteruskan ke Admin Pusat"}
                 </p>
               </div>
             </div>
@@ -220,9 +231,9 @@ export default function AllConsultations() {
                     <div className="p-2 bg-blue-500/10 rounded-lg">
                       <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.submitted}</div>
+                    <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.pending}</div>
                   </div>
-                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Konsultasi Baru</p>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Menunggu Review</p>
                 </CardContent>
               </Card>
 
@@ -239,16 +250,16 @@ export default function AllConsultations() {
                 </CardContent>
               </Card>
 
-              <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
+              <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
                 <CardContent className="p-4 md:p-6 relative z-10">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-red-500/10 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.escalated}</div>
+                    <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</div>
                   </div>
-                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Tereskalasi</p>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground">Selesai</p>
                 </CardContent>
               </Card>
             </>

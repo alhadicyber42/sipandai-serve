@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WORK_UNITS, SERVICE_LABELS } from "@/lib/constants";
-import { FileText, Clock, CheckCircle, MessageSquare, TrendingUp, AlertCircle, Sparkles, ArrowRight } from "lucide-react";
+import { FileText, Clock, CheckCircle, MessageSquare, TrendingUp, AlertCircle, Sparkles, ArrowRight, Users, Cake, UserMinus, Coffee, Megaphone, Pin, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -15,7 +15,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [services, setServices] = useState<any[]>([]);
   const [consultations, setConsultations] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [employeeStats, setEmployeeStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const [announcementsPage, setAnnouncementsPage] = useState(1);
 
   useEffect(() => {
     if (user) {
@@ -88,7 +92,151 @@ export default function Dashboard() {
     const { data: consultationsData } = await consultationsQuery.order("created_at", { ascending: false });
     setConsultations(consultationsData || []);
 
+    // Load recent activities from service_history
+    let historyQuery = supabase
+      .from("service_history")
+      .select(`
+        *,
+        services (
+          id,
+          title,
+          service_type,
+          status,
+          user_id
+        )
+      `)
+      .order("timestamp", { ascending: false })
+      .limit(10);
+
+    // Filter by user role
+    if (user?.role === "user_unit") {
+      // User can only see their own activities
+      historyQuery = historyQuery.eq("actor_id", user.id);
+    }
+
+    const { data: historyData, error: historyError } = await historyQuery;
+
+    if (!historyError && historyData) {
+      // For admin_unit, filter activities from their unit
+      let filteredHistory = historyData;
+      if (user?.role === "admin_unit") {
+        const userUnitServiceIds = servicesList
+          .filter(s => s.work_unit_id === user.work_unit_id)
+          .map(s => s.id);
+        filteredHistory = historyData.filter(h => 
+          h.services && userUnitServiceIds.includes(h.services.id)
+        );
+      }
+
+      // Load actor profiles
+      const actorIds = [...new Set(filteredHistory.map(h => h.actor_id))];
+      const { data: actorProfiles } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .in("id", actorIds);
+
+      const actorMap = new Map((actorProfiles || []).map(p => [p.id, p]));
+
+      const enrichedHistory = filteredHistory.map(h => ({
+        ...h,
+        actor_profile: actorMap.get(h.actor_id),
+      }));
+
+      setRecentActivities(enrichedHistory);
+    } else {
+      setRecentActivities([]);
+    }
+
+    // Load employee statistics for admin only
+    if (user?.role === "admin_unit" || user?.role === "admin_pusat") {
+      await loadEmployeeStats();
+    }
+
     setIsLoading(false);
+  };
+
+  const loadEmployeeStats = async () => {
+    try {
+      // Query employees based on role
+      let employeesQuery = supabase
+        .from("profiles")
+        .select("id, name, nip, work_unit_id");
+
+      // Filter by work unit for admin_unit
+      if (user?.role === "admin_unit" && user?.work_unit_id) {
+        employeesQuery = employeesQuery.eq("work_unit_id", user.work_unit_id);
+      }
+
+      const { data: employees, error: employeesError } = await employeesQuery;
+
+      if (employeesError) {
+        console.error("Error loading employees:", employeesError);
+        return;
+      }
+
+      const employeeList = employees || [];
+      const totalEmployees = employeeList.length;
+
+      // For now, we'll skip birthday and retirement data since it requires auth.users access
+      // which is not available on client side
+      const birthdaysThisMonth: any[] = [];
+      const retiringThisYear: any[] = [];
+
+      // Get active leaves (cuti)
+      let leavesQuery = supabase
+        .from("services")
+        .select(`
+          *,
+          leave_details (*)
+        `)
+        .eq("service_type", "cuti")
+        .in("status", ["approved_by_unit", "approved_final"]);
+
+      // Filter by work unit for admin_unit
+      if (user?.role === "admin_unit" && user?.work_unit_id) {
+        leavesQuery = leavesQuery.eq("work_unit_id", user.work_unit_id);
+      }
+
+      const { data: leaves, error: leavesError } = await leavesQuery;
+
+      if (!leavesError && leaves) {
+        // Filter active leaves (within date range)
+        const today = new Date();
+        const activeLeaves = leaves.filter(leave => {
+          if (!leave.leave_details || leave.leave_details.length === 0) return false;
+          const detail = leave.leave_details[0];
+          const startDate = new Date(detail.start_date);
+          const endDate = new Date(detail.end_date);
+          return startDate <= today && endDate >= today;
+        });
+
+        // Count by leave type
+        const leaveTypeCount: Record<string, number> = {};
+        activeLeaves.forEach(leave => {
+          const detail = leave.leave_details[0];
+          const type = detail.leave_type;
+          leaveTypeCount[type] = (leaveTypeCount[type] || 0) + 1;
+        });
+
+        setEmployeeStats({
+          totalEmployees,
+          birthdaysThisMonth,
+          retiringThisYear,
+          activeLeaves: activeLeaves.length,
+          leaveTypeCount,
+        });
+      } else {
+        setEmployeeStats({
+          totalEmployees,
+          birthdaysThisMonth,
+          retiringThisYear,
+          activeLeaves: 0,
+          leaveTypeCount: {},
+        });
+      }
+    } catch (error) {
+      console.error("Error loading employee stats:", error);
+    }
   };
 
   // Get user's work unit name
@@ -118,6 +266,111 @@ export default function Dashboard() {
   const userServices = getUserServices();
   const userConsultations = getUserConsultations();
 
+  // Pagination constants
+  const ACTIVITIES_PER_PAGE = 2;
+  const ANNOUNCEMENTS_PER_PAGE = 3;
+
+  // Dummy announcements data
+  const allAnnouncements = [
+    {
+      id: 1,
+      title: "Update Sistem SIPANDAI",
+      content: "Sistem SIPANDAI akan mengalami maintenance pada tanggal 30 November 2025 pukul 22:00 - 24:00 WIB. Mohon maaf atas ketidaknyamanannya.",
+      author: "Admin Pusat",
+      authorRole: "admin_pusat",
+      date: "2025-11-25",
+      isPinned: true,
+      workUnitId: null, // null = all units
+      workUnit: "Semua Unit"
+    },
+    {
+      id: 2,
+      title: "Pengumpulan Dokumen Kenaikan Pangkat",
+      content: "Batas akhir pengumpulan dokumen untuk kenaikan pangkat periode April 2026 adalah tanggal 15 Desember 2025.",
+      author: "Admin Unit - Setditjen Binalavotas",
+      authorRole: "admin_unit",
+      date: "2025-11-24",
+      isPinned: false,
+      workUnitId: 1, // Only for unit 1
+      workUnit: "Setditjen Binalavotas"
+    },
+    {
+      id: 3,
+      title: "Libur Nasional & Cuti Bersama 2026",
+      content: "Telah ditetapkan jadwal libur nasional dan cuti bersama tahun 2026. Silakan ajukan cuti Anda lebih awal untuk perencanaan yang lebih baik.",
+      author: "Admin Pusat",
+      authorRole: "admin_pusat",
+      date: "2025-11-23",
+      isPinned: false,
+      workUnitId: null, // null = all units
+      workUnit: "Semua Unit"
+    },
+    {
+      id: 4,
+      title: "Workshop Peningkatan Kompetensi",
+      content: "Akan diadakan workshop peningkatan kompetensi untuk pegawai pada tanggal 5-7 Desember 2025. Pendaftaran dibuka mulai hari ini.",
+      author: "Admin Pusat",
+      authorRole: "admin_pusat",
+      date: "2025-11-22",
+      isPinned: false,
+      workUnitId: null, // null = all units
+      workUnit: "Semua Unit"
+    },
+    {
+      id: 5,
+      title: "Perubahan Jam Kerja Ramadan 2026",
+      content: "Pengumuman perubahan jam kerja selama bulan Ramadan 2026 akan disampaikan paling lambat bulan Februari 2026.",
+      author: "Admin Pusat",
+      authorRole: "admin_pusat",
+      date: "2025-11-21",
+      isPinned: false,
+      workUnitId: null, // null = all units
+      workUnit: "Semua Unit"
+    },
+    {
+      id: 6,
+      title: "Pengumuman Khusus Unit Stankomproglat",
+      content: "Rapat koordinasi unit akan diadakan pada hari Senin, 2 Desember 2025 pukul 09:00 WIB di ruang rapat.",
+      author: "Admin Unit - Direktorat Bina Stankomproglat",
+      authorRole: "admin_unit",
+      date: "2025-11-20",
+      isPinned: false,
+      workUnitId: 2, // Only for unit 2
+      workUnit: "Direktorat Bina Stankomproglat"
+    }
+  ];
+
+  // Filter announcements based on user's role and work unit
+  const dummyAnnouncements = allAnnouncements.filter((announcement) => {
+    // Admin Pusat can see all announcements
+    if (user?.role === "admin_pusat") {
+      return true;
+    }
+    
+    // Admin Unit and User Unit can see:
+    // 1. Announcements from Admin Pusat (workUnitId = null)
+    // 2. Announcements for their work unit
+    if (user?.role === "admin_unit" || user?.role === "user_unit") {
+      return announcement.workUnitId === null || announcement.workUnitId === user?.work_unit_id;
+    }
+
+    return false;
+  });
+
+  // Calculate pagination
+  const totalActivitiesPages = Math.ceil(recentActivities.length / ACTIVITIES_PER_PAGE);
+  const totalAnnouncementsPages = Math.ceil(dummyAnnouncements.length / ANNOUNCEMENTS_PER_PAGE);
+  
+  const paginatedActivities = recentActivities.slice(
+    (activitiesPage - 1) * ACTIVITIES_PER_PAGE,
+    activitiesPage * ACTIVITIES_PER_PAGE
+  );
+
+  const paginatedAnnouncements = dummyAnnouncements.slice(
+    (announcementsPage - 1) * ANNOUNCEMENTS_PER_PAGE,
+    announcementsPage * ANNOUNCEMENTS_PER_PAGE
+  );
+
   // Calculate statistics
   const stats = {
     total: userServices.length,
@@ -132,6 +385,11 @@ export default function Dashboard() {
         : 0,
     approved: userServices.filter((s) => s.status === "approved_final").length,
     returned: userServices.filter((s) =>
+      s.status === "returned_to_user" ||
+      s.status === "returned_to_unit"
+    ).length,
+    rejected: userServices.filter((s) =>
+      s.status === "rejected" ||
       s.status === "returned_to_user" ||
       s.status === "returned_to_unit"
     ).length,
@@ -262,6 +520,20 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {user?.role === "user_unit" && (
+            <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium">Ditolak/Dikembalikan</CardTitle>
+                <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+              </CardHeader>
+              <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+                <div className="text-lg md:text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400">{stats.rejected}</div>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">Perlu perbaikan</p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
@@ -277,153 +549,449 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Recent Services with Better Design */}
-        <Card className="shadow-lg border-primary/10">
+        {/* Grid Layout for Activities and Employee Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activities */}
+          <Card className="shadow-lg border-primary/10">
           <CardHeader className="border-b bg-muted/30">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 <TrendingUp className="h-5 w-5 text-primary" />
                 Aktivitas Terbaru
               </CardTitle>
-              {userServices.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-xs md:text-sm"
-                  onClick={() => navigate(user?.role === "user_unit" ? "/layanan/kenaikan-pangkat" : "/usulan/kenaikan-pangkat")}
-                >
-                  Lihat Semua
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+              {recentActivities.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {recentActivities.length} Aktivitas
+                </Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
-            {userServices.length === 0 ? (
+            {recentActivities.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                  <FileText className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/50" />
+                  <TrendingUp className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/50" />
                 </div>
-                <p className="text-sm md:text-base text-muted-foreground mb-4">Belum ada usulan</p>
-                {user?.role === "user_unit" && (
-                  <Button onClick={() => navigate("/layanan/kenaikan-pangkat")} className="gap-2">
-                    <FileText className="h-4 w-4" />
-                    Buat Usulan Baru
-                  </Button>
-                )}
+                <p className="text-sm md:text-base text-muted-foreground">Belum ada aktivitas terbaru</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {userServices.slice(0, 5).map((service) => (
+                {paginatedActivities.map((activity) => (
                   <div
-                    key={service.id}
-                    className="group flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 md:p-4 rounded-xl bg-gradient-to-r from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/30 transition-all duration-300 border border-transparent hover:border-primary/20 cursor-pointer"
+                    key={activity.id}
+                    className="group flex items-center gap-3 p-3 md:p-4 rounded-xl bg-gradient-to-r from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/30 transition-all duration-300 border border-transparent hover:border-primary/20 cursor-pointer"
                     onClick={() => {
-                      // Navigate to service detail or list based on role
-                      if (user?.role === "user_unit") {
-                        navigate(`/layanan/${service.service_type}`);
-                      } else {
-                        navigate(`/usulan/${service.service_type}`);
+                      if (activity.services) {
+                        // Navigate to appropriate page based on role and service type
+                        // Convert service_type from snake_case to kebab-case for URL
+                        const serviceType = activity.services.service_type.replace(/_/g, '-');
+                        if (user?.role === "user_unit") {
+                          // User goes to their service page (layanan)
+                          navigate(`/layanan/${serviceType}`);
+                        } else {
+                          // Admin goes to usulan page
+                          navigate(`/usulan/${serviceType}`);
+                        }
                       }
                     }}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2 mb-1">
-                        <p className="font-semibold text-sm md:text-base truncate">{service.title}</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        {user?.role !== "user_unit" && service.profiles?.name && (
-                          <>
-                            <span className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              {service.profiles.name}
-                            </span>
-                            <span>•</span>
-                          </>
-                        )}
-                        <span>{SERVICE_LABELS[service.service_type as keyof typeof SERVICE_LABELS]}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(service.created_at).toLocaleDateString("id-ID", {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
+                    <div className="flex-shrink-0">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <FileText className="h-4 w-4 text-primary" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(service.status)}
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm mb-0.5">
+                        <span className="text-primary">{activity.actor_profile?.name || "Seseorang"}</span>
+                        {" "}
+                        <span className="text-muted-foreground">{activity.action.toLowerCase()}</span>
+                      </p>
+                      {activity.services && (
+                        <p className="text-xs text-foreground font-medium truncate">
+                          {activity.services.title}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {activity.services && (
+                          <>
+                            <Badge variant="outline" className="text-xs">
+                              {SERVICE_LABELS[activity.services.service_type as keyof typeof SERVICE_LABELS]}
+                            </Badge>
+                            <span className="text-muted-foreground">•</span>
+                          </>
+                        )}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {new Date(activity.timestamp).toLocaleDateString("id-ID", {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      {activity.notes && (
+                        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1 italic">
+                          "{activity.notes}"
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Pagination Controls for Activities */}
+            {recentActivities.length > ACTIVITIES_PER_PAGE && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
+                  disabled={activitiesPage === 1}
+                  className="gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Sebelumnya
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Halaman {activitiesPage} dari {totalActivitiesPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActivitiesPage(p => Math.min(totalActivitiesPages, p + 1))}
+                  disabled={activitiesPage === totalActivitiesPages}
+                  className="gap-2"
+                >
+                  Berikutnya
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions for User */}
+        {/* Quick Actions for User - Only show if not showing employee stats */}
         {user?.role === "user_unit" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
-            <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/layanan/kenaikan-pangkat")}>
-              <CardContent className="p-3 md:p-4 lg:p-6">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-2 md:p-2.5 lg:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                    <TrendingUp className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-primary" />
+          <Card className="shadow-lg border-primary/10">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-500/10 to-indigo-500/10">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                Layanan Kepegawaian
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/layanan/kenaikan-pangkat")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="font-semibold text-sm">Kenaikan Pangkat</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Kenaikan Pangkat</p>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Ajukan usulan</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">Ajukan usulan kenaikan pangkat</p>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/layanan/cuti")}>
-              <CardContent className="p-3 md:p-4 lg:p-6">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-2 md:p-2.5 lg:p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
-                    <FileText className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-blue-600" />
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-blue-500/5 to-blue-500/10 hover:from-blue-500/10 hover:to-blue-500/20 border border-blue-500/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/layanan/cuti")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <p className="font-semibold text-sm">Cuti Pegawai</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Cuti Pegawai</p>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Ajukan cuti</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">Ajukan permohonan cuti</p>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/konsultasi/baru")}>
-              <CardContent className="p-3 md:p-4 lg:p-6">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-2 md:p-2.5 lg:p-3 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
-                    <MessageSquare className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-green-600" />
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-green-500/5 to-green-500/10 hover:from-green-500/10 hover:to-green-500/20 border border-green-500/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/layanan/mutasi")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                      <FileText className="h-5 w-5 text-green-600" />
+                    </div>
+                    <p className="font-semibold text-sm">Mutasi Pegawai</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Konsultasi</p>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Tanya admin</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">Ajukan usulan mutasi</p>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/employee-of-the-month")}>
-              <CardContent className="p-3 md:p-4 lg:p-6">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <div className="p-2 md:p-2.5 lg:p-3 bg-yellow-500/10 rounded-lg group-hover:bg-yellow-500/20 transition-colors">
-                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-yellow-600" />
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-purple-500/5 to-purple-500/10 hover:from-purple-500/10 hover:to-purple-500/20 border border-purple-500/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/layanan/pensiun")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                      <FileText className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <p className="font-semibold text-sm">Pensiun</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Employee of The Month</p>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Lihat penilaian</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">Ajukan usulan pensiun</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-amber-500/5 to-amber-500/10 hover:from-amber-500/10 hover:to-amber-500/20 border border-amber-500/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/konsultasi")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-amber-500/10 rounded-lg group-hover:bg-amber-500/20 transition-colors">
+                      <MessageSquare className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <p className="font-semibold text-sm">Konsultasi</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Ajukan pertanyaan kepegawaian</p>
+                </div>
+
+                <div 
+                  className="group p-4 rounded-lg bg-gradient-to-r from-yellow-500/5 to-yellow-500/10 hover:from-yellow-500/10 hover:to-yellow-500/20 border border-yellow-500/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  onClick={() => navigate("/employee-of-the-month")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-yellow-500/10 rounded-lg group-hover:bg-yellow-500/20 transition-colors">
+                      <Sparkles className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <p className="font-semibold text-sm">Pegawai Terbaik</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Lihat pencapaian pegawai</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Employee Statistics - Only for admin */}
+        {(user?.role === "admin_unit" || user?.role === "admin_pusat") && employeeStats && (
+          <Card className="shadow-lg border-primary/10">
+            <CardHeader className="border-b bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Users className="h-5 w-5 text-emerald-600" />
+                Statistik Pegawai
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-4">
+              {/* Total Employees */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                      <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Pegawai</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {employeeStats.totalEmployees}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Leaves */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                    <Coffee className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pegawai Sedang Cuti</p>
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                      {employeeStats.activeLeaves}
+                    </p>
+                  </div>
+                </div>
+                {/* Leave Type Breakdown */}
+                {Object.keys(employeeStats.leaveTypeCount).length > 0 ? (
+                  <div className="space-y-2 mt-3 pl-11">
+                    {Object.entries(employeeStats.leaveTypeCount).map(([type, count]: [string, any]) => (
+                      <div key={type} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground capitalize">
+                          {type === 'tahunan' && 'Cuti Tahunan'}
+                          {type === 'sakit' && 'Cuti Sakit'}
+                          {type === 'melahirkan' && 'Cuti Melahirkan'}
+                          {type === 'alasan_penting' && 'Cuti Alasan Penting'}
+                          {type === 'besar' && 'Cuti Besar'}
+                          {!['tahunan', 'sakit', 'melahirkan', 'alasan_penting', 'besar'].includes(type) && type}
+                        </span>
+                        <Badge variant="secondary">{count} orang</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Tidak ada pegawai yang sedang cuti
+                  </div>
+                )}
+              </div>
+
+              {/* Birthdays This Month */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/30 dark:to-rose-950/30 border border-pink-200 dark:border-pink-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-pink-100 dark:bg-pink-900/50 rounded-lg">
+                    <Cake className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Ulang Tahun Bulan Ini</p>
+                    <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                      {employeeStats.birthdaysThisMonth.length}
+                    </p>
+                  </div>
+                </div>
+                {employeeStats.birthdaysThisMonth.length > 0 ? (
+                  <div className="space-y-2 mt-3 pl-11 max-h-32 overflow-y-auto">
+                    {employeeStats.birthdaysThisMonth.map((emp: any) => (
+                      <div key={emp.id} className="text-sm text-muted-foreground">
+                        <span className="font-medium">{emp.name}</span> - {new Date(emp.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground italic">
+                    Data ulang tahun belum tersedia
+                  </div>
+                )}
+              </div>
+
+              {/* Retiring This Year */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                    <UserMinus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pensiun Tahun Ini</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {employeeStats.retiringThisYear.length}
+                    </p>
+                  </div>
+                </div>
+                {employeeStats.retiringThisYear.length > 0 ? (
+                  <div className="space-y-2 mt-3 pl-11 max-h-32 overflow-y-auto">
+                    {employeeStats.retiringThisYear.map((emp: any) => (
+                      <div key={emp.id} className="text-sm text-muted-foreground">
+                        <span className="font-medium">{emp.name}</span> - {new Date(emp.tmt_pensiun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground italic">
+                    Data pensiun belum tersedia
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        </div>
+
+        {/* Pengumuman Section - Full Width */}
+        <Card className="shadow-lg border-primary/10">
+          <CardHeader className="border-b bg-gradient-to-r from-orange-500/10 to-red-500/10">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Megaphone className="h-5 w-5 text-orange-600" />
+                Pengumuman
+              </CardTitle>
+              {user?.role !== "user_unit" && (
+                <Button 
+                  onClick={() => navigate("/pengumuman")}
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                >
+                  Kelola Pengumuman
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            {paginatedAnnouncements.map((announcement) => (
+              <div
+                key={announcement.id}
+                className={`group p-4 rounded-lg border transition-all duration-300 hover:shadow-md mb-3 ${
+                  announcement.isPinned 
+                    ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800' 
+                    : 'bg-muted/20 border-muted-foreground/20 hover:border-primary/30'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {announcement.isPinned && (
+                    <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-1" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-base flex items-center gap-2">
+                        {announcement.title}
+                        {announcement.isPinned && (
+                          <Badge variant="secondary" className="text-xs">
+                            Disematkan
+                          </Badge>
+                        )}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {announcement.content}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium">{announcement.author}</span>
+                      <span>•</span>
+                      <span>{announcement.workUnit}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(announcement.date).toLocaleDateString("id-ID", {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination Controls for Announcements */}
+            {dummyAnnouncements.length > ANNOUNCEMENTS_PER_PAGE && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAnnouncementsPage(p => Math.max(1, p - 1))}
+                  disabled={announcementsPage === 1}
+                  className="gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Sebelumnya
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Halaman {announcementsPage} dari {totalAnnouncementsPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAnnouncementsPage(p => Math.min(totalAnnouncementsPages, p + 1))}
+                  disabled={announcementsPage === totalAnnouncementsPages}
+                  className="gap-2"
+                >
+                  Berikutnya
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
     </DashboardLayout>
   );

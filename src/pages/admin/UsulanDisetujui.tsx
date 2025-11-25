@@ -146,35 +146,62 @@ export default function UsulanDisetujui() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Usulan Disetujui</h1>
-          <p className="text-muted-foreground mt-1">
-            Daftar usulan yang telah disetujui oleh unit Anda
-          </p>
+        {/* Modern Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 md:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <CheckCircle className="h-6 w-6 md:h-8 md:w-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-4xl font-bold">Usulan Disetujui</h1>
+                <p className="text-sm md:text-base text-white/80 mt-1">
+                  Daftar usulan yang telah disetujui oleh unit Anda
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-sm text-muted-foreground">Total Usulan Disetujui</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+            <CardContent className="p-4 md:p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
+              </div>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Usulan Disetujui</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-blue-600">
-                {stats.approved_by_unit}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="p-4 md:p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.approved_by_unit}</div>
               </div>
-              <p className="text-sm text-muted-foreground">Menunggu Pusat</p>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground">Menunggu Pusat</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">
-                {stats.approved_final}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="p-4 md:p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.approved_final}</div>
               </div>
-              <p className="text-sm text-muted-foreground">Disetujui Final</p>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground">Disetujui Final</p>
             </CardContent>
           </Card>
         </div>

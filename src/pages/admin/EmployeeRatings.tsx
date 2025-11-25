@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Trophy, Star, Search, Eye, Calendar, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Rating {
     id: string;
@@ -27,12 +28,14 @@ interface Rating {
 }
 
 export default function AdminEmployeeRatings() {
+    const { user } = useAuth();
     const [ratings, setRatings] = useState<Rating[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
     const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
     const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, employeeName: string, totalPoints: number, ratingCount: number }>>([]);
+    const [unitEmployeeIds, setUnitEmployeeIds] = useState<string[]>([]);
 
     useEffect(() => {
         loadData();
@@ -43,19 +46,39 @@ export default function AdminEmployeeRatings() {
     }, [ratings, selectedPeriod]);
 
     const loadData = async () => {
-        // Load ratings from localStorage
-        const storedRatings = JSON.parse(localStorage.getItem('employee_ratings') || '[]');
-        setRatings(storedRatings);
-
         // Load employees from Supabase
-        const { data } = await supabase
+        let employeeQuery = supabase
             .from("profiles")
             .select("*")
             .eq("role", "user_unit");
 
-        if (data) {
-            setEmployees(data);
+        // If admin_unit, filter by work_unit_id
+        if (user?.role === "admin_unit" && user?.work_unit_id) {
+            employeeQuery = employeeQuery.eq("work_unit_id", user.work_unit_id);
         }
+
+        const { data: employeeData } = await employeeQuery;
+
+        if (employeeData) {
+            setEmployees(employeeData);
+            const employeeIds = employeeData.map(emp => emp.id);
+            setUnitEmployeeIds(employeeIds);
+        }
+
+        // Load ratings from localStorage
+        const storedRatings = JSON.parse(localStorage.getItem('employee_ratings') || '[]');
+        
+        // Filter ratings based on user role
+        let filteredRatings = storedRatings;
+        if (user?.role === "admin_unit" && employeeData) {
+            const employeeIds = employeeData.map(emp => emp.id);
+            // Only show ratings where the rated employee is from this unit
+            filteredRatings = storedRatings.filter((rating: Rating) => 
+                employeeIds.includes(rating.rated_employee_id)
+            );
+        }
+        
+        setRatings(filteredRatings);
     };
 
     const calculateLeaderboard = () => {
@@ -112,9 +135,34 @@ export default function AdminEmployeeRatings() {
                 <div className="space-y-2">
                     <h1 className="text-3xl font-bold tracking-tight">Penilaian Employee of The Month</h1>
                     <p className="text-muted-foreground">
-                        Lihat semua penilaian dan leaderboard pegawai terbaik
+                        {user?.role === "admin_unit" 
+                            ? "Lihat penilaian dan leaderboard pegawai terbaik di unit Anda"
+                            : "Lihat semua penilaian dan leaderboard pegawai terbaik"
+                        }
                     </p>
                 </div>
+
+                {/* Info Badge for Admin Unit */}
+                {user?.role === "admin_unit" && (
+                    <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                        <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                                    <Trophy className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                                        Data Unit Kerja Anda
+                                    </h3>
+                                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                                        Anda hanya dapat melihat penilaian dan leaderboard untuk pegawai di unit kerja Anda. 
+                                        Total <span className="font-semibold">{employees.length} pegawai</span> dan <span className="font-semibold">{ratings.length} penilaian</span> di unit Anda.
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Leaderboard */}
                 {leaderboard.length > 0 && (
@@ -123,6 +171,9 @@ export default function AdminEmployeeRatings() {
                             <CardTitle className="flex items-center gap-2">
                                 <Trophy className="h-6 w-6 text-yellow-600" />
                                 Leaderboard {selectedPeriod !== "all" ? formatPeriod(selectedPeriod) : "Semua Periode"}
+                                {user?.role === "admin_unit" && (
+                                    <Badge variant="secondary" className="ml-2">Unit Anda</Badge>
+                                )}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -186,9 +237,14 @@ export default function AdminEmployeeRatings() {
                 {/* Ratings Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Semua Penilaian ({filteredRatings.length})</CardTitle>
+                        <CardTitle>
+                            {user?.role === "admin_unit" ? "Penilaian Unit Anda" : "Semua Penilaian"} ({filteredRatings.length})
+                        </CardTitle>
                         <CardDescription>
-                            Daftar lengkap penilaian Employee of The Month
+                            {user?.role === "admin_unit" 
+                                ? "Daftar penilaian Employee of The Month untuk pegawai di unit Anda"
+                                : "Daftar lengkap penilaian Employee of The Month"
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

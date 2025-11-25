@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -107,20 +107,21 @@ export const DashboardLayout = ({
           path: "/konsultasi/masuk",
           label: "Konsultasi Masuk"
         }, {
-          path: "/konsultasi/tereskalasi",
-          label: "Konsultasi Tereskalasi"
-        }, {
           path: "/konsultasi/riwayat-unit",
           label: "Riwayat Konsultasi"
         }]
       }, {
-        path: "/usulan/disetujui",
-        label: "Usulan Disetujui",
-        icon: TrendingUp
-      }, {
         path: "/admin/daftar-pegawai",
         label: "Daftar Pegawai Unit",
         icon: Users
+      }, {
+        path: "/admin/employee-ratings",
+        label: "Penilaian Employee of The Month",
+        icon: Trophy
+      }, {
+        path: "/pengumuman",
+        label: "Kelola Pengumuman",
+        icon: Megaphone
       }, {
         path: "/profile",
         label: "Profil",
@@ -154,14 +155,8 @@ export const DashboardLayout = ({
         icon: MessageSquare,
         id: "konsultasi",
         submenu: [{
-          path: "/konsultasi/semua",
-          label: "Semua Konsultasi"
-        }, {
           path: "/konsultasi/tereskalasi",
           label: "Konsultasi Tereskalasi"
-        }, {
-          path: "/konsultasi/butuh-respons",
-          label: "Butuh Respons"
         }]
       }, {
         path: "/admin/kelola-admin",
@@ -179,6 +174,10 @@ export const DashboardLayout = ({
         path: "/admin/employee-ratings",
         label: "Penilaian Employee of The Month",
         icon: Trophy
+      }, {
+        path: "/pengumuman",
+        label: "Kelola Pengumuman",
+        icon: Megaphone
       }, {
         path: "/profile",
         label: "Profil",
