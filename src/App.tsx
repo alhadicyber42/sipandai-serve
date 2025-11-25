@@ -9,6 +9,7 @@ import { lazy, Suspense } from "react";
 import { DashboardSkeleton } from "./components/skeletons";
 
 import ReloadPrompt from "./components/ReloadPrompt";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 // Lazy load all pages for code splitting
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -75,6 +76,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <ReloadPrompt />
+          <PWAInstallPrompt />
           <BrowserRouter>
             <Suspense fallback={<DashboardSkeleton />}>
               <Routes>
