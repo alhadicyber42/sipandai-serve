@@ -281,26 +281,29 @@ export const DashboardLayout = ({
           <item.icon className={cn("h-4 w-4 md:h-5 md:w-5 flex-shrink-0", isActive(item.path) ? "text-white" : "text-white/70 group-hover:text-white")} />
           <span className="text-xs md:text-sm font-medium">{item.label}</span>
         </Link>)}
-      </nav>
 
-      {/* Install PWA, Theme Toggle & Logout */}
-      <div className="p-3 md:p-4 border-t border-white/10 space-y-2">
         {/* Install PWA Button - Only show if not already installed */}
         {!isStandalone && (
-          <Button 
-            onClick={handleManualInstall} 
-            variant="ghost" 
-            className="w-full justify-start gap-2 md:gap-3 hover:bg-blue-500/20 hover:text-blue-400 text-white/70 transition-colors h-9 md:h-10 px-2.5 md:px-3"
-          >
-            <Download className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-            <span className="text-xs md:text-sm">Install Aplikasi</span>
-          </Button>
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <Button 
+              onClick={handleManualInstall} 
+              variant="ghost" 
+              className="w-full justify-start gap-2 md:gap-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-colors px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg"
+            >
+              <Download className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+              <span className="text-xs md:text-sm font-medium">Install Aplikasi</span>
+            </Button>
+          </div>
         )}
+      </nav>
+
+      {/* Theme Toggle & Logout */}
+      <div className="p-3 md:p-4 border-t border-white/10 space-y-2">
         
         <div className="hidden lg:block">
           <ThemeToggle />
         </div>
-        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-2 md:gap-3 hover:bg-red-500/20 hover:text-red-400 text-white/70 transition-colors h-9 md:h-10 px-2.5 md:px-3">
+        <Button onClick={handleLogout} variant="ghost" className="w-full justify-start gap-2 md:gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 transition-colors h-9 md:h-10 px-2.5 md:px-3">
           <LogOut className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
           <span className="text-xs md:text-sm">Keluar</span>
         </Button>
