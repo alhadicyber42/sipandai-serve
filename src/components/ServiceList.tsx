@@ -11,6 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -31,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, CheckCircle, XCircle, FileText, Search, Filter } from "lucide-react";
+import { Eye, CheckCircle, XCircle, FileText, Search, Filter, MoreHorizontal, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +47,7 @@ import { DocumentVerification, type VerifiedDocument } from "@/components/Docume
 import { TableSkeleton } from "@/components/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoDataState, SearchState } from "@/components/EmptyState";
+import { TrackingStatusDialog } from "@/components/TrackingStatusDialog";
 
 interface Service {
   id: string;
@@ -83,6 +92,8 @@ export function ServiceList({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verifiedDocuments, setVerifiedDocuments] = useState<VerifiedDocument[]>([]);
   const [isSavingVerification, setIsSavingVerification] = useState(false);
+  const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
+  const [isSavingTracking, setIsSavingTracking] = useState(false);
 
   const handleApprove = async () => {
     if (!selectedService) return;
@@ -291,6 +302,68 @@ export function ServiceList({
     }
   };
 
+  const handleSaveTrackingStatus = async (data: {
+    status: string;
+    description: string;
+    evidenceLink: string;
+  }) => {
+    if (!selectedService) return;
+
+    setIsSavingTracking(true);
+    try {
+      const newNote = {
+        actor: user?.name,
+        role: user?.role,
+        note: `Update Status: ${data.status}`,
+        timestamp: new Date().toISOString(),
+        is_tracking_status: true,
+        status_label: data.status,
+        description: data.description,
+        evidence_link: data.evidenceLink,
+      };
+
+      const { error } = await supabase
+        .from("services")
+        .update({
+          notes: [...(selectedService.notes || []), newNote] as any,
+        })
+        .eq("id", selectedService.id);
+
+      if (error) throw error;
+
+      // Add to service history
+      await supabase.from("service_history").insert({
+        service_id: selectedService.id,
+        service_type: selectedService.service_type as any,
+        action: "status_update",
+        actor_id: user!.id,
+        actor_role: user!.role as any,
+        notes: `Update Status: ${data.status}`,
+      });
+
+      toast.success("Status tracking berhasil diperbarui");
+      setIsTrackingDialogOpen(false);
+      setSelectedService(null);
+      onReload();
+    } catch (error: any) {
+      console.error("Error updating tracking status:", error);
+      toast.error("Gagal memperbarui status tracking");
+    } finally {
+      setIsSavingTracking(false);
+    }
+  };
+
+  const getLatestTrackingStatus = (service: Service) => {
+    if (!service.notes || service.notes.length === 0) return null;
+    // Filter notes that are tracking statuses and get the last one
+    const trackingNotes = service.notes.filter(
+      (note: any) => note.is_tracking_status
+    );
+    return trackingNotes.length > 0
+      ? trackingNotes[trackingNotes.length - 1]
+      : null;
+  };
+
   const filteredServices = services.filter((service) => {
     const matchesSearch =
       service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -406,47 +479,64 @@ export function ServiceList({
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={service.status} />
+                        {getLatestTrackingStatus(service) && (
+                          <div className="mt-1">
+                            <Badge variant="outline" className="text-xs border-blue-200 text-blue-700 bg-blue-50">
+                              <Activity className="w-3 h-3 mr-1" />
+                              {getLatestTrackingStatus(service).status_label}
+                            </Badge>
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDetailOpen(service)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Detail
-                        </Button>
-                        {canEditService(service) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEditService!(service)}
-                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Perbaiki
-                          </Button>
-                        )}
-                        {canTakeAction(service) && (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => openActionDialog(service, "approve")}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Setujui
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => openActionDialog(service, "return")}
-                            >
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Kembalikan
-                            </Button>
-                          </>
-                        )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleDetailOpen(service)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Detail
+                            </DropdownMenuItem>
+                            {canEditService(service) && (
+                              <DropdownMenuItem onClick={() => onEditService!(service)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Perbaiki
+                              </DropdownMenuItem>
+                            )}
+                            {user?.role === "admin_pusat" && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedService(service);
+                                  setIsTrackingDialogOpen(true);
+                                }}
+                              >
+                                <Activity className="mr-2 h-4 w-4" />
+                                Update Status
+                              </DropdownMenuItem>
+                            )}
+                            {canTakeAction(service) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => openActionDialog(service, "approve")}>
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Setujui
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openActionDialog(service, "return")}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Kembalikan
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -663,6 +753,12 @@ export function ServiceList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <TrackingStatusDialog
+        open={isTrackingDialogOpen}
+        onOpenChange={setIsTrackingDialogOpen}
+        onSave={handleSaveTrackingStatus}
+        isLoading={isSavingTracking}
+      />
     </>
   );
 }
