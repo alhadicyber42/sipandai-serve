@@ -77,7 +77,7 @@ export function exportToExcel(services: ExportService[], filename: string = "usu
     ];
     ws["!cols"] = colWidths;
 
-    // Enable text wrapping for cells with long content
+    // Enable text wrapping and convert URLs to hyperlinks
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -85,6 +85,21 @@ export function exportToExcel(services: ExportService[], filename: string = "usu
             if (!ws[cellAddress]) continue;
             if (!ws[cellAddress].s) ws[cellAddress].s = {};
             ws[cellAddress].s.alignment = { wrapText: true, vertical: 'top' };
+
+            // Add hyperlinks to Lampiran Dokumen column (column K, index 10)
+            if (C === 10 && R > 0) { // Skip header row
+                const cellValue = ws[cellAddress].v;
+                if (cellValue && typeof cellValue === 'string' && cellValue !== '-') {
+                    // Extract first URL from the cell
+                    const urlMatch = cellValue.match(/https?:\/\/[^\s|]+/);
+                    if (urlMatch) {
+                        ws[cellAddress].l = { Target: urlMatch[0], Tooltip: "Klik untuk membuka link" };
+                        // Add blue color to indicate it's a link
+                        if (!ws[cellAddress].s) ws[cellAddress].s = {};
+                        ws[cellAddress].s.font = { color: { rgb: "0563C1" }, underline: true };
+                    }
+                }
+            }
         }
     }
 
