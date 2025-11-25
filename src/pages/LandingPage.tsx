@@ -75,53 +75,56 @@ export default function LandingPage() {
                 <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
                     <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-left duration-1000">
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 backdrop-blur-sm">
-                            <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-blue-600 animate-pulse" />
-                            <span className="text-xs md:text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                Platform Digital ASN Terintegrasi
+                            <Building2 className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
+                            <span className="text-xs md:text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                Ditjen Binalavotas - Kementerian Perhubungan RI
                             </span>
                         </div>
 
                         <div className="space-y-4 md:space-y-6">
-                            <h1 className="text-3xl md:text-5xl font-black tracking-tight lg:text-7xl xl:text-8xl leading-tight">
-                                <span className="block">SIPANDAI</span>
-                                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-1000 text-2xl md:text-4xl lg:text-7xl">
-                                    Sistem Pelayanan
-                                </span>
-                                <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-1000 delay-150 text-xl md:text-2xl lg:text-4xl py-[3px]">
-                                    Administrasi Digital ASN Terintegrasi
+                            <h1 className="text-3xl md:text-5xl font-black tracking-tight lg:text-6xl xl:text-7xl leading-tight">
+                                <span className="block text-foreground">SIPANDAI</span>
+                                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent text-2xl md:text-3xl lg:text-5xl leading-tight">
+                                    Sistem Informasi Pelayanan Administrasi Digital ASN Terintegrasi
                                 </span>
                             </h1>
-                            <p className="text-base md:text-xl lg:text-2xl text-muted-foreground max-w-[600px] leading-relaxed">
-                                Platform terintegrasi untuk pengelolaan administrasi kepegawaian ASN yang
-                                <span className="font-semibold text-foreground"> efisien</span>,
-                                <span className="font-semibold text-foreground"> transparan</span>, dan
-                                <span className="font-semibold text-foreground"> modern</span>.
+                            <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-[650px] leading-relaxed">
+                                Aplikasi resmi <span className="font-semibold text-foreground">Direktorat Jenderal Pembinaan Pelatihan Vokasi dan Produktivitas</span> untuk digitalisasi layanan kepegawaian ASN yang terintegrasi, transparan, dan akuntabel.
                             </p>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200/50 dark:border-blue-800/30">
+                                <ShieldCheck className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                                <p className="text-xs md:text-sm">
+                                    Platform resmi untuk ASN di lingkungan BPSDM Perhubungan
+                                </p>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                            <Button size="lg" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-14 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 transition-all hover:scale-105 group" onClick={() => navigate("/auth?tab=register")}>
-                                Mulai Sekarang
+                            <Button size="lg" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-14 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all group" onClick={() => navigate("/auth")}>
+                                Masuk Aplikasi
                                 <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
-                            <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-14 font-semibold border-2 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all hover:scale-105" onClick={() => navigate("/auth")}>
-                                Masuk ke Akun
+                            <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-14 font-semibold border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all" onClick={() => {
+                                const infoSection = document.getElementById('fitur-layanan');
+                                infoSection?.scrollIntoView({ behavior: 'smooth' });
+                            }}>
+                                Lihat Fitur
                             </Button>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm">
                             {[{
                                 icon: ShieldCheck,
-                                text: "Keamanan Tingkat Enterprise"
+                                text: "Aman & Terenkripsi"
                             }, {
-                                icon: Clock,
-                                text: "Akses 24/7"
+                                icon: CheckCircle2,
+                                text: "Terintegrasi"
                             }, {
-                                icon: Zap,
-                                text: "Proses Instan"
-                            }].map((item, i) => <div key={i} className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20">
+                                icon: Users,
+                                text: "Untuk ASN"
+                            }].map((item, i) => <div key={i} className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/30">
                                 <item.icon className="h-3 w-3 md:h-4 md:w-4 text-blue-600 flex-shrink-0" />
-                                <span className="font-medium whitespace-nowrap text-xs md:text-sm">{item.text}</span>
+                                <span className="font-medium whitespace-nowrap text-xs md:text-sm text-foreground/80">{item.text}</span>
                             </div>)}
                         </div>
                     </div>
@@ -172,22 +175,22 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section - Modern Cards */}
-        <section className="py-16 md:py-32 relative">
+        <section id="fitur-layanan" className="py-16 md:py-32 relative">
             <div className="container px-3 md:px-6">
                 <div className="text-center space-y-4 md:space-y-6 mb-12 md:mb-20 animate-in fade-in slide-in-from-bottom duration-700">
                     <Badge variant="outline" className="text-xs md:text-base px-4 md:px-6 py-1.5 md:py-2 border-2 border-blue-500/20 bg-blue-500/5">
-                        <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 inline" />
-                        Layanan Unggulan
+                        <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 inline" />
+                        Layanan Digital ASN
                     </Badge>
                     <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight px-4">
                         <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                            Fitur Lengkap
+                            Layanan Kepegawaian
                         </span>
                         <br />
-                        untuk Kebutuhan Anda
+                        Terintegrasi
                     </h2>
                     <p className="text-sm md:text-xl lg:text-2xl text-muted-foreground max-w-[900px] mx-auto leading-relaxed px-4">
-                        Berbagai fitur layanan kepegawaian yang dapat diakses dengan mudah melalui satu pintu digital
+                        Akses seluruh layanan administrasi kepegawaian ASN secara digital dalam satu platform
                     </p>
                 </div>
 
@@ -208,19 +211,20 @@ export default function LandingPage() {
                 <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
                     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-left duration-700">
                         <Badge variant="outline" className="text-xs md:text-base px-4 md:px-6 py-1.5 md:py-2 border-2">
-                            Keunggulan Kami
+                            <Building2 className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 inline" />
+                            Keunggulan Platform
                         </Badge>
                         <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight">
-                            Mengapa Memilih
+                            Pelayanan Digital
                             <span className="block mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                SIPANDAI?
+                                untuk ASN Modern
                             </span>
                         </h2>
                         <div className="space-y-6">
-                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-blue-600" />} title="Efisiensi Waktu" description="Proses administrasi yang lebih cepat tanpa perlu datang ke kantor." />
-                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-indigo-600" />} title="Transparansi Penuh" description="Lacak status pengajuan Anda secara real-time kapan saja." />
-                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-purple-600" />} title="Keamanan Data" description="Data Anda dilindungi dengan enkripsi tingkat enterprise." />
-                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-pink-600" />} title="Mudah Digunakan" description="Interface yang intuitif dan user-friendly untuk semua kalangan." />
+                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-blue-600" />} title="Efisien & Cepat" description="Proses administrasi yang lebih cepat dengan sistem terintegrasi." />
+                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-indigo-600" />} title="Transparan & Akuntabel" description="Lacak status pengajuan secara real-time dengan sistem yang transparan." />
+                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-purple-600" />} title="Aman & Terpercaya" description="Data dilindungi dengan standar keamanan pemerintahan." />
+                            <BenefitItem icon={<CheckCircle2 className="h-6 w-6 text-pink-600" />} title="Mudah Diakses" description="Interface yang mudah digunakan untuk seluruh pegawai ASN." />
                         </div>
                     </div>
 
@@ -238,23 +242,22 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                                 <p className="text-sm md:text-lg text-muted-foreground leading-relaxed">
-                                    SIPANDAI hadir sebagai solusi modern untuk mengelola administrasi kepegawaian ASN.
-                                    Dengan teknologi terkini, kami memastikan setiap proses berjalan efisien dan transparan.
+                                    SIPANDAI dikembangkan oleh Ditjen Binalavotas untuk mendukung transformasi digital pelayanan kepegawaian ASN dengan sistem yang terintegrasi, transparan, dan akuntabel.
                                 </p>
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                                     <div className="p-3 md:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                                        <BarChart3 className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mb-2" />
-                                        <div className="text-xl md:text-2xl font-bold">99.9%</div>
-                                        <div className="text-xs md:text-sm text-muted-foreground">Uptime</div>
+                                        <ShieldCheck className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mb-2" />
+                                        <div className="text-xl md:text-2xl font-bold">100%</div>
+                                        <div className="text-xs md:text-sm text-muted-foreground">Resmi</div>
                                     </div>
                                     <div className="p-3 md:p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
                                         <Users className="h-6 w-6 md:h-8 md:w-8 text-indigo-600 mb-2" />
-                                        <div className="text-xl md:text-2xl font-bold">1000+</div>
-                                        <div className="text-xs md:text-sm text-muted-foreground">Pengguna</div>
+                                        <div className="text-xl md:text-2xl font-bold">ASN</div>
+                                        <div className="text-xs md:text-sm text-muted-foreground">Terintegrasi</div>
                                     </div>
                                 </div>
-                                <Button className="w-full h-12 md:h-14 text-base md:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 group" size="lg" onClick={() => navigate("/auth?tab=register")}>
-                                    Bergabung Sekarang
+                                <Button className="w-full h-12 md:h-14 text-base md:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 group" size="lg" onClick={() => navigate("/auth")}>
+                                    Akses SIPANDAI
                                     <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </div>
@@ -272,54 +275,67 @@ export default function LandingPage() {
             <div className="container px-3 md:px-6 relative z-10">
                 <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-10 text-white">
                     <div className="inline-flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                        <Sparkles className="h-4 w-4 md:h-5 md:w-5 animate-pulse" />
-                        <span className="font-semibold text-xs md:text-base">Mulai Perjalanan Digital Anda</span>
+                        <Building2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="font-semibold text-xs md:text-base">Platform Resmi Ditjen Binalavotas</span>
                     </div>
 
                     <h2 className="text-2xl md:text-4xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-tight px-4">
-                        Siap Bergabung dengan
-                        <span className="block mt-2">Masa Depan ASN?</span>
+                        Transformasi Digital
+                        <span className="block mt-2">Pelayanan ASN</span>
                     </h2>
 
                     <p className="text-base md:text-xl lg:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed px-4">
-                        Bergabunglah dengan ribuan ASN yang telah merasakan kemudahan SIPANDAI
+                        Akses layanan kepegawaian digital yang terintegrasi, transparan, dan akuntabel
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center pt-4">
-                        <Button size="lg" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-16 font-bold bg-white text-blue-600 hover:bg-white/90 shadow-2xl shadow-black/20 hover:scale-105 transition-all group" onClick={() => navigate("/auth?tab=register")}>
-                            Daftar Gratis Sekarang
+                        <Button size="lg" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-16 font-bold bg-white text-blue-600 hover:bg-white/90 shadow-2xl shadow-black/20 transition-all group" onClick={() => navigate("/auth")}>
+                            Masuk Aplikasi
                             <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                         </Button>
-                        <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-16 font-semibold bg-transparent text-white border-2 border-white/30 hover:bg-white/10 hover:scale-105 transition-all" onClick={() => navigate("/auth")}>
-                            Masuk ke Akun
+                        <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-16 font-semibold bg-transparent text-white border-2 border-white/30 hover:bg-white/10 transition-all" onClick={() => {
+                            const infoSection = document.getElementById('fitur-layanan');
+                            infoSection?.scrollIntoView({ behavior: 'smooth' });
+                        }}>
+                            Pelajari Lebih Lanjut
                         </Button>
                     </div>
                 </div>
             </div>
         </section>
 
-        {/* Footer - Minimalist */}
+        {/* Footer - Government Style */}
         <footer className="py-8 md:py-12 border-t border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl">
             <div className="container px-3 md:px-6">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="p-1.5 md:p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg md:rounded-xl shadow-lg shadow-blue-500/30">
-                            <Building2 className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                        </div>
-                        <div>
-                            <span className="text-base md:text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                SIPANDAI
-                            </span>
-                            <div className="text-[10px] md:text-xs text-muted-foreground">Digital ASN Platform</div>
+                <div className="flex flex-col gap-6 md:gap-8">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="p-1.5 md:p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg md:rounded-xl shadow-lg shadow-blue-500/30">
+                                <Building2 className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                            </div>
+                            <div>
+                                <span className="text-base md:text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                    SIPANDAI
+                                </span>
+                                <div className="text-[10px] md:text-xs text-muted-foreground">Sistem Informasi Pelayanan Administrasi Digital ASN Terintegrasi</div>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex flex-col md:flex-row items-center gap-3 md:gap-8">
-                        <p className="text-xs md:text-sm text-muted-foreground text-center">
-                            © 2024 SIPANDAI. Hak Cipta Dilindungi.
-                        </p>
-                        <button onClick={() => navigate("/privacy")} className="text-xs md:text-sm text-muted-foreground hover:text-blue-600 transition-colors font-medium">
-                            Kebijakan Privasi
-                        </button>
+                    
+                    <div className="border-t border-white/10 pt-4 md:pt-6">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-6 text-center md:text-left">
+                            <div className="space-y-1">
+                                <p className="text-xs md:text-sm text-muted-foreground font-medium">
+                                    Direktorat Jenderal Pembinaan Pelatihan Vokasi dan Produktivitas
+                                </p>
+                                <p className="text-xs md:text-sm text-muted-foreground">
+                                    Kementerian Perhubungan Republik Indonesia
+                                </p>
+                            </div>
+                            <p className="text-xs md:text-sm text-muted-foreground">
+                                © 2024 Ditjen Binalavotas. All rights reserved.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
