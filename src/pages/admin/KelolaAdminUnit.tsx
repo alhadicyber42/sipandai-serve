@@ -236,14 +236,23 @@ export default function KelolaAdminUnit() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Kelola Admin Unit
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Kelola pengguna dan ubah role administrator
-            </p>
+        {/* Enhanced Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
+          
+          <div className="relative flex items-start gap-4">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <UserCog className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                Kelola Admin Unit
+              </h1>
+              <p className="text-white/90 mt-1 text-sm md:text-base">
+                Kelola pengguna dan ubah role administrator
+              </p>
+            </div>
           </div>
         </div>
 

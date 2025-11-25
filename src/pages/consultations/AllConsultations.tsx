@@ -82,12 +82,14 @@ export default function AllConsultations() {
           *,
           profiles!consultations_user_id_fkey (name),
           work_units (name)
-        `)
-        .eq("is_escalated", true);
+        `);
 
       // If admin_unit, only show escalated consultations from their unit
-      if (user?.role === "admin_unit" && user?.work_unit_id) {
-        query = query.eq("work_unit_id", user.work_unit_id);
+      if (user?.role === "admin_unit") {
+        query = query.eq("is_escalated", true);
+        if (user?.work_unit_id) {
+          query = query.eq("work_unit_id", user.work_unit_id);
+        }
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -189,10 +191,12 @@ export default function AllConsultations() {
                 <MessageSquare className="h-6 w-6 md:h-8 md:w-8" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Tereskalasi</h1>
+                <h1 className="text-2xl md:text-4xl font-bold">
+                  {user?.role === "admin_pusat" ? "Konsultasi Masuk" : "Konsultasi Tereskalasi"}
+                </h1>
                 <p className="text-sm md:text-base text-white/80 mt-1">
                   {user?.role === "admin_pusat"
-                    ? "Kelola konsultasi yang memerlukan perhatian Admin Pusat"
+                    ? "Kelola semua konsultasi yang masuk dari unit kerja"
                     : "Konsultasi dari unit Anda yang diteruskan ke Admin Pusat"}
                 </p>
               </div>

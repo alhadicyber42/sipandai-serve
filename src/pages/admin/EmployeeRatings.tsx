@@ -132,14 +132,27 @@ export default function AdminEmployeeRatings() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Penilaian Employee of The Month</h1>
-                    <p className="text-muted-foreground">
-                        {user?.role === "admin_unit" 
-                            ? "Lihat penilaian dan leaderboard pegawai terbaik di unit Anda"
-                            : "Lihat semua penilaian dan leaderboard pegawai terbaik"
-                        }
-                    </p>
+                {/* Enhanced Header with Gradient */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-6 md:p-8 text-white shadow-xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
+                    
+                    <div className="relative flex items-start gap-4">
+                        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <Award className="h-8 w-8 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-white">
+                                Penilaian Employee of The Month
+                            </h1>
+                            <p className="text-white/90 mt-1 text-sm md:text-base">
+                                {user?.role === "admin_unit" 
+                                    ? "Lihat penilaian dan leaderboard pegawai terbaik di unit Anda"
+                                    : "Lihat semua penilaian dan leaderboard pegawai terbaik"
+                                }
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Info Badge for Admin Unit */}

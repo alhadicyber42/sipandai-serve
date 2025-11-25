@@ -163,15 +163,26 @@ export default function DaftarPegawaiUnit() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Daftar Pegawai Unit
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {user?.role === "admin_pusat"
-              ? "Daftar semua pegawai di seluruh unit kerja"
-              : "Daftar pegawai di unit kerja Anda"}
-          </p>
+        {/* Enhanced Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
+          
+          <div className="relative flex items-start gap-4">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <Users className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                Daftar Pegawai Unit
+              </h1>
+              <p className="text-white/90 mt-1 text-sm md:text-base">
+                {user?.role === "admin_pusat"
+                  ? "Daftar semua pegawai di seluruh unit kerja"
+                  : "Daftar pegawai di unit kerja Anda"}
+              </p>
+            </div>
+          </div>
         </div>
 
         <Card>

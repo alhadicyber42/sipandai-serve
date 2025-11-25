@@ -264,17 +264,31 @@ export default function KelolaUnitKerja() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Kelola Unit Kerja</h1>
-            <p className="text-muted-foreground mt-1">
-              Kelola data unit kerja dan administrator
-            </p>
+        {/* Enhanced Header with Gradient */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-blue-400 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
+          
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">
+                  Kelola Unit Kerja
+                </h1>
+                <p className="text-white/90 mt-1 text-sm md:text-base">
+                  Kelola data unit kerja dan administrator
+                </p>
+              </div>
+            </div>
+
+            <Button onClick={() => handleOpenDialog()} className="gap-2 bg-white text-indigo-600 hover:bg-white/90 shadow-lg">
+              <Plus className="h-4 w-4" />
+              Tambah Unit Kerja
+            </Button>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Tambah Unit Kerja
-          </Button>
         </div>
 
         <Card>
