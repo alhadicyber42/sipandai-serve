@@ -613,12 +613,34 @@ export function ServiceList({
                     <Label>Riwayat</Label>
                     <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
                       {selectedService.notes.map((note: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-muted rounded-lg text-sm">
-                          <p className="font-medium">{note.actor}</p>
+                        <div key={idx} className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                          <div className="flex justify-between items-start">
+                            <p className="font-medium">{note.actor}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(note.timestamp), "dd MMM yyyy, HH:mm")}
+                            </p>
+                          </div>
                           <p className="text-muted-foreground">{note.note}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(note.timestamp), "dd MMM yyyy, HH:mm")}
-                          </p>
+
+                          {/* Display additional tracking info if available */}
+                          {note.description && (
+                            <p className="text-xs text-muted-foreground italic mt-1 bg-background/50 p-2 rounded border">
+                              "{note.description}"
+                            </p>
+                          )}
+                          {note.evidence_link && (
+                            <div className="mt-2">
+                              <a
+                                href={note.evidence_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                Lihat Bukti Dukung
+                              </a>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
