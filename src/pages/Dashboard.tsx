@@ -180,21 +180,21 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 md:space-y-8">
+      <div className="space-y-4 md:space-y-6 lg:space-y-8">
         {/* Header with Gradient Background */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 md:p-8 text-primary-foreground shadow-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+        <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-4 md:p-6 lg:p-8 text-primary-foreground shadow-xl">
+          <div className="absolute top-0 right-0 w-32 h-32 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl -mr-16 md:-mr-32 -mt-16 md:-mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 md:w-48 md:h-48 bg-white/10 rounded-full blur-3xl -ml-12 md:-ml-24 -mb-12 md:-mb-24"></div>
 
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-5 w-5 md:h-6 md:w-6 animate-pulse" />
-              <span className="text-sm md:text-base font-medium opacity-90">{getGreeting()}</span>
+            <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
+              <Sparkles className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 animate-pulse" />
+              <span className="text-xs md:text-sm lg:text-base font-medium opacity-90">{getGreeting()}</span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-bold mb-2">
+            <h1 className="text-xl md:text-2xl lg:text-4xl font-bold mb-1 md:mb-2 break-words">
               {user?.name}
             </h1>
-            <p className="text-sm md:text-base text-primary-foreground/80">
+            <p className="text-xs md:text-sm lg:text-base text-primary-foreground/80">
               {user?.role === "admin_pusat"
                 ? "Administrator Pusat - Kelola seluruh sistem"
                 : user?.role === "admin_unit"
@@ -205,16 +205,16 @@ export default function Dashboard() {
         </div>
 
         {/* Statistics Cards - Responsive Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 lg:gap-4">
           <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Total Usulan</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
+              <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold text-primary">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-primary">{stats.total}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
                 {user?.role === "user_unit" ? "Usulan Anda" : "Semua usulan"}
               </p>
             </CardContent>
@@ -223,15 +223,15 @@ export default function Dashboard() {
           {(user?.role === "admin_unit" || user?.role === "admin_pusat") && (
             <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
               <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full blur-2xl"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
                 <CardTitle className="text-xs md:text-sm font-medium">Perlu Persetujuan</CardTitle>
-                <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400 animate-pulse" />
+                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-orange-600 dark:text-orange-400 animate-pulse flex-shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
+              <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+                <div className="text-lg md:text-xl lg:text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {stats.pendingForMe}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
                   {user?.role === "admin_unit" ? "Menunggu review" : "Approval pusat"}
                 </p>
               </CardContent>
@@ -240,37 +240,37 @@ export default function Dashboard() {
 
           <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/30 border-yellow-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Diproses</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
-              <p className="text-xs text-muted-foreground mt-1">Menunggu persetujuan</p>
+            <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">Menunggu persetujuan</p>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Disetujui</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">{stats.approved}</div>
-              <p className="text-xs text-muted-foreground mt-1">Usulan selesai</p>
+            <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400">{stats.approved}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">Usulan selesai</p>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Konsultasi</CardTitle>
-              <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.consultations}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.consultations}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
                 {user?.role === "user_unit" ? "Konsultasi Anda" : "Total konsultasi"}
               </p>
             </CardContent>
@@ -366,58 +366,58 @@ export default function Dashboard() {
 
         {/* Quick Actions for User */}
         {user?.role === "user_unit" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
             <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/layanan/kenaikan-pangkat")}>
-              <CardContent className="p-4 md:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 md:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                    <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <CardContent className="p-3 md:p-4 lg:p-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-2 md:p-2.5 lg:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                    <TrendingUp className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-primary" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm md:text-base">Kenaikan Pangkat</p>
-                    <p className="text-xs text-muted-foreground">Ajukan usulan</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Kenaikan Pangkat</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Ajukan usulan</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/layanan/cuti")}>
-              <CardContent className="p-4 md:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 md:p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
-                    <FileText className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
+              <CardContent className="p-3 md:p-4 lg:p-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-2 md:p-2.5 lg:p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm md:text-base">Cuti Pegawai</p>
-                    <p className="text-xs text-muted-foreground">Ajukan cuti</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Cuti Pegawai</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Ajukan cuti</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/konsultasi/baru")}>
-              <CardContent className="p-4 md:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 md:p-3 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
-                    <MessageSquare className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+              <CardContent className="p-3 md:p-4 lg:p-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-2 md:p-2.5 lg:p-3 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                    <MessageSquare className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-green-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm md:text-base">Konsultasi</p>
-                    <p className="text-xs text-muted-foreground">Tanya admin</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Konsultasi</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Tanya admin</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer border-primary/20" onClick={() => navigate("/employee-of-the-month")}>
-              <CardContent className="p-4 md:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 md:p-3 bg-yellow-500/10 rounded-lg group-hover:bg-yellow-500/20 transition-colors">
-                    <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-yellow-600" />
+              <CardContent className="p-3 md:p-4 lg:p-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="p-2 md:p-2.5 lg:p-3 bg-yellow-500/10 rounded-lg group-hover:bg-yellow-500/20 transition-colors">
+                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-yellow-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm md:text-base">Employee of The Month</p>
-                    <p className="text-xs text-muted-foreground">Lihat penilaian</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-xs md:text-sm lg:text-base truncate">Employee of The Month</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Lihat penilaian</p>
                   </div>
                 </div>
               </CardContent>

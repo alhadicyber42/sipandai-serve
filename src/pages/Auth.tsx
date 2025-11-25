@@ -258,94 +258,94 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 p-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 p-3 md:p-4 py-4 md:py-8 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl top-0 -left-48 animate-pulse" />
-        <div className="absolute w-[600px] h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl bottom-0 -right-48 animate-pulse delay-1000" />
+        <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl top-0 -left-48 animate-pulse" />
+        <div className="absolute w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl bottom-0 -right-48 animate-pulse delay-1000" />
       </div>
 
       {/* Back to Home Button */}
       <Button
         variant="ghost"
         size="sm"
-        className="absolute top-4 left-4 z-10 gap-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-900/80"
+        className="absolute top-2 left-2 md:top-4 md:left-4 z-10 gap-1 md:gap-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-900/80 h-8 md:h-9 px-2 md:px-3 text-xs md:text-sm"
         onClick={() => navigate("/")}
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
         <span className="hidden sm:inline">Kembali</span>
       </Button>
 
       {activeTab === "login" ? (
-        <Card className="w-full max-w-md shadow-2xl border-2 border-white/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl my-8 relative z-10">
-          <CardHeader className="space-y-1 text-center pb-8">
-            <div className="flex justify-center mb-4">
-              <div className="relative p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/50 group hover:shadow-blue-500/70 transition-all">
-                <Building2 className="h-12 w-12 text-white" />
-                <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Card className="w-full max-w-md shadow-2xl border-2 border-white/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl my-4 md:my-8 relative z-10">
+          <CardHeader className="space-y-1 text-center pb-6 md:pb-8 pt-6 md:pt-6">
+            <div className="flex justify-center mb-3 md:mb-4">
+              <div className="relative p-3 md:p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl md:rounded-2xl shadow-lg shadow-blue-500/50 group hover:shadow-blue-500/70 transition-all">
+                <Building2 className="h-8 w-8 md:h-12 md:w-12 text-white" />
+                <div className="absolute inset-0 bg-white/20 rounded-xl md:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <CardTitle className="text-2xl md:text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               SIPANDAI
             </CardTitle>
-            <CardDescription className="text-base">
+            <CardDescription className="text-sm md:text-base px-2">
               Sistem Pelayanan Administrasi Digital ASN Terintegrasi
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8 h-12 bg-muted/50 p-1">
+              <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-10 md:h-12 bg-muted/50 p-1">
                 <TabsTrigger
                   value="login"
-                  className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                  className="text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
                 >
                   Login
                 </TabsTrigger>
                 <TabsTrigger
                   value="register"
-                  className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                  className="text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
                 >
                   Daftar
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 md:space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-base font-semibold">Email</Label>
+                    <Label htmlFor="login-email" className="text-sm md:text-base font-semibold">Email</Label>
                     <div className="relative group">
-                      <Mail className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                      <Mail className="absolute left-3 top-2.5 md:top-3.5 h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                       <Input
                         id="login-email"
                         type="email"
                         placeholder="nama@email.com"
-                        className="pl-10 h-12 text-base border-2 focus:border-blue-600 transition-all"
+                        className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base border-2 focus:border-blue-600 transition-all"
                         {...loginForm.register("email")}
                       />
                     </div>
                     {loginForm.formState.errors.email && (
-                      <p className="text-sm text-destructive font-medium">{loginForm.formState.errors.email.message}</p>
+                      <p className="text-xs md:text-sm text-destructive font-medium">{loginForm.formState.errors.email.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-base font-semibold">Password</Label>
+                    <Label htmlFor="login-password" className="text-sm md:text-base font-semibold">Password</Label>
                     <div className="relative group">
-                      <Lock className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                      <Lock className="absolute left-3 top-2.5 md:top-3.5 h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                       <Input
                         id="login-password"
                         type="password"
                         placeholder="••••••••"
-                        className="pl-10 h-12 text-base border-2 focus:border-blue-600 transition-all"
+                        className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base border-2 focus:border-blue-600 transition-all"
                         {...loginForm.register("password")}
                       />
                     </div>
                     {loginForm.formState.errors.password && (
-                      <p className="text-sm text-destructive font-medium">{loginForm.formState.errors.password.message}</p>
+                      <p className="text-xs md:text-sm text-destructive font-medium">{loginForm.formState.errors.password.message}</p>
                     )}
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
+                    className="w-full h-10 md:h-12 text-sm md:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
                     isLoading={isLoading}
                   >
                     Login
@@ -354,7 +354,7 @@ export default function Auth() {
                     <button
                       type="button"
                       onClick={() => setActiveTab("register")}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                      className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
                     >
                       Belum punya akun? Daftar sekarang
                     </button>
@@ -376,83 +376,83 @@ export default function Auth() {
           nextButtonText={registerStep === 4 ? "Daftar Sekarang" : "Lanjut"}
           isLoading={isLoading}
           size="lg"
-          className="w-full my-8 relative z-10"
+          className="w-full my-4 md:my-8 relative z-10"
         >
           {/* Step 1: Data Pribadi */}
           {registerStep === 1 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-4 md:space-y-6">
+              <div className="grid md:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="register-name" className="text-sm font-semibold">Nama Lengkap</Label>
+                  <Label htmlFor="register-name" className="text-xs md:text-sm font-semibold">Nama Lengkap</Label>
                   <div className="relative group">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <User className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-name"
                       placeholder="Nama lengkap Anda"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 h-9 md:h-10 text-sm border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("name")}
                     />
                   </div>
-                  {registerForm.formState.errors.name && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.name.message}</p>}
+                  {registerForm.formState.errors.name && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-email" className="text-sm font-semibold">Email</Label>
+                  <Label htmlFor="register-email" className="text-xs md:text-sm font-semibold">Email</Label>
                   <div className="relative group">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Mail className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-email"
                       type="email"
                       placeholder="nama@email.com"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 h-9 md:h-10 text-sm border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("email")}
                     />
                   </div>
-                  {registerForm.formState.errors.email && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.email.message}</p>}
+                  {registerForm.formState.errors.email && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.email.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-nip" className="text-sm font-semibold">NIP</Label>
+                  <Label htmlFor="register-nip" className="text-xs md:text-sm font-semibold">NIP</Label>
                   <div className="relative group">
-                    <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <IdCard className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-nip"
                       placeholder="Nomor Induk Pegawai"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 h-9 md:h-10 text-sm border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("nip")}
                     />
                   </div>
-                  {registerForm.formState.errors.nip && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.nip.message}</p>}
+                  {registerForm.formState.errors.nip && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.nip.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-phone" className="text-sm font-semibold">No. Telepon</Label>
+                  <Label htmlFor="register-phone" className="text-xs md:text-sm font-semibold">No. Telepon</Label>
                   <div className="relative group">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Phone className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-phone"
                       type="tel"
                       placeholder="08xxxxxxxxxx"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 h-9 md:h-10 text-sm border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("phone")}
                     />
                   </div>
-                  {registerForm.formState.errors.phone && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.phone.message}</p>}
+                  {registerForm.formState.errors.phone && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.phone.message}</p>}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="register-unit" className="text-sm font-semibold">Unit Kerja</Label>
+                  <Label htmlFor="register-unit" className="text-xs md:text-sm font-semibold">Unit Kerja</Label>
                   <Controller
                     control={registerForm.control}
                     name="work_unit"
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all">
+                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm">
                           <SelectValue placeholder="Pilih unit kerja" />
                         </SelectTrigger>
                         <SelectContent>
                           {WORK_UNITS.map(unit => (
-                            <SelectItem key={unit.id} value={unit.id.toString()}>
+                            <SelectItem key={unit.id} value={unit.id.toString()} className="text-sm">
                               {unit.name}
                             </SelectItem>
                           ))}
@@ -460,7 +460,7 @@ export default function Auth() {
                       </Select>
                     )}
                   />
-                  {registerForm.formState.errors.work_unit && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.work_unit.message}</p>}
+                  {registerForm.formState.errors.work_unit && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.work_unit.message}</p>}
                 </div>
               </div>
             </div>
@@ -468,35 +468,35 @@ export default function Auth() {
 
           {/* Step 2: Data Kepegawaian */}
           {registerStep === 2 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-4 md:space-y-6">
+              <div className="grid md:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="register-jabatan" className="text-sm font-semibold">Jabatan Saat Ini</Label>
+                  <Label htmlFor="register-jabatan" className="text-xs md:text-sm font-semibold">Jabatan Saat Ini</Label>
                   <Input
                     id="register-jabatan"
                     placeholder="Sesuai SK Terakhir"
-                    className="border-2 focus:border-blue-600 transition-all"
+                    className="border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm"
                     {...registerForm.register("jabatan")}
                   />
-                  {registerForm.formState.errors.jabatan && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.jabatan.message}</p>}
+                  {registerForm.formState.errors.jabatan && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.jabatan.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-pangkat" className="text-sm font-semibold">Pangkat/Golongan</Label>
+                  <Label htmlFor="register-pangkat" className="text-xs md:text-sm font-semibold">Pangkat/Golongan</Label>
                   <Controller
                     control={registerForm.control}
                     name="pangkat_golongan"
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all">
+                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm">
                           <SelectValue placeholder="Pilih Pangkat/Golongan" />
                         </SelectTrigger>
                         <SelectContent>
                           {PANGKAT_GOLONGAN_OPTIONS.map((group) => (
                             <SelectGroup key={group.label}>
-                              <SelectLabel>{group.label}</SelectLabel>
+                              <SelectLabel className="text-xs">{group.label}</SelectLabel>
                               {group.options.map((option) => (
-                                <SelectItem key={option} value={option}>
+                                <SelectItem key={option} value={option} className="text-sm">
                                   {option}
                                 </SelectItem>
                               ))}
@@ -506,35 +506,35 @@ export default function Auth() {
                       </Select>
                     )}
                   />
-                  {registerForm.formState.errors.pangkat_golongan && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.pangkat_golongan.message}</p>}
+                  {registerForm.formState.errors.pangkat_golongan && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.pangkat_golongan.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-tmt-pns" className="text-sm font-semibold">TMT PNS</Label>
+                  <Label htmlFor="register-tmt-pns" className="text-xs md:text-sm font-semibold">TMT PNS</Label>
                   <div className="relative group">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Calendar className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-tmt-pns"
                       type="date"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm"
                       {...registerForm.register("tmt_pns")}
                     />
                   </div>
-                  {registerForm.formState.errors.tmt_pns && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pns.message}</p>}
+                  {registerForm.formState.errors.tmt_pns && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pns.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-tmt-pensiun" className="text-sm font-semibold">TMT Pensiun</Label>
+                  <Label htmlFor="register-tmt-pensiun" className="text-xs md:text-sm font-semibold">TMT Pensiun</Label>
                   <div className="relative group">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                    <Calendar className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-tmt-pensiun"
                       type="date"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-8 md:pl-9 border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm"
                       {...registerForm.register("tmt_pensiun")}
                     />
                   </div>
-                  {registerForm.formState.errors.tmt_pensiun && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pensiun.message}</p>}
+                  {registerForm.formState.errors.tmt_pensiun && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pensiun.message}</p>}
                 </div>
               </div>
             </div>

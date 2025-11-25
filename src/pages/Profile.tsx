@@ -113,43 +113,48 @@ export default function Profile() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6 pb-10">
+      <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 pb-10">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 p-6 md:p-8 text-white shadow-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+        <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 p-4 md:p-6 lg:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 w-32 h-32 md:w-64 md:h-64 bg-white/10 rounded-full blur-3xl -mr-16 md:-mr-32 -mt-16 md:-mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 md:w-48 md:h-48 bg-white/10 rounded-full blur-3xl -ml-12 md:-ml-24 -mb-12 md:-mb-24"></div>
 
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-white/30 shadow-xl">
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <Avatar className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 border-2 md:border-4 border-white/30 shadow-xl flex-shrink-0">
                 <AvatarImage src={user.avatar_url || undefined} alt={user.name} />
-                <AvatarFallback className="bg-white/20 backdrop-blur-sm text-white text-2xl md:text-3xl font-bold">
+                <AvatarFallback className="bg-white/20 backdrop-blur-sm text-white text-xl md:text-2xl lg:text-3xl font-bold">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-2xl md:text-4xl font-bold">{user.name}</h1>
-                <p className="text-sm md:text-base text-white/80 mt-1">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg md:text-2xl lg:text-4xl font-bold truncate">{user.name}</h1>
+                <p className="text-xs md:text-sm lg:text-base text-white/80 mt-0.5 md:mt-1 truncate">
                   {user.jabatan || 'ASN'} • {user.nip}
                 </p>
               </div>
             </div>
             {activeTab === "profile" && !isEditing && (
-              <Button onClick={() => setIsEditing(true)} variant="secondary" className="gap-2 shadow-lg">
-                <Edit2 className="h-4 w-4" />
-                Edit Profil
+              <Button onClick={() => setIsEditing(true)} variant="secondary" className="gap-1.5 md:gap-2 shadow-lg h-9 md:h-10 px-3 md:px-4 text-xs md:text-sm">
+                <Edit2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Edit Profil</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
             )}
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="profile" className="gap-2">
-              <User className="h-4 w-4" /> Data Diri
+          <TabsList className="grid w-full grid-cols-2 mb-4 md:mb-6 h-10 md:h-11">
+            <TabsTrigger value="profile" className="gap-1.5 md:gap-2 text-xs md:text-sm">
+              <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Data Diri</span>
+              <span className="sm:hidden">Profil</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-2">
-              <FileText className="h-4 w-4" /> Kelengkapan Administrasi
+            <TabsTrigger value="documents" className="gap-1.5 md:gap-2 text-xs md:text-sm">
+              <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Kelengkapan Administrasi</span>
+              <span className="sm:hidden">Dokumen</span>
             </TabsTrigger>
           </TabsList>
 
