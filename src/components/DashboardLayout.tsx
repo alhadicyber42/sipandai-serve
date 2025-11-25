@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -22,6 +22,15 @@ export const DashboardLayout = ({
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>(["layanan"]);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(() => {
+    // Check if app is already installed
+    const standalone = window.matchMedia('(display-mode: standalone)').matches 
+      || (window.navigator as any).standalone 
+      || document.referrer.includes('android-app://');
+    return standalone;
+  });
+
   const handleLogout = () => {
     logout();
     navigate("/auth");
@@ -30,6 +39,12 @@ export const DashboardLayout = ({
     setOpenMenus(prev => prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]);
   };
   const isActive = (path: string) => location.pathname === path;
+
+  const handleManualInstall = () => {
+    // Clear localStorage to force showing prompt
+    localStorage.removeItem('sipandai-install-dismissed');
+    setShowInstallPrompt(true);
+  };
 
   // Menu items based on role
   const getMenuItems = () => {
@@ -188,6 +203,17 @@ export const DashboardLayout = ({
   };
   const menuItems = getMenuItems();
   return <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
+    {/* PWA Install Prompt - Manual Trigger */}
+    {showInstallPrompt && (
+      <InstallPrompt 
+        isManual={true} 
+        onClose={() => setShowInstallPrompt(false)} 
+      />
+    )}
+
+    {/* Auto Install Prompt */}
+    <InstallPrompt />
+
     {/* Mobile Header */}
     <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground border-b border-primary/20 shadow-md">
       <div className="flex items-center justify-between p-3 md:p-4">
@@ -257,8 +283,20 @@ export const DashboardLayout = ({
         </Link>)}
       </nav>
 
-      {/* Logout & Theme Toggle */}
+      {/* Install PWA, Theme Toggle & Logout */}
       <div className="p-3 md:p-4 border-t border-white/10 space-y-2">
+        {/* Install PWA Button - Only show if not already installed */}
+        {!isStandalone && (
+          <Button 
+            onClick={handleManualInstall} 
+            variant="ghost" 
+            className="w-full justify-start gap-2 md:gap-3 hover:bg-blue-500/20 hover:text-blue-400 text-white/70 transition-colors h-9 md:h-10 px-2.5 md:px-3"
+          >
+            <Download className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+            <span className="text-xs md:text-sm">Install Aplikasi</span>
+          </Button>
+        )}
+        
         <div className="hidden lg:block">
           <ThemeToggle />
         </div>

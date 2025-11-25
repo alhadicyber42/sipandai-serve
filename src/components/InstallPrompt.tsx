@@ -13,7 +13,12 @@ import { Download, Smartphone, Share, MoreVertical } from "lucide-react";
 const INSTALL_DISMISSED_KEY = 'sipandai-install-dismissed';
 const DISMISS_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
-export function InstallPrompt() {
+interface InstallPromptProps {
+    isManual?: boolean;
+    onClose?: () => void;
+}
+
+export function InstallPrompt({ isManual = false, onClose }: InstallPromptProps = {}) {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
@@ -30,6 +35,12 @@ export function InstallPrompt() {
         // Detect iOS
         const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         setIsIOS(ios);
+
+        // If manual trigger, show immediately
+        if (isManual) {
+            setIsOpen(true);
+            return;
+        }
 
         // Check if user dismissed the prompt recently
         const dismissedTime = localStorage.getItem(INSTALL_DISMISSED_KEY);
@@ -82,7 +93,7 @@ export function InstallPrompt() {
         return () => {
             window.removeEventListener("beforeinstallprompt", handler);
         };
-    }, []);
+    }, [isManual]);
 
     const handleInstall = async () => {
         if (deferredPrompt) {
@@ -110,13 +121,17 @@ export function InstallPrompt() {
         }
         
         setIsOpen(false);
+        onClose?.();
         // Don't save dismissed time if user installed, only if dismissed
     };
 
     const handleDismiss = () => {
-        // Save dismissed time to localStorage
-        localStorage.setItem(INSTALL_DISMISSED_KEY, Date.now().toString());
+        // Save dismissed time to localStorage (only if not manual trigger)
+        if (!isManual) {
+            localStorage.setItem(INSTALL_DISMISSED_KEY, Date.now().toString());
+        }
         setIsOpen(false);
+        onClose?.();
     };
 
     if (!isOpen) return null;
