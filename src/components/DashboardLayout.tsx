@@ -25,8 +25,8 @@ export const DashboardLayout = ({
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(() => {
     // Check if app is already installed
-    const standalone = window.matchMedia('(display-mode: standalone)').matches 
-      || (window.navigator as any).standalone 
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone
       || document.referrer.includes('android-app://');
     return standalone;
   });
@@ -131,7 +131,7 @@ export const DashboardLayout = ({
         icon: Users
       }, {
         path: "/admin/employee-ratings",
-        label: "Penilaian Employee of The Month",
+        label: "Employee of The Month",
         icon: Trophy
       }, {
         path: "/pengumuman",
@@ -187,7 +187,7 @@ export const DashboardLayout = ({
         icon: Users
       }, {
         path: "/admin/employee-ratings",
-        label: "Penilaian Employee of The Month",
+        label: "Employee of The Month",
         icon: Trophy
       }, {
         path: "/pengumuman",
@@ -205,9 +205,9 @@ export const DashboardLayout = ({
   return <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
     {/* PWA Install Prompt - Manual Trigger */}
     {showInstallPrompt && (
-      <InstallPrompt 
-        isManual={true} 
-        onClose={() => setShowInstallPrompt(false)} 
+      <InstallPrompt
+        isManual={true}
+        onClose={() => setShowInstallPrompt(false)}
       />
     )}
 
@@ -285,9 +285,9 @@ export const DashboardLayout = ({
         {/* Install PWA Button - Only show if not already installed */}
         {!isStandalone && (
           <div className="mt-4 pt-3 border-t border-white/10">
-            <Button 
-              onClick={handleManualInstall} 
-              variant="ghost" 
+            <Button
+              onClick={handleManualInstall}
+              variant="ghost"
               className="w-full justify-start gap-2 md:gap-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-colors px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg"
             >
               <Download className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
@@ -299,7 +299,7 @@ export const DashboardLayout = ({
 
       {/* Theme Toggle & Logout */}
       <div className="p-3 md:p-4 border-t border-white/10 space-y-2">
-        
+
         <div className="hidden lg:block">
           <ThemeToggle />
         </div>
