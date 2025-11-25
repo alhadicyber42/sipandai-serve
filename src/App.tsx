@@ -6,7 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
-import { DashboardSkeleton } from "./components/skeletons";
+import { DashboardSkeleton, ProfileSkeleton, ServiceListSkeleton } from "./components/skeletons";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import ReloadPrompt from "./components/ReloadPrompt";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
@@ -69,17 +70,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <ReloadPrompt />
-          <PWAInstallPrompt />
-          <BrowserRouter>
-            <Suspense fallback={<DashboardSkeleton />}>
-              <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <ReloadPrompt />
+            <PWAInstallPrompt />
+            <BrowserRouter>
+              <Suspense fallback={<DashboardSkeleton />}>
+                <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/auth" element={<Auth />} />
@@ -107,13 +109,14 @@ const App = () => (
                 <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
