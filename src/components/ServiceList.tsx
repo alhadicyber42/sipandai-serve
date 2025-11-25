@@ -508,7 +508,7 @@ export function ServiceList({
                                 Perbaiki
                               </DropdownMenuItem>
                             )}
-                            {user?.role === "admin_pusat" && (
+                            {user?.role === "admin_pusat" && service.status === "approved_final" && (
                               <DropdownMenuItem
                                 onClick={() => {
                                   setSelectedService(service);
