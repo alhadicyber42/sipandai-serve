@@ -86,15 +86,27 @@ export function InstallPrompt() {
 
     const handleInstall = async () => {
         if (deferredPrompt) {
-            // Android/Chrome install
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
+            // Android/Chrome install with native prompt
+            try {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
 
-            if (outcome === 'accepted') {
-                console.log('User accepted the install prompt');
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+
+                setDeferredPrompt(null);
+            } catch (error) {
+                console.error('Install prompt error:', error);
             }
-
-            setDeferredPrompt(null);
+        } else {
+            // Fallback: Show manual install instructions
+            alert(
+                'Untuk menginstall aplikasi:\n\n' +
+                '1. Buka menu browser (⋮ atau •••)\n' +
+                '2. Pilih "Add to Home Screen" atau "Install App"\n' +
+                '3. Tap "Install" atau "Add"'
+            );
         }
         
         setIsOpen(false);
@@ -150,18 +162,14 @@ export function InstallPrompt() {
                 )}
 
                 <DialogFooter className="flex justify-center">
-                    {!isIOS && deferredPrompt ? (
-                        <Button type="button" onClick={handleInstall} className="gap-2 w-full sm:w-auto" size="lg">
-                            <Download className="h-5 w-5" />
-                            Install Sekarang
-                        </Button>
-                    ) : isIOS ? (
+                    {isIOS ? (
                         <Button type="button" onClick={handleDismiss} className="w-full sm:w-auto" size="lg">
                             Mengerti, Saya Akan Install
                         </Button>
                     ) : (
-                        <Button type="button" onClick={handleDismiss} className="w-full sm:w-auto" size="lg">
-                            Tutup
+                        <Button type="button" onClick={handleInstall} className="gap-2 w-full sm:w-auto" size="lg">
+                            <Download className="h-5 w-5" />
+                            Install Sekarang
                         </Button>
                     )}
                 </DialogFooter>
