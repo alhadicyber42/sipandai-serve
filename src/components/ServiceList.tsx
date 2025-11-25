@@ -39,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, CheckCircle, XCircle, FileText, Search, Filter, MoreHorizontal, Activity } from "lucide-react";
+import { Eye, CheckCircle, XCircle, FileText, Search, Filter, MoreHorizontal, Activity, Download } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +48,7 @@ import { TableSkeleton } from "@/components/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoDataState, SearchState } from "@/components/EmptyState";
 import { TrackingStatusDialog } from "@/components/TrackingStatusDialog";
+import { exportToExcel } from "@/lib/exportToExcel";
 
 interface Service {
   id: string;
@@ -94,6 +95,41 @@ export function ServiceList({
   const [isSavingVerification, setIsSavingVerification] = useState(false);
   const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
   const [isSavingTracking, setIsSavingTracking] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = () => {
+    setIsExporting(true);
+    try {
+      // Filter services based on user role
+      let exportData = filteredServices;
+
+      if (user?.role === "admin_unit") {
+        // Admin Unit: only export services from their unit
+        exportData = filteredServices.filter(
+          (service) => service.work_unit_id === user.work_unit_id
+        );
+      } else if (user?.role === "user_unit") {
+        // User Unit: only export their own submissions
+        exportData = filteredServices.filter(
+          (service) => service.user_id === user.id
+        );
+      }
+      // Admin Pusat: export all (no filtering needed)
+
+      if (exportData.length === 0) {
+        toast.error("Tidak ada data untuk di-export");
+        return;
+      }
+
+      exportToExcel(exportData, "usulan");
+      toast.success(`Berhasil export ${exportData.length} usulan ke Excel`);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast.error("Gagal export ke Excel");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleApprove = async () => {
     if (!selectedService) return;
@@ -432,15 +468,29 @@ export function ServiceList({
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Daftar Usulan
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Daftar Usulan
+              {filteredServices.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {filteredServices.length}
+                </Badge>
+              )}
+            </CardTitle>
             {filteredServices.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {filteredServices.length}
-              </Badge>
+              <Button
+                onClick={handleExport}
+                disabled={isExporting}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? "Exporting..." : "Export Excel"}
+              </Button>
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
