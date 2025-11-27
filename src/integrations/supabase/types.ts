@@ -235,33 +235,99 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      retirement_reminders: {
         Row: {
           created_at: string
+          error_message: string | null
+          id: string
+          message_content: string | null
+          reminder_type: string
+          sent_at: string
+          sent_by: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          reminder_type: string
+          sent_at?: string
+          sent_by: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          reminder_type?: string
+          sent_at?: string
+          sent_by?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retirement_reminders_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retirement_reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          birth_date: string | null
+          created_at: string
+          email: string | null
           id: string
           name: string
           nip: string
           phone: string | null
+          retirement_date: string | null
+          retirement_reminder_sent_at: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           work_unit_id: number | null
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string
+          email?: string | null
           id: string
           name: string
           nip: string
           phone?: string | null
+          retirement_date?: string | null
+          retirement_reminder_sent_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           work_unit_id?: number | null
         }
         Update: {
+          birth_date?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
           nip?: string
           phone?: string | null
+          retirement_date?: string | null
+          retirement_reminder_sent_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           work_unit_id?: number | null

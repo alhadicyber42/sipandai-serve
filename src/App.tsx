@@ -39,6 +39,7 @@ const EmployeeProfile = lazy(() => import("./pages/admin/EmployeeProfile"));
 const Pengumuman = lazy(() => import("./pages/admin/Pengumuman"));
 const LeaveDeferralManagement = lazy(() => import("./pages/admin/LeaveDeferralManagement"));
 const JobFormationManagement = lazy(() => import("./pages/admin/JobFormationManagement"));
+const RetirementReminders = lazy(() => import("./pages/admin/RetirementReminders"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -102,6 +103,7 @@ const App = () => (
                   <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
                   <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
                   <Route path="/admin/formasi-jabatan" element={<ProtectedRoute><JobFormationManagement /></ProtectedRoute>} />
+                  <Route path="/admin/reminder-pensiun" element={<ProtectedRoute><RetirementReminders /></ProtectedRoute>} />
                   <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
                   <Route path="/pengumuman" element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
                   <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
