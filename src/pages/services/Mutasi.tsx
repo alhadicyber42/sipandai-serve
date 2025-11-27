@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Users, AlertCircle } from "lucide-react";
+import { Plus, Users, AlertCircle, Building2, Briefcase } from "lucide-react";
 import { TRANSFER_CATEGORIES, type TransferCategory } from "@/lib/transfer-categories";
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
@@ -32,9 +32,52 @@ export default function Mutasi() {
     const [editingDocuments, setEditingDocuments] = useState<Record<string, string>>({});
     const [savingDocuments, setSavingDocuments] = useState<Set<string>>(new Set());
 
+    // Target Unit & Formation State
+    const [workUnits, setWorkUnits] = useState<any[]>([]);
+    const [jobFormations, setJobFormations] = useState<any[]>([]);
+    const [targetUnitId, setTargetUnitId] = useState<string>("");
+    const [targetFormationId, setTargetFormationId] = useState<string>("");
+
     useEffect(() => {
         loadServices();
+        loadWorkUnits();
     }, [user]);
+
+    useEffect(() => {
+        if (targetUnitId) {
+            loadJobFormations(targetUnitId);
+        } else {
+            setJobFormations([]);
+            setTargetFormationId("");
+        }
+    }, [targetUnitId]);
+
+    const loadWorkUnits = async () => {
+        const { data, error } = await supabase
+            .from("work_units")
+            .select("id, name")
+            .order("name");
+
+        if (error) {
+            console.error("Error loading work units:", error);
+        } else {
+            setWorkUnits(data || []);
+        }
+    };
+
+    const loadJobFormations = async (unitId: string) => {
+        const { data, error } = await supabase
+            .from("job_formations")
+            .select("*")
+            .eq("work_unit_id", parseInt(unitId))
+            .order("position_name");
+
+        if (error) {
+            console.error("Error loading job formations:", error);
+        } else {
+            setJobFormations(data || []);
+        }
+    };
 
     const loadServices = async () => {
         if (!user) return;
@@ -42,7 +85,11 @@ export default function Mutasi() {
         setIsLoading(true);
         let query = supabase
             .from("services")
-            .select("*")
+            .select(`
+                *,
+                target_work_unit:target_work_unit_id (name),
+                target_job_formation:target_job_formation_id (position_name)
+            `)
             .eq("service_type", "mutasi");
 
         if (user.role === "user_unit") {
@@ -91,6 +138,16 @@ export default function Mutasi() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (!targetUnitId) {
+            toast.error("Pilih unit kerja tujuan terlebih dahulu");
+            return;
+        }
+
+        if (!targetFormationId) {
+            toast.error("Pilih formasi jabatan tujuan terlebih dahulu");
+            return;
+        }
 
         if (!selectedCategory) {
             toast.error("Pilih kategori mutasi terlebih dahulu");
@@ -171,6 +228,8 @@ export default function Mutasi() {
             title: selectedCategory.name,
             description: selectedCategory.description,
             documents: documentsArray,
+            target_work_unit_id: parseInt(targetUnitId),
+            target_job_formation_id: targetFormationId
         });
 
         if (error) {
@@ -181,6 +240,8 @@ export default function Mutasi() {
             setIsDialogOpen(false);
             setSelectedCategory(null);
             setDocumentLinks({});
+            setTargetUnitId("");
+            setTargetFormationId("");
             loadServices();
         }
 
@@ -205,6 +266,8 @@ export default function Mutasi() {
         if (!open) {
             setSelectedCategory(null);
             setDocumentLinks({});
+            setTargetUnitId("");
+            setTargetFormationId("");
         }
     };
 
@@ -359,6 +422,51 @@ export default function Mutasi() {
                                         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                                             <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
                                                 <div className="space-y-6 pb-4">
+
+                                                    {/* Target Unit & Formation Selection */}
+                                                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                                                        <h3 className="font-semibold flex items-center gap-2">
+                                                            <Building2 className="h-4 w-4" />
+                                                            Tujuan Mutasi
+                                                        </h3>
+                                                        <div className="grid gap-4 sm:grid-cols-2">
+                                                            <div className="space-y-2">
+                                                                <Label>Unit Kerja Tujuan</Label>
+                                                                <Select value={targetUnitId} onValueChange={setTargetUnitId}>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Pilih Unit Tujuan" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {workUnits.map((unit) => (
+                                                                            <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                                                {unit.name}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Formasi Jabatan</Label>
+                                                                <Select
+                                                                    value={targetFormationId}
+                                                                    onValueChange={setTargetFormationId}
+                                                                    disabled={!targetUnitId}
+                                                                >
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder={targetUnitId ? "Pilih Jabatan" : "Pilih Unit Dulu"} />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {jobFormations.map((formation) => (
+                                                                            <SelectItem key={formation.id} value={formation.id}>
+                                                                                {formation.position_name} (Sisa: {formation.quota})
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div className="space-y-2">
                                                         <Label htmlFor="category">Kategori Mutasi *</Label>
                                                         <Select

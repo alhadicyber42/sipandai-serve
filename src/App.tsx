@@ -37,6 +37,8 @@ const EmployeeRating = lazy(() => import("./pages/EmployeeRating"));
 const AdminEmployeeRatings = lazy(() => import("./pages/admin/EmployeeRatings"));
 const EmployeeProfile = lazy(() => import("./pages/admin/EmployeeProfile"));
 const Pengumuman = lazy(() => import("./pages/admin/Pengumuman"));
+const LeaveDeferralManagement = lazy(() => import("./pages/admin/LeaveDeferralManagement"));
+const JobFormationManagement = lazy(() => import("./pages/admin/JobFormationManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -84,36 +86,38 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<DashboardSkeleton />}>
                 <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/layanan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
-                <Route path="/layanan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
-                <Route path="/layanan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
-                <Route path="/layanan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
-                <Route path="/usulan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
-                <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
-                <Route path="/usulan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
-                <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
-                <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
-                <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
-                <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
-                <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
-                <Route path="/pengumuman" element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
-                <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
-                <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
-                <Route path="/konsultasi/riwayat-unit" element={<ProtectedRoute><UnitConsultationHistory /></ProtectedRoute>} />
-                <Route path="/konsultasi/tereskalasi" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
-                <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
-                <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
-                <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
-                <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
-                <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
-                <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
-                <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/layanan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
+                  <Route path="/layanan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+                  <Route path="/layanan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
+                  <Route path="/layanan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
+                  <Route path="/usulan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
+                  <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+                  <Route path="/usulan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
+                  <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
+                  <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
+                  <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
+                  <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
+                  <Route path="/admin/formasi-jabatan" element={<ProtectedRoute><JobFormationManagement /></ProtectedRoute>} />
+                  <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
+                  <Route path="/pengumuman" element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
+                  <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
+                  <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/riwayat-unit" element={<ProtectedRoute><UnitConsultationHistory /></ProtectedRoute>} />
+                  <Route path="/konsultasi/tereskalasi" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
+                  <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
+                  <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
+                  <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
+                  <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+                  <Route path="/admin/penangguhan-cuti" element={<ProtectedRoute><LeaveDeferralManagement /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
             </BrowserRouter>

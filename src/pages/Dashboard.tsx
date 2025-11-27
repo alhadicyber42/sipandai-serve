@@ -196,7 +196,70 @@ export default function Dashboard() {
       await loadEmployeeStats();
     }
 
+    // Load leave stats for user_unit
+    if (user?.role === "user_unit") {
+      await loadUserLeaveStats();
+    }
+
     setIsLoading(false);
+  };
+
+  const loadUserLeaveStats = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      // Get approved and pending leave requests
+      const { data: leaves } = await supabase
+        .from("services")
+        .select(`
+          *,
+          leave_details (*)
+        `)
+        .eq("user_id", user?.id)
+        .eq("service_type", "cuti")
+        .in("status", ["submitted", "under_review_unit", "under_review_central", "approved_by_unit", "approved_final"]);
+
+      let usedDays = 0;
+      let pendingDays = 0;
+
+      if (leaves) {
+        leaves.forEach(service => {
+          const details = service.leave_details?.[0];
+          if (!details) return;
+
+          // Only count Annual Leave (Cuti Tahunan)
+          if (details.leave_type === 'tahunan') {
+            const serviceYear = new Date(details.start_date).getFullYear();
+            if (serviceYear === currentYear) {
+              if (service.status === 'approved_final') {
+                usedDays += details.total_days;
+              } else {
+                pendingDays += details.total_days;
+              }
+            }
+          }
+        });
+      }
+
+      // Get active deferrals
+      const { data: deferrals } = await supabase
+        .from("leave_deferrals")
+        .select("days_deferred")
+        .eq("user_id", user?.id)
+        .eq("status", "active");
+
+      const carriedOver = (deferrals || []).reduce((sum, d) => sum + d.days_deferred, 0);
+
+      setEmployeeStats({
+        remaining: 12 + carriedOver - usedDays - pendingDays,
+        carriedOver,
+        used: usedDays,
+        pending: pendingDays
+      });
+
+    } catch (error) {
+      console.error("Error loading user leave stats:", error);
+    }
   };
 
   const loadEmployeeStats = async () => {
@@ -520,6 +583,24 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+
+          {user?.role === "user_unit" && employeeStats?.remaining !== undefined && (
+            <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/10 rounded-full blur-2xl"></div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium">Sisa Cuti</CardTitle>
+                <Coffee className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              </CardHeader>
+              <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
+                <div className="text-lg md:text-xl lg:text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {employeeStats.remaining} Hari
+                </div>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
+                  {employeeStats.carriedOver > 0 ? `+${employeeStats.carriedOver} hari penangguhan` : "Kuota tahun ini"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {(user?.role === "admin_unit" || user?.role === "admin_pusat") && (
             <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/30 border-orange-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">

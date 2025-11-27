@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, Download } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, Download, CalendarX, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -130,6 +130,10 @@ export const DashboardLayout = ({
         label: "Daftar Pegawai Unit",
         icon: Users
       }, {
+        path: "/admin/formasi-jabatan",
+        label: "Formasi Jabatan",
+        icon: Briefcase
+      }, {
         path: "/admin/employee-ratings",
         label: "Employee of The Month",
         icon: Trophy
@@ -186,9 +190,17 @@ export const DashboardLayout = ({
         label: "Daftar Pegawai Unit",
         icon: Users
       }, {
+        path: "/admin/formasi-jabatan",
+        label: "Formasi Jabatan",
+        icon: Briefcase
+      }, {
         path: "/admin/employee-ratings",
         label: "Employee of The Month",
         icon: Trophy
+      }, {
+        path: "/admin/penangguhan-cuti",
+        label: "Penangguhan Cuti",
+        icon: CalendarX
       }, {
         path: "/pengumuman",
         label: "Kelola Pengumuman",

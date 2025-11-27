@@ -40,14 +40,22 @@ export default function Cuti() {
   const [savingDocuments, setSavingDocuments] = useState<Set<number>>(new Set());
   const [selectedLeaveType, setSelectedLeaveType] = useState<string>("");
 
+  // Deferral State
+  const [isDeferralDialogOpen, setIsDeferralDialogOpen] = useState(false);
+  const [deferralYear, setDeferralYear] = useState<string>(new Date().getFullYear().toString());
+  const [deferralDays, setDeferralDays] = useState<string>("");
+  const [deferralDoc, setDeferralDoc] = useState<string>("");
+  const [pendingDeferrals, setPendingDeferrals] = useState<any[]>([]);
+
   // Leave Balance State
   const [leaveStats, setLeaveStats] = useState({
     quota: 12, // Default annual quota
-    carriedOver: 0, // N-1 quota (mocked for now as 0)
+    carriedOver: 0, // Loaded from leave_deferrals table
     used: 0,
     pending: 0,
     remaining: 12
   });
+  const [deferralDetails, setDeferralDetails] = useState<Array<{ year: number, days: number }>>([]);
 
   useEffect(() => {
     loadServices();
@@ -141,11 +149,27 @@ export default function Cuti() {
           }
         });
 
+        // Load deferral balances
+        const { data: deferrals } = await supabase
+          .from("leave_deferrals")
+          .select("deferral_year, days_deferred, status")
+          .eq("user_id", user.id)
+          .in("status", ["active", "pending"]);
+
+        const activeDeferrals = (deferrals || []).filter(d => d.status === "active");
+        const pending = (deferrals || []).filter(d => d.status === "pending");
+
+        const totalCarriedOver = activeDeferrals.reduce((sum, d) => sum + d.days_deferred, 0);
+        const deferralList = activeDeferrals.map(d => ({ year: d.deferral_year, days: d.days_deferred }));
+
+        setDeferralDetails(deferralList);
+        setPendingDeferrals(pending);
         setLeaveStats(prev => ({
           ...prev,
+          carriedOver: totalCarriedOver,
           used: usedDays,
           pending: pendingDays,
-          remaining: (prev.quota + prev.carriedOver) - usedDays
+          remaining: (prev.quota + totalCarriedOver) - usedDays
         }));
       }
 
@@ -286,6 +310,45 @@ export default function Cuti() {
     }
 
     setIsSubmitting(false);
+  };
+
+  const handleDeferralSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (!deferralYear || !deferralDays || !deferralDoc) {
+      toast.error("Mohon lengkapi semua field");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase
+        .from("leave_deferrals")
+        .insert({
+          user_id: user.id,
+          deferral_year: parseInt(deferralYear),
+          days_deferred: parseInt(deferralDays),
+          approval_document: deferralDoc,
+          status: "pending",
+          created_by: user.id
+        });
+
+      if (error) throw error;
+
+      toast.success("Pengajuan penangguhan berhasil dikirim");
+      setIsDeferralDialogOpen(false);
+      setDeferralYear(new Date().getFullYear().toString());
+      setDeferralDays("");
+      setDeferralDoc("");
+      loadServices(); // Reload to show pending status
+    } catch (error: any) {
+      console.error("Error submitting deferral:", error);
+      toast.error(error.message || "Gagal mengajukan penangguhan");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditService = (service: any) => {
@@ -637,6 +700,109 @@ export default function Cuti() {
                     <p className="text-xs text-muted-foreground">
                       Sisa tahun lalu
                     </p>
+                    {deferralDetails.length > 0 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="link" size="sm" className="h-auto p-0 text-xs mt-1">
+                            <Info className="h-3 w-3 mr-1" />
+                            Lihat detail
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">Detail Penangguhan</h4>
+                            {deferralDetails.map((d, idx) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Tahun {d.year}:</span>
+                                <span className="font-medium">{d.days} hari</span>
+                              </div>
+                            ))}
+                            <div className="border-t pt-2 flex justify-between text-sm font-semibold">
+                              <span>Total:</span>
+                              <span>{leaveStats.carriedOver} hari</span>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+
+                    <div className="mt-2 flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs h-8"
+                        onClick={() => setIsDeferralDialogOpen(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Ajukan Penangguhan
+                      </Button>
+
+                      {pendingDeferrals.length > 0 && (
+                        <Alert className="py-2 px-3 bg-yellow-50 border-yellow-200">
+                          <Clock className="h-3 w-3 text-yellow-600" />
+                          <AlertDescription className="text-[10px] text-yellow-700 ml-2">
+                            {pendingDeferrals.length} pengajuan menunggu persetujuan
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+
+                    <Dialog open={isDeferralDialogOpen} onOpenChange={setIsDeferralDialogOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Ajukan Penangguhan Cuti</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleDeferralSubmit} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Tahun Asal Cuti</Label>
+                            <Input
+                              type="number"
+                              min={2000}
+                              max={new Date().getFullYear()}
+                              value={deferralYear}
+                              onChange={(e) => setDeferralYear(e.target.value)}
+                              placeholder="Contoh: 2024"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Tahun dari mana sisa cuti berasal
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Jumlah Hari</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={12}
+                              value={deferralDays}
+                              onChange={(e) => setDeferralDays(e.target.value)}
+                              placeholder="Jumlah hari yang ditangguhkan"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Dokumen Persetujuan (Link)</Label>
+                            <Input
+                              value={deferralDoc}
+                              onChange={(e) => setDeferralDoc(e.target.value)}
+                              placeholder="https://..."
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Link Google Drive/Dropbox dokumen persetujuan
+                            </p>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setIsDeferralDialogOpen(false)}>
+                              Batal
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                              {isSubmitting ? "Mengirim..." : "Kirim Pengajuan"}
+                            </Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   </CardContent>
                 </Card>
               </>
