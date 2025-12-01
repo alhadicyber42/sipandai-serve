@@ -138,6 +138,10 @@ export const DashboardLayout = ({
         label: "Reminder Pensiun",
         icon: Bell
       }, {
+        path: "/admin/buat-surat",
+        label: "Buat Surat",
+        icon: FileText
+      }, {
         path: "/admin/employee-ratings",
         label: "Employee of The Month",
         icon: Trophy
@@ -209,6 +213,10 @@ export const DashboardLayout = ({
         path: "/admin/penangguhan-cuti",
         label: "Penangguhan Cuti",
         icon: CalendarX
+      }, {
+        path: "/admin/buat-surat",
+        label: "Buat Surat",
+        icon: FileText
       }, {
         path: "/pengumuman",
         label: "Kelola Pengumuman",

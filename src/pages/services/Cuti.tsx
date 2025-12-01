@@ -23,6 +23,16 @@ import { cn } from "@/lib/utils";
 import { LEAVE_LABELS } from "@/lib/constants";
 import { z } from "zod";
 import { StatCardSkeleton } from "@/components/skeletons";
+import { extractTemplateData } from "@/lib/templateEngine";
+import { getDefaultTemplate } from "@/lib/templateStorage";
+import { generateDocument } from "@/lib/docxEngine";
+import { LetterTemplate } from "@/types/leave-certificate";
+import { Database } from "@/integrations/supabase/types";
+import { Service } from "@/components/ServiceList";
+
+type LeaveDetail = Database['public']['Tables']['leave_details']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type WorkUnit = Database['public']['Tables']['work_units']['Row'];
 
 export default function Cuti() {
   const { user } = useAuth();
@@ -56,6 +66,11 @@ export default function Cuti() {
     remaining: 12
   });
   const [deferralDetails, setDeferralDetails] = useState<Array<{ year: number, days: number }>>([]);
+
+  // Certificate Generation State
+  const [isCertificateDialogOpen, setIsCertificateDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplate | null>(null);
+  const [certificateData, setCertificateData] = useState<any>(null);
 
   useEffect(() => {
     loadServices();
@@ -437,6 +452,48 @@ export default function Cuti() {
       loadServices();
     }
 
+  };
+
+  const handleGenerateCertificate = (service: Service) => {
+    // 1. Get default template for this user's unit
+    // In real app, we should get unit from service.user_id -> profile -> work_unit_id
+    // For now, we use current user's unit or default 1
+    const workUnitId = user?.work_unit_id || 1;
+    const template = getDefaultTemplate(workUnitId, 'cuti');
+
+    if (!template) {
+      toast.error("Template surat keterangan belum tersedia untuk unit kerja ini.");
+      return;
+    }
+
+    if (!template.file_content) {
+      toast.error("Template ini menggunakan format lama (text). Harap update ke format Word (.docx).");
+      return;
+    }
+
+    try {
+      // 2. Extract data
+      // Mock data for now since we need full profile and unit info
+      // In production, we would fetch this data properly
+      const data = extractTemplateData(
+        service as any,
+        (service as any).leave_details?.[0] || {} as any,
+        (service as any).profiles || {} as any,
+        (service as any).work_units || { name: "BBPVP Bekasi" } as any
+      );
+
+      // 3. Generate Document
+      generateDocument(
+        template.file_content,
+        data,
+        `Surat_Keterangan_Cuti_${user?.name || 'Pegawai'}.docx`
+      );
+
+      toast.success("Surat keterangan berhasil didownload");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal membuat surat keterangan");
+    }
   };
 
   const isAdmin = user?.role === "admin_unit" || user?.role === "admin_pusat";
@@ -869,6 +926,7 @@ export default function Cuti() {
             showFilters={isAdmin}
             allowActions={isAdmin}
             onEditService={user?.role === "user_unit" ? handleEditService : undefined}
+            onGenerateCertificate={handleGenerateCertificate}
           />
         </div>
 

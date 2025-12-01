@@ -50,7 +50,7 @@ import { NoDataState, SearchState } from "@/components/EmptyState";
 import { TrackingStatusDialog } from "@/components/TrackingStatusDialog";
 import { exportToExcel } from "@/lib/exportToExcel";
 
-interface Service {
+export interface Service {
   id: string;
   title: string;
   description: string | null;
@@ -72,6 +72,7 @@ interface ServiceListProps {
   showFilters?: boolean;
   allowActions?: boolean;
   onEditService?: (service: Service) => void;
+  onGenerateCertificate?: (service: Service) => void;
 }
 
 export function ServiceList({
@@ -81,6 +82,7 @@ export function ServiceList({
   showFilters = true,
   allowActions = true,
   onEditService,
+  onGenerateCertificate,
 }: ServiceListProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -569,6 +571,16 @@ export function ServiceList({
                                 Update Status
                               </DropdownMenuItem>
                             )}
+                            {(user?.role === "admin_unit" || user?.role === "admin_pusat") &&
+                              service.status === "approved_final" &&
+                              onGenerateCertificate && (
+                                <DropdownMenuItem
+                                  onClick={() => onGenerateCertificate(service)}
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Generate Surat
+                                </DropdownMenuItem>
+                              )}
                             {canTakeAction(service) && (
                               <>
                                 <DropdownMenuSeparator />
