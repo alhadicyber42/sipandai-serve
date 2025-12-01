@@ -279,7 +279,8 @@ export default function LetterGenerator() {
                 });
 
                 // Add to zip with sanitized filename
-                const sanitizedName = entry.nama_pegawai.replace(/[^a-z0-9]/gi, '_');
+                const employeeName = entry.selectedEmployee?.name || 'Unknown';
+                const sanitizedName = employeeName.replace(/[^a-z0-9]/gi, '_');
                 zip.file(`Surat_${category}_${sanitizedName}.docx`, blob);
             }
 
