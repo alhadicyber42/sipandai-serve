@@ -65,20 +65,37 @@ export default function AdminEmployeeRatings() {
             setUnitEmployeeIds(employeeIds);
         }
 
-        // Load ratings from localStorage
-        const storedRatings = JSON.parse(localStorage.getItem('employee_ratings') || '[]');
+        // Load ratings from database
+        let ratingsQuery = supabase
+            .from("employee_ratings")
+            .select("*")
+            .order("created_at", { ascending: false });
         
         // Filter ratings based on user role
-        let filteredRatings = storedRatings;
         if (user?.role === "admin_unit" && employeeData) {
             const employeeIds = employeeData.map(emp => emp.id);
-            // Only show ratings where the rated employee is from this unit
-            filteredRatings = storedRatings.filter((rating: Rating) => 
-                employeeIds.includes(rating.rated_employee_id)
-            );
+            ratingsQuery = ratingsQuery.in("rated_employee_id", employeeIds);
         }
+
+        const { data: ratingsData, error } = await ratingsQuery;
         
-        setRatings(filteredRatings);
+        if (error) {
+            console.error("Error loading ratings:", error);
+            return;
+        }
+
+        // Enrich ratings with employee names
+        const enrichedRatings = (ratingsData || []).map((rating: any) => {
+            const ratedEmployee = employeeData?.find(e => e.id === rating.rated_employee_id);
+            const rater = employeeData?.find(e => e.id === rating.rater_id);
+            return {
+                ...rating,
+                rated_employee_name: ratedEmployee?.name || "Unknown",
+                rater_name: rater?.name || "Unknown",
+            };
+        });
+        
+        setRatings(enrichedRatings);
     };
 
     const calculateLeaderboard = () => {

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          title: string
+          updated_at: string
+          work_unit_id: number | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title: string
+          updated_at?: string
+          work_unit_id?: number | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title?: string
+          updated_at?: string
+          work_unit_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_work_unit_id_fkey"
+            columns: ["work_unit_id"]
+            isOneToOne: false
+            referencedRelation: "work_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultation_messages: {
         Row: {
           attachments: Json | null
@@ -116,6 +157,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      employee_ratings: {
+        Row: {
+          created_at: string
+          criteria_totals: Json
+          detailed_ratings: Json
+          id: string
+          max_possible_points: number
+          rated_employee_id: string
+          rater_id: string
+          rating_period: string
+          reason: string
+          total_points: number
+        }
+        Insert: {
+          created_at?: string
+          criteria_totals?: Json
+          detailed_ratings?: Json
+          id?: string
+          max_possible_points?: number
+          rated_employee_id: string
+          rater_id: string
+          rating_period: string
+          reason: string
+          total_points?: number
+        }
+        Update: {
+          created_at?: string
+          criteria_totals?: Json
+          detailed_ratings?: Json
+          id?: string
+          max_possible_points?: number
+          rated_employee_id?: string
+          rater_id?: string
+          rating_period?: string
+          reason?: string
+          total_points?: number
+        }
+        Relationships: []
       }
       job_formations: {
         Row: {
