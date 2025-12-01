@@ -107,11 +107,7 @@ const RetirementReminders = () => {
     const loadReminders = async () => {
         const { data, error } = await supabase
             .from("retirement_reminders")
-            .select(`
-        *,
-        profiles!retirement_reminders_user_id_fkey (*),
-        sender:profiles!retirement_reminders_sent_by_fkey (*)
-      `)
+            .select(`*`)
             .order("sent_at", { ascending: false })
             .limit(100);
 
@@ -120,7 +116,7 @@ const RetirementReminders = () => {
             return;
         }
 
-        setReminders(data || []);
+        setReminders((data || []) as any);
     };
 
     const loadWorkUnits = async () => {
@@ -151,10 +147,10 @@ const RetirementReminders = () => {
                 .insert({
                     user_id: employee.id,
                     reminder_type: "email",
-                    sent_by: user!.id,
+                    sender_id: user!.id,
                     status: "sent",
-                    message_content: `Email sent to ${employee.email}`
-                });
+                    message: `Email sent to ${employee.email}`
+                } as any);
 
             if (logError) throw logError;
 
@@ -214,10 +210,10 @@ const RetirementReminders = () => {
             .insert({
                 user_id: selectedEmployee.id,
                 reminder_type: "whatsapp",
-                sent_by: user!.id,
+                sender_id: user!.id,
                 status: "sent",
-                message_content: message
-            })
+                message: message
+            } as any)
             .then(() => {
                 // Update last reminder sent timestamp
                 supabase

@@ -361,8 +361,8 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                         <div className="space-y-2">
                             <Label>Upload Template (.docx)</Label>
                             <TemplateUploader
-                                onFileSelect={setNewTemplateFile}
-                                currentFile={newTemplateFile}
+                                onFileSelect={(file, base64) => setNewTemplateFile({ file, base64 })}
+                                currentFileName={newTemplateFile?.file.name}
                             />
                         </div>
                     </div>

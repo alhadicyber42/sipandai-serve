@@ -120,6 +120,8 @@ export type Database = {
       job_formations: {
         Row: {
           created_at: string
+          description: string | null
+          filled: number
           id: string
           position_name: string
           quota: number
@@ -128,6 +130,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
+          filled?: number
           id?: string
           position_name: string
           quota?: number
@@ -136,6 +140,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
+          filled?: number
           id?: string
           position_name?: string
           quota?: number
@@ -151,6 +157,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leave_deferrals: {
+        Row: {
+          approval_document: string | null
+          created_at: string
+          created_by: string | null
+          days_deferred: number
+          deferral_year: number
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_document?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_deferred?: number
+          deferral_year: number
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_document?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_deferred?: number
+          deferral_year?: number
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       leave_details: {
         Row: {
@@ -199,136 +244,106 @@ export type Database = {
           },
         ]
       }
-      leave_deferrals: {
-        Row: {
-          approval_document: string
-          created_at: string
-          created_by: string
-          days_deferred: number
-          deferral_year: number
-          id: string
-          status: Database["public"]["Enums"]["deferral_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          approval_document: string
-          created_at?: string
-          created_by: string
-          days_deferred: number
-          deferral_year: number
-          id?: string
-          status?: Database["public"]["Enums"]["deferral_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          approval_document?: string
-          created_at?: string
-          created_by?: string
-          days_deferred?: number
-          deferral_year?: number
-          id?: string
-          status?: Database["public"]["Enums"]["deferral_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      retirement_reminders: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          message_content: string | null
-          reminder_type: string
-          sent_at: string
-          sent_by: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_content?: string | null
-          reminder_type: string
-          sent_at?: string
-          sent_by: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_content?: string | null
-          reminder_type?: string
-          sent_at?: string
-          sent_by?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "retirement_reminders_sent_by_fkey"
-            columns: ["sent_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "retirement_reminders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
-          birth_date: string | null
+          agama: string | null
+          alamat: string | null
+          alamat_lengkap: string | null
+          avatar_url: string | null
           created_at: string
+          documents: Json | null
           email: string | null
+          email_alternatif: string | null
           id: string
+          jabatan: string | null
+          jenis_kelamin: string | null
+          masa_kerja_bulan: number | null
+          masa_kerja_tahun: number | null
           name: string
           nip: string
+          nomor_hp: string | null
+          nomor_wa: string | null
+          pangkat_golongan: string | null
+          pendidikan_terakhir: string | null
           phone: string | null
           retirement_date: string | null
           retirement_reminder_sent_at: string | null
+          riwayat_jabatan: Json | null
+          riwayat_mutasi: Json | null
           role: Database["public"]["Enums"]["user_role"]
+          status_perkawinan: string | null
+          tanggal_lahir: string | null
+          tempat_lahir: string | null
+          tmt_pensiun: string | null
+          tmt_pns: string | null
           updated_at: string
           work_unit_id: number | null
         }
         Insert: {
-          birth_date?: string | null
+          agama?: string | null
+          alamat?: string | null
+          alamat_lengkap?: string | null
+          avatar_url?: string | null
           created_at?: string
+          documents?: Json | null
           email?: string | null
+          email_alternatif?: string | null
           id: string
+          jabatan?: string | null
+          jenis_kelamin?: string | null
+          masa_kerja_bulan?: number | null
+          masa_kerja_tahun?: number | null
           name: string
           nip: string
+          nomor_hp?: string | null
+          nomor_wa?: string | null
+          pangkat_golongan?: string | null
+          pendidikan_terakhir?: string | null
           phone?: string | null
           retirement_date?: string | null
           retirement_reminder_sent_at?: string | null
+          riwayat_jabatan?: Json | null
+          riwayat_mutasi?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
+          status_perkawinan?: string | null
+          tanggal_lahir?: string | null
+          tempat_lahir?: string | null
+          tmt_pensiun?: string | null
+          tmt_pns?: string | null
           updated_at?: string
           work_unit_id?: number | null
         }
         Update: {
-          birth_date?: string | null
+          agama?: string | null
+          alamat?: string | null
+          alamat_lengkap?: string | null
+          avatar_url?: string | null
           created_at?: string
+          documents?: Json | null
           email?: string | null
+          email_alternatif?: string | null
           id?: string
+          jabatan?: string | null
+          jenis_kelamin?: string | null
+          masa_kerja_bulan?: number | null
+          masa_kerja_tahun?: number | null
           name?: string
           nip?: string
+          nomor_hp?: string | null
+          nomor_wa?: string | null
+          pangkat_golongan?: string | null
+          pendidikan_terakhir?: string | null
           phone?: string | null
           retirement_date?: string | null
           retirement_reminder_sent_at?: string | null
+          riwayat_jabatan?: Json | null
+          riwayat_mutasi?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
+          status_perkawinan?: string | null
+          tanggal_lahir?: string | null
+          tempat_lahir?: string | null
+          tmt_pensiun?: string | null
+          tmt_pns?: string | null
           updated_at?: string
           work_unit_id?: number | null
         }
@@ -341,6 +356,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      retirement_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          reminder_type: string
+          sender_id: string
+          sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          reminder_type: string
+          sender_id: string
+          sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          reminder_type?: string
+          sender_id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       service_history: {
         Row: {
@@ -395,8 +443,6 @@ export type Database = {
           rejected_at: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["service_status"]
-          target_job_formation_id: string | null
-          target_work_unit_id: number | null
           title: string
           updated_at: string
           user_id: string
@@ -514,40 +560,39 @@ export type Database = {
     }
     Enums: {
       consultation_category:
-      | "escalated_responded"
-      | "follow_up_requested"
-      | "resolved"
-      | "closed"
+        | "kepegawaian"
+        | "administrasi"
+        | "teknis"
+        | "lainnya"
       consultation_priority: "low" | "medium" | "high"
       consultation_status:
-      | "submitted"
-      | "under_review"
-      | "responded"
-      | "escalated"
-      | "escalated_responded"
-      | "follow_up_requested"
-      | "resolved"
-      | "closed"
-      deferral_status: "active" | "used" | "expired" | "pending" | "rejected"
+        | "submitted"
+        | "under_review"
+        | "responded"
+        | "escalated"
+        | "escalated_responded"
+        | "follow_up_requested"
+        | "resolved"
+        | "closed"
       leave_type:
-      | "tahunan"
-      | "sakit"
-      | "melahirkan"
-      | "alasan_penting"
-      | "besar"
-      | "bersama"
-      | "di_luar_tanggungan_negara"
+        | "tahunan"
+        | "sakit"
+        | "melahirkan"
+        | "alasan_penting"
+        | "besar"
+        | "bersama"
+        | "di_luar_tanggungan_negara"
       message_type: "question" | "answer" | "follow_up"
       service_status:
-      | "draft"
-      | "submitted"
-      | "under_review_unit"
-      | "returned_to_user"
-      | "approved_by_unit"
-      | "under_review_central"
-      | "returned_to_unit"
-      | "approved_final"
-      | "rejected"
+        | "draft"
+        | "submitted"
+        | "under_review_unit"
+        | "returned_to_user"
+        | "approved_by_unit"
+        | "under_review_central"
+        | "returned_to_unit"
+        | "approved_final"
+        | "rejected"
       service_type: "kenaikan_pangkat" | "mutasi" | "pensiun" | "cuti"
       user_role: "user_unit" | "admin_unit" | "admin_pusat"
     }
@@ -563,116 +608,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-  ? R
-  : never
+    ? R
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : never
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
+      Insert: infer I
+    }
+    ? I
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  }
-  ? U
-  : never
+      Update: infer U
+    }
+    ? U
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
@@ -684,7 +729,6 @@ export const Constants = {
         "lainnya",
       ],
       consultation_priority: ["low", "medium", "high"],
-      deferral_status: ["active", "used", "expired"],
       consultation_status: [
         "submitted",
         "under_review",
