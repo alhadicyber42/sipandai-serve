@@ -139,7 +139,7 @@ export default function LetterGenerator() {
     };
 
     const updateBatchEntry = (id: string, field: keyof BatchEntry, value: any) => {
-        setBatchEntries(batchEntries.map(entry =>
+        setBatchEntries(prev => prev.map(entry =>
             entry.id === id ? { ...entry, [field]: value } : entry
         ));
     };
@@ -586,14 +586,7 @@ export default function LetterGenerator() {
                                                                         className="pl-9 text-sm"
                                                                         placeholder={category ? "Ketik nama/NIP..." : "Pilih jenis surat dulu"}
                                                                         value={entry.employeeSearch}
-                                                                        onChange={(e) => {
-                                                                            handleBatchEmployeeSearch(entry.id, e.target.value);
-                                                                            if (entry.selectedEmployee) {
-                                                                                updateBatchEntry(entry.id, 'selectedEmployee', null);
-                                                                                updateBatchEntry(entry.id, 'selectedSubmission', null);
-                                                                                updateBatchEntry(entry.id, 'submissionResults', []);
-                                                                            }
-                                                                        }}
+                                                                        onChange={(e) => handleBatchEmployeeSearch(entry.id, e.target.value)}
                                                                         disabled={!category}
                                                                     />
                                                                     {entry.isSearchingEmployee && (
