@@ -96,21 +96,27 @@ export default function EmployeeOfTheMonth() {
         setIsLoading(false);
     };
 
-    const loadLeaderboard = () => {
+    const loadLeaderboard = async () => {
         try {
-            const ratings = JSON.parse(localStorage.getItem('employee_ratings') || '[]');
-
             // Get current period
             const now = new Date();
             const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-            // Filter ratings for current period
-            const currentPeriodRatings = ratings.filter((r: any) => r.rating_period === currentPeriod);
+            // Fetch ratings from database
+            const { data: ratings, error } = await supabase
+                .from("employee_ratings")
+                .select("*")
+                .eq("rating_period", currentPeriod);
+
+            if (error) {
+                console.error('Error loading ratings:', error);
+                return;
+            }
 
             // Aggregate points by employee
             const pointsByEmployee: Record<string, { totalPoints: number, count: number }> = {};
 
-            currentPeriodRatings.forEach((rating: any) => {
+            (ratings || []).forEach((rating: any) => {
                 const employeeId = rating.rated_employee_id;
                 if (!pointsByEmployee[employeeId]) {
                     pointsByEmployee[employeeId] = { totalPoints: 0, count: 0 };
@@ -131,15 +137,27 @@ export default function EmployeeOfTheMonth() {
             // Get testimonials for the winner (top employee)
             if (leaderboardData.length > 0) {
                 const winnerId = leaderboardData[0].employeeId;
-                const winnerRatings = currentPeriodRatings.filter((r: any) => r.rated_employee_id === winnerId && r.reason);
+                const winnerRatings = (ratings || []).filter((r: any) => r.rated_employee_id === winnerId && r.reason);
+
+                // Get rater profiles for testimonials
+                const raterIds = winnerRatings.map((r: any) => r.rater_id);
+                const { data: raterProfiles } = await supabase
+                    .from("profiles")
+                    .select("id, name")
+                    .in("id", raterIds);
+
+                const raterMap = (raterProfiles || []).reduce((acc: any, p: any) => {
+                    acc[p.id] = p.name;
+                    return acc;
+                }, {});
 
                 const testimonialData: Testimonial[] = winnerRatings.map((r: any, index: number) => ({
                     id: index,
-                    name: r.rater_name || "Rekan Kerja",
+                    name: raterMap[r.rater_id] || "Rekan Kerja",
                     role: "Pegawai",
                     company: "Kemnaker",
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.rater_name || "User"}`,
-                    rating: 5, // Default to 5 or calculate from points if needed
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${raterMap[r.rater_id] || "User"}`,
+                    rating: 5,
                     text: r.reason,
                     results: r.criteria_totals ? Object.entries(r.criteria_totals).map(([key, value]: [string, any]) => `${key.replace('_', ' ')}: ${value}/25`).slice(0, 3) : undefined
                 }));

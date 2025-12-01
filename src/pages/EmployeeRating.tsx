@@ -175,39 +175,42 @@ export default function EmployeeRating() {
 
             const maxPossiblePoints = ratingCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
 
-            const rating = {
-                id: crypto.randomUUID(),
-                rater_id: user.id,
-                rater_name: user.name || user.email,
-                rated_employee_id: employeeId,
-                rated_employee_name: employee.name,
-                rating_period: ratingPeriod,
-                reason: reason.trim(),
-                detailed_ratings: ratings,
-                criteria_totals: criteriaTotals,
-                total_points: totalPoints,
-                max_possible_points: maxPossiblePoints,
-                created_at: new Date().toISOString()
-            };
+            // Check for duplicate rating in database
+            const { data: existingRating } = await supabase
+                .from("employee_ratings")
+                .select("id")
+                .eq("rater_id", user.id)
+                .eq("rated_employee_id", employeeId)
+                .eq("rating_period", ratingPeriod)
+                .maybeSingle();
 
-            const existingRatings = JSON.parse(localStorage.getItem('employee_ratings') || '[]');
-
-            const isDuplicate = existingRatings.some(
-                (r: any) => r.rater_id === user.id &&
-                    r.rated_employee_id === employeeId &&
-                    r.rating_period === ratingPeriod
-            );
-
-            if (isDuplicate) {
+            if (existingRating) {
                 toast.error("Anda sudah memberikan penilaian untuk pegawai ini di periode ini");
                 setIsSubmitting(false);
                 return;
             }
 
-            existingRatings.push(rating);
-            localStorage.setItem('employee_ratings', JSON.stringify(existingRatings));
+            // Save to database
+            const { error: insertError } = await supabase
+                .from("employee_ratings")
+                .insert({
+                    rater_id: user.id,
+                    rated_employee_id: employeeId,
+                    rating_period: ratingPeriod,
+                    reason: reason.trim(),
+                    detailed_ratings: ratings,
+                    criteria_totals: criteriaTotals,
+                    total_points: totalPoints,
+                    max_possible_points: maxPossiblePoints,
+                } as any);
 
-            console.log('Rating saved to localStorage:', rating);
+            if (insertError) {
+                console.error('Error saving rating:', insertError);
+                toast.error("Gagal menyimpan penilaian: " + insertError.message);
+                setIsSubmitting(false);
+                return;
+            }
+
             toast.success(`Penilaian berhasil dikirim! Total Poin: ${totalPoints}/${maxPossiblePoints}`);
 
             setTimeout(() => {
