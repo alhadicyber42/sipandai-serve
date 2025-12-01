@@ -92,6 +92,37 @@ export async function getApprovedSubmissions(
 }
 
 /**
+ * Search approved submissions by employee name or NIP
+ */
+export async function searchSubmissionsByEmployee(
+    serviceType: string,
+    searchTerm: string
+): Promise<ApprovedSubmission[]> {
+    if (!searchTerm || searchTerm.length < 2) {
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from('services')
+        .select(`
+            *,
+            profiles!inner(id, name, nip),
+            leave_details(*)
+        `)
+        .eq('service_type', serviceType as any)
+        .eq('status', 'approved_final')
+        .or(`profiles.name.ilike.%${searchTerm}%,profiles.nip.ilike.%${searchTerm}%`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error searching submissions:', error);
+        return [];
+    }
+
+    return (data || []) as any[];
+}
+
+/**
  * Map submission data to template variables based on service type
  */
 export function mapSubmissionToTemplateData(submission: any, serviceType: string): any {

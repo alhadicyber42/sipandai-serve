@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TemplateManagement from "./TemplateManagement";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { FileText, Settings, Download, User, File, Plus, Trash2, Users } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, Settings, User, Plus, Trash2, Users } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,12 @@ import { generateDocument } from "@/lib/docxEngine";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { searchEmployees, getApprovedSubmissions, mapSubmissionToTemplateData, formatSubmissionLabel, EmployeeSearchResult, ApprovedSubmission } from "@/lib/submissionData";
+import {
+    searchSubmissionsByEmployee,
+    mapSubmissionToTemplateData,
+    formatSubmissionLabel,
+    ApprovedSubmission
+} from "@/lib/submissionData";
 
 interface BatchEntry {
     id: string;
@@ -23,6 +28,12 @@ interface BatchEntry {
     nip_pegawai: string;
     jabatan_pegawai: string;
     unit_kerja: string;
+    // Search states per entry
+    submissionSearch: string;
+    submissionResults: ApprovedSubmission[];
+    selectedSubmission: ApprovedSubmission | null;
+    isSearching: boolean;
+    showManualInput: boolean;
 }
 
 export default function LetterGenerator() {
@@ -39,20 +50,27 @@ export default function LetterGenerator() {
     const [employeeJabatan, setEmployeeJabatan] = useState("");
     const [employeeUnit, setEmployeeUnit] = useState("");
 
-    // Employee search states
-    const [employeeSearch, setEmployeeSearch] = useState("");
-    const [employeeResults, setEmployeeResults] = useState<EmployeeSearchResult[]>([]);
-    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSearchResult | null>(null);
-    const [isSearching, setIsSearching] = useState(false);
-
-    // Submission states
-    const [submissions, setSubmissions] = useState<ApprovedSubmission[]>([]);
+    // Submission search states (Individual)
+    const [submissionSearch, setSubmissionSearch] = useState("");
+    const [submissionResults, setSubmissionResults] = useState<ApprovedSubmission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<ApprovedSubmission | null>(null);
-    const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showManualInput, setShowManualInput] = useState(false);
 
     // Batch mode states
     const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([
-        { id: "1", nama_pegawai: "", nip_pegawai: "", jabatan_pegawai: "", unit_kerja: "" }
+        {
+            id: "1",
+            nama_pegawai: "",
+            nip_pegawai: "",
+            jabatan_pegawai: "",
+            unit_kerja: "",
+            submissionSearch: "",
+            submissionResults: [],
+            selectedSubmission: null,
+            isSearching: false,
+            showManualInput: false
+        }
     ]);
 
     useEffect(() => {
@@ -64,39 +82,41 @@ export default function LetterGenerator() {
         }
     }, [user, category]);
 
-    // Search employees when search term changes
+    // Search submissions when search term changes (Individual)
     useEffect(() => {
         const searchTimer = setTimeout(async () => {
-            if (employeeSearch.length >= 2) {
+            if (submissionSearch.length >= 2 && category) {
                 setIsSearching(true);
-                const results = await searchEmployees(employeeSearch);
-                setEmployeeResults(results);
+                const results = await searchSubmissionsByEmployee(category, submissionSearch);
+                setSubmissionResults(results);
                 setIsSearching(false);
             } else {
-                setEmployeeResults([]);
+                setSubmissionResults([]);
             }
         }, 300);
 
         return () => clearTimeout(searchTimer);
-    }, [employeeSearch]);
+    }, [submissionSearch, category]);
 
-    // Load submissions when employee and category are selected
-    useEffect(() => {
-        const loadSubmissions = async () => {
-            if (selectedEmployee && category) {
-                setIsLoadingSubmissions(true);
-                const data = await getApprovedSubmissions(category, selectedEmployee.id);
-                setSubmissions(data);
-                setIsLoadingSubmissions(false);
-            } else {
-                setSubmissions([]);
-                setSelectedSubmission(null);
-            }
-        };
+    const handleSubmissionSelect = (submission: ApprovedSubmission) => {
+        if (category) {
+            setSelectedSubmission(submission);
+            const mappedData = mapSubmissionToTemplateData(submission, category);
+            setEmployeeName(mappedData.nama_pegawai);
+            setEmployeeNip(mappedData.nip_pegawai);
+            setEmployeeJabatan(mappedData.jabatan_pegawai);
+            setEmployeeUnit(mappedData.unit_kerja || "");
 
-        loadSubmissions();
-    }, [selectedEmployee, category]);
+            // Clear search results but keep the search term or clear it? 
+            // Usually better to clear results to hide the dropdown
+            setSubmissionResults([]);
+            // Optional: set search term to employee name to show who was selected
+            setSubmissionSearch("");
+            setShowManualInput(false);
+        }
+    };
 
+    // Batch functions
     const addBatchEntry = () => {
         const newId = (Math.max(...batchEntries.map(e => parseInt(e.id))) + 1).toString();
         setBatchEntries([...batchEntries, {
@@ -104,7 +124,12 @@ export default function LetterGenerator() {
             nama_pegawai: "",
             nip_pegawai: "",
             jabatan_pegawai: "",
-            unit_kerja: ""
+            unit_kerja: "",
+            submissionSearch: "",
+            submissionResults: [],
+            selectedSubmission: null,
+            isSearching: false,
+            showManualInput: false
         }]);
     };
 
@@ -114,29 +139,46 @@ export default function LetterGenerator() {
         }
     };
 
-    const updateBatchEntry = (id: string, field: keyof BatchEntry, value: string) => {
+    const updateBatchEntry = (id: string, field: keyof BatchEntry, value: any) => {
         setBatchEntries(batchEntries.map(entry =>
             entry.id === id ? { ...entry, [field]: value } : entry
         ));
     };
 
-    const handleEmployeeSelect = (employee: EmployeeSearchResult) => {
-        setSelectedEmployee(employee);
-        setEmployeeName(employee.name);
-        setEmployeeNip(employee.nip);
-        setEmployeeSearch(employee.name);
-        setEmployeeResults([]);
+    const handleBatchSubmissionSearch = async (entryId: string, searchTerm: string) => {
+        updateBatchEntry(entryId, 'submissionSearch', searchTerm);
+
+        if (searchTerm.length >= 2 && category) {
+            updateBatchEntry(entryId, 'isSearching', true);
+            const results = await searchSubmissionsByEmployee(category, searchTerm);
+            updateBatchEntry(entryId, 'submissionResults', results);
+            updateBatchEntry(entryId, 'isSearching', false);
+        } else {
+            updateBatchEntry(entryId, 'submissionResults', []);
+        }
     };
 
-    const handleSubmissionSelect = (submissionId: string) => {
-        const submission = submissions.find(s => s.id.toString() === submissionId);
-        if (submission && category) {
-            setSelectedSubmission(submission);
+    const handleBatchSubmissionSelect = (entryId: string, submission: ApprovedSubmission) => {
+        if (category) {
+            updateBatchEntry(entryId, 'selectedSubmission', submission);
             const mappedData = mapSubmissionToTemplateData(submission, category);
-            setEmployeeName(mappedData.nama_pegawai);
-            setEmployeeNip(mappedData.nip_pegawai);
-            setEmployeeJabatan(mappedData.jabatan_pegawai);
-            setEmployeeUnit(mappedData.unit_kerja || "");
+
+            // Update all fields at once
+            setBatchEntries(prev => prev.map(entry => {
+                if (entry.id === entryId) {
+                    return {
+                        ...entry,
+                        nama_pegawai: mappedData.nama_pegawai,
+                        nip_pegawai: mappedData.nip_pegawai,
+                        jabatan_pegawai: mappedData.jabatan_pegawai,
+                        unit_kerja: mappedData.unit_kerja || "",
+                        submissionResults: [], // Hide results
+                        submissionSearch: mappedData.nama_pegawai, // Show name in search box
+                        showManualInput: false // Hide manual input
+                    };
+                }
+                return entry;
+            }));
         }
     };
 
@@ -158,6 +200,8 @@ export default function LetterGenerator() {
                 jabatan_pegawai: employeeJabatan || "Staf",
                 unit_kerja: employeeUnit || "Unit Kerja",
                 tanggal_surat: new Date().toLocaleDateString("id-ID"),
+                // Add specific fields from selected submission if available
+                ...(selectedSubmission ? mapSubmissionToTemplateData(selectedSubmission, category as string) : {})
             };
 
             generateDocument(
@@ -199,12 +243,17 @@ export default function LetterGenerator() {
 
             // Generate document for each entry
             for (const entry of validEntries) {
+                const submissionData = entry.selectedSubmission
+                    ? mapSubmissionToTemplateData(entry.selectedSubmission, category as string)
+                    : {};
+
                 const data = {
                     nama_pegawai: entry.nama_pegawai,
                     nip_pegawai: entry.nip_pegawai,
                     jabatan_pegawai: entry.jabatan_pegawai || "Staf",
                     unit_kerja: entry.unit_kerja || "Unit Kerja",
                     tanggal_surat,
+                    ...submissionData
                 };
 
                 // Generate document blob
@@ -274,7 +323,13 @@ export default function LetterGenerator() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Jenis Surat</Label>
-                                        <Select value={category} onValueChange={(val) => setCategory(val as LetterCategory)}>
+                                        <Select value={category} onValueChange={(val) => {
+                                            setCategory(val as LetterCategory);
+                                            // Reset states when category changes
+                                            setSubmissionSearch("");
+                                            setSubmissionResults([]);
+                                            setSelectedSubmission(null);
+                                        }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Pilih jenis surat" />
                                             </SelectTrigger>
@@ -320,113 +375,188 @@ export default function LetterGenerator() {
 
                                         {/* Individual Mode */}
                                         <TabsContent value="individual" className="space-y-4 mt-4">
-                                            {/* Employee Search */}
-                                            <div className="space-y-2">
-                                                <Label>Cari Pegawai</Label>
-                                                <div className="relative">
-                                                    <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        className="pl-9"
-                                                        placeholder="Ketik nama atau NIP pegawai..."
-                                                        value={employeeSearch}
-                                                        onChange={(e) => setEmployeeSearch(e.target.value)}
-                                                    />
-                                                    {isSearching && (
-                                                        <div className="absolute right-2.5 top-2.5">
-                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                                        </div>
-                                                    )}
+                                            {/* Submission Search & Results */}
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label>Cari Pegawai</Label>
+                                                    <div className="relative">
+                                                        <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            className="pl-9"
+                                                            placeholder={category ? "Ketik nama pegawai..." : "Pilih jenis surat terlebih dahulu"}
+                                                            value={submissionSearch}
+                                                            onChange={(e) => {
+                                                                setSubmissionSearch(e.target.value);
+                                                                if (selectedSubmission) {
+                                                                    setSelectedSubmission(null); // Reset selection when searching again
+                                                                    setShowManualInput(false);
+                                                                }
+                                                            }}
+                                                            disabled={!category}
+                                                        />
+                                                        {isSearching && (
+                                                            <div className="absolute right-2.5 top-2.5">
+                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                {employeeResults.length > 0 && (
-                                                    <Card className="mt-1">
-                                                        <CardContent className="p-2">
-                                                            {employeeResults.map((emp) => (
-                                                                <Button
-                                                                    key={emp.id}
-                                                                    variant="ghost"
-                                                                    className="w-full justify-start text-left"
-                                                                    onClick={() => handleEmployeeSelect(emp)}
+
+                                                {/* Results List - Only show if not selected and not manual mode */}
+                                                {!selectedSubmission && !showManualInput && submissionResults.length > 0 && (
+                                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        <Label className="text-muted-foreground">Pilih Usulan {category ? `(${category})` : ''}:</Label>
+                                                        <div className="grid grid-cols-1 gap-3">
+                                                            {submissionResults.map((sub) => (
+                                                                <Card
+                                                                    key={sub.id}
+                                                                    className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/20"
+                                                                    onClick={() => handleSubmissionSelect(sub)}
                                                                 >
-                                                                    <div>
-                                                                        <div className="font-medium">{emp.name}</div>
-                                                                        <div className="text-xs text-muted-foreground">NIP: {emp.nip}</div>
-                                                                    </div>
-                                                                </Button>
+                                                                    <CardContent className="p-4 flex justify-between items-center">
+                                                                        <div>
+                                                                            <div className="font-semibold text-primary">
+                                                                                {formatSubmissionLabel(sub, category as string)}
+                                                                            </div>
+                                                                            <div className="text-sm text-muted-foreground mt-1">
+                                                                                {sub.profiles?.name} - NIP: {sub.profiles?.nip}
+                                                                            </div>
+                                                                        </div>
+                                                                        <Button size="sm" variant="secondary">Pilih</Button>
+                                                                    </CardContent>
+                                                                </Card>
                                                             ))}
-                                                        </CardContent>
-                                                    </Card>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* No Results State */}
+                                                {!selectedSubmission && !showManualInput && submissionSearch.length >= 2 && !isSearching && submissionResults.length === 0 && category && (
+                                                    <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                                        <p className="text-muted-foreground mb-2">
+                                                            Tidak ditemukan usulan {category} yang disetujui untuk "{submissionSearch}".
+                                                        </p>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setShowManualInput(true)}
+                                                        >
+                                                            Isi Data Secara Manual
+                                                        </Button>
+                                                    </div>
+                                                )}
+
+                                                {/* Manual Input Toggle (Always visible if no selection) */}
+                                                {!selectedSubmission && !showManualInput && submissionResults.length === 0 && submissionSearch.length < 2 && (
+                                                    <div className="text-center pt-2">
+                                                        <Button
+                                                            variant="link"
+                                                            className="text-muted-foreground"
+                                                            onClick={() => setShowManualInput(true)}
+                                                        >
+                                                            Atau isi data secara manual
+                                                        </Button>
+                                                    </div>
                                                 )}
                                             </div>
 
-                                            {/* Submission Selector */}
-                                            {selectedEmployee && category && (
-                                                <div className="space-y-2">
-                                                    <Label>Pilih Pengajuan</Label>
-                                                    <Select
-                                                        value={selectedSubmission?.id.toString() || ""}
-                                                        onValueChange={handleSubmissionSelect}
-                                                        disabled={isLoadingSubmissions || submissions.length === 0}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={
-                                                                isLoadingSubmissions
-                                                                    ? "Memuat pengajuan..."
-                                                                    : submissions.length === 0
-                                                                        ? "Tidak ada pengajuan yang disetujui"
-                                                                        : "Pilih pengajuan"
-                                                            } />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {submissions.map((sub) => (
-                                                                <SelectItem key={sub.id} value={sub.id.toString()}>
-                                                                    {formatSubmissionLabel(sub, category)}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    {submissions.length === 0 && !isLoadingSubmissions && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Pegawai ini belum memiliki pengajuan {category} yang disetujui. Anda masih bisa input manual di bawah.
-                                                        </p>
-                                                    )}
-                                                </div>
+                                            {/* Selected Submission Detail Card */}
+                                            {selectedSubmission && (
+                                                <Card className="bg-muted/50 border-primary/20">
+                                                    <CardContent className="p-4 space-y-3">
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <div className="font-semibold text-lg">{employeeName}</div>
+                                                                <div className="text-sm text-muted-foreground">NIP: {employeeNip}</div>
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setSelectedSubmission(null);
+                                                                    setEmployeeName("");
+                                                                    setEmployeeNip("");
+                                                                    setEmployeeJabatan("");
+                                                                    setEmployeeUnit("");
+                                                                    setShowManualInput(true);
+                                                                }}
+                                                                className="text-muted-foreground hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4 mr-1" />
+                                                                Hapus
+                                                            </Button>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Jabatan:</span>
+                                                                <div className="font-medium">{employeeJabatan || "-"}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Unit Kerja:</span>
+                                                                <div className="font-medium">{employeeUnit || "-"}</div>
+                                                            </div>
+                                                            <div className="col-span-1 md:col-span-2 pt-2 border-t mt-1">
+                                                                <span className="text-muted-foreground">Detail Pengajuan:</span>
+                                                                <div className="font-medium text-primary">
+                                                                    {formatSubmissionLabel(selectedSubmission, category as string)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full text-xs h-8"
+                                                            onClick={() => setShowManualInput(!showManualInput)}
+                                                        >
+                                                            {showManualInput ? "Sembunyikan Edit Manual" : "Edit Data Manual"}
+                                                        </Button>
+                                                    </CardContent>
+                                                </Card>
                                             )}
 
                                             {/* Manual Input Fields */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Nama Pegawai *</Label>
-                                                    <Input
-                                                        placeholder="Nama Lengkap"
-                                                        value={employeeName}
-                                                        onChange={(e) => setEmployeeName(e.target.value)}
-                                                    />
+                                            {(showManualInput || !selectedSubmission) && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Nama Pegawai *</Label>
+                                                        <Input
+                                                            placeholder="Nama Lengkap"
+                                                            value={employeeName}
+                                                            onChange={(e) => setEmployeeName(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">NIP *</Label>
+                                                        <Input
+                                                            placeholder="NIP Pegawai"
+                                                            value={employeeNip}
+                                                            onChange={(e) => setEmployeeNip(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Jabatan</Label>
+                                                        <Input
+                                                            placeholder="Jabatan"
+                                                            value={employeeJabatan}
+                                                            onChange={(e) => setEmployeeJabatan(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Unit Kerja</Label>
+                                                        <Input
+                                                            placeholder="Unit Kerja"
+                                                            value={employeeUnit}
+                                                            onChange={(e) => setEmployeeUnit(e.target.value)}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">NIP *</Label>
-                                                    <Input
-                                                        placeholder="NIP Pegawai"
-                                                        value={employeeNip}
-                                                        onChange={(e) => setEmployeeNip(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Jabatan</Label>
-                                                    <Input
-                                                        placeholder="Jabatan"
-                                                        value={employeeJabatan}
-                                                        onChange={(e) => setEmployeeJabatan(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Unit Kerja</Label>
-                                                    <Input
-                                                        placeholder="Unit Kerja"
-                                                        value={employeeUnit}
-                                                        onChange={(e) => setEmployeeUnit(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
+                                            )}
+
+                                            <Button onClick={handleGenerateIndividual} className="w-full">
+                                                Buat Surat Individual
+                                            </Button>
                                         </TabsContent>
 
                                         {/* Batch Mode */}
@@ -449,41 +579,145 @@ export default function LetterGenerator() {
                                                                 )}
                                                             </div>
                                                         </CardHeader>
-                                                        <CardContent>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-xs text-muted-foreground">Nama Pegawai *</Label>
+                                                        <CardContent className="space-y-4">
+                                                            {/* Submission Search */}
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs">Cari Pegawai / Pengajuan</Label>
+                                                                <div className="relative">
+                                                                    <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                                     <Input
-                                                                        placeholder="Nama Lengkap"
-                                                                        value={entry.nama_pegawai}
-                                                                        onChange={(e) => updateBatchEntry(entry.id, "nama_pegawai", e.target.value)}
+                                                                        className="pl-9"
+                                                                        placeholder={category ? "Ketik nama pegawai..." : "Pilih jenis surat dulu"}
+                                                                        value={entry.submissionSearch}
+                                                                        onChange={(e) => handleBatchSubmissionSearch(entry.id, e.target.value)}
+                                                                        disabled={!category}
                                                                     />
+                                                                    {entry.isSearching && (
+                                                                        <div className="absolute right-2.5 top-2.5">
+                                                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-xs text-muted-foreground">NIP *</Label>
-                                                                    <Input
-                                                                        placeholder="NIP Pegawai"
-                                                                        value={entry.nip_pegawai}
-                                                                        onChange={(e) => updateBatchEntry(entry.id, "nip_pegawai", e.target.value)}
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-xs text-muted-foreground">Jabatan</Label>
-                                                                    <Input
-                                                                        placeholder="Jabatan"
-                                                                        value={entry.jabatan_pegawai}
-                                                                        onChange={(e) => updateBatchEntry(entry.id, "jabatan_pegawai", e.target.value)}
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-xs text-muted-foreground">Unit Kerja</Label>
-                                                                    <Input
-                                                                        placeholder="Unit Kerja"
-                                                                        value={entry.unit_kerja}
-                                                                        onChange={(e) => updateBatchEntry(entry.id, "unit_kerja", e.target.value)}
-                                                                    />
-                                                                </div>
+                                                                {entry.submissionResults.length > 0 && (
+                                                                    <Card className="mt-1 max-h-40 overflow-y-auto">
+                                                                        <CardContent className="p-2">
+                                                                            {entry.submissionResults.map((sub) => (
+                                                                                <Button
+                                                                                    key={sub.id}
+                                                                                    variant="ghost"
+                                                                                    className="w-full justify-start text-left h-auto py-2"
+                                                                                    onClick={() => handleBatchSubmissionSelect(entry.id, sub)}
+                                                                                >
+                                                                                    <div>
+                                                                                        <div className="font-medium text-sm">{sub.profiles?.name}</div>
+                                                                                        <div className="text-xs text-muted-foreground">
+                                                                                            {formatSubmissionLabel(sub, category as string)}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </Button>
+                                                                            ))}
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                )}
                                                             </div>
+
+
+
+                                                            {/* Selected Submission Detail Card (Batch) */}
+                                                            {entry.selectedSubmission && (
+                                                                <Card className="bg-muted/50 border-primary/20">
+                                                                    <CardContent className="p-3 space-y-2">
+                                                                        <div className="flex justify-between items-start">
+                                                                            <div>
+                                                                                <div className="font-semibold text-sm">{entry.nama_pegawai}</div>
+                                                                                <div className="text-xs text-muted-foreground">NIP: {entry.nip_pegawai}</div>
+                                                                            </div>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                                                                onClick={() => {
+                                                                                    updateBatchEntry(entry.id, "selectedSubmission", null);
+                                                                                    updateBatchEntry(entry.id, "nama_pegawai", "");
+                                                                                    updateBatchEntry(entry.id, "nip_pegawai", "");
+                                                                                    updateBatchEntry(entry.id, "jabatan_pegawai", "");
+                                                                                    updateBatchEntry(entry.id, "unit_kerja", "");
+                                                                                    updateBatchEntry(entry.id, "submissionSearch", "");
+                                                                                    updateBatchEntry(entry.id, "showManualInput", true);
+                                                                                }}
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </Button>
+                                                                        </div>
+
+                                                                        <div className="text-xs space-y-1">
+                                                                            <div className="grid grid-cols-2 gap-2">
+                                                                                <div>
+                                                                                    <span className="text-muted-foreground">Jabatan:</span>
+                                                                                    <div className="font-medium truncate">{entry.jabatan_pegawai || "-"}</div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <span className="text-muted-foreground">Unit:</span>
+                                                                                    <div className="font-medium truncate">{entry.unit_kerja || "-"}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="pt-1 border-t mt-1">
+                                                                                <span className="text-muted-foreground">Detail:</span>
+                                                                                <div className="font-medium text-primary truncate">
+                                                                                    {formatSubmissionLabel(entry.selectedSubmission, category as string)}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="w-full text-xs h-7"
+                                                                            onClick={() => updateBatchEntry(entry.id, "showManualInput", !entry.showManualInput)}
+                                                                        >
+                                                                            {entry.showManualInput ? "Sembunyikan Edit Manual" : "Edit Data Manual"}
+                                                                        </Button>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            )}
+
+                                                            {/* Manual Input Fields */}
+                                                            {(entry.showManualInput || !entry.selectedSubmission) && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                    <div className="space-y-1">
+                                                                        <Label className="text-xs text-muted-foreground">Nama Pegawai *</Label>
+                                                                        <Input
+                                                                            placeholder="Nama Lengkap"
+                                                                            value={entry.nama_pegawai}
+                                                                            onChange={(e) => updateBatchEntry(entry.id, "nama_pegawai", e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <Label className="text-xs text-muted-foreground">NIP *</Label>
+                                                                        <Input
+                                                                            placeholder="NIP Pegawai"
+                                                                            value={entry.nip_pegawai}
+                                                                            onChange={(e) => updateBatchEntry(entry.id, "nip_pegawai", e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <Label className="text-xs text-muted-foreground">Jabatan</Label>
+                                                                        <Input
+                                                                            placeholder="Jabatan"
+                                                                            value={entry.jabatan_pegawai}
+                                                                            onChange={(e) => updateBatchEntry(entry.id, "jabatan_pegawai", e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <Label className="text-xs text-muted-foreground">Unit Kerja</Label>
+                                                                        <Input
+                                                                            placeholder="Unit Kerja"
+                                                                            value={entry.unit_kerja}
+                                                                            onChange={(e) => updateBatchEntry(entry.id, "unit_kerja", e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </CardContent>
                                                     </Card>
                                                 ))}
@@ -495,30 +729,22 @@ export default function LetterGenerator() {
                                                     <Plus className="h-4 w-4 mr-2" />
                                                     Tambah Pegawai
                                                 </Button>
+                                                <Button onClick={handleGenerateBatch} className="w-full">
+                                                    Buat Surat Batch (ZIP)
+                                                </Button>
                                             </div>
                                         </TabsContent>
                                     </Tabs>
                                 </div>
                             </CardContent>
-                            <CardFooter>
-                                <Button
-                                    onClick={generationMode === "individual" ? handleGenerateIndividual : handleGenerateBatch}
-                                    disabled={!selectedTemplateId}
-                                    className="ml-auto"
-                                >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    {generationMode === "individual" ? "Generate Surat" : `Generate ${batchEntries.filter(e => e.nama_pegawai && e.nip_pegawai).length} Surat`}
-                                </Button>
-                            </CardFooter>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="templates" className="space-y-4">
+                    <TabsContent value="templates">
                         <TemplateManagement isEmbedded={true} />
                     </TabsContent>
                 </Tabs>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
-
