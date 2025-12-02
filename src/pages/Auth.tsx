@@ -32,16 +32,16 @@ const mutationHistorySchema = z.object({
 });
 
 const registerSchema = z.object({
-  name: z.string().min(1, "Nama lengkap diperlukan"),
+  name: z.string().optional(),
   email: z.string().email("Email tidak valid"),
-  nip: z.string().min(1, "NIP diperlukan"),
-  phone: z.string().min(1, "No. Telepon diperlukan"),
-  work_unit: z.string().min(1, "Unit kerja diperlukan"),
-  jabatan: z.string().min(1, "Jabatan saat ini diperlukan"),
-  pangkat_golongan: z.string().min(1, "Pangkat/Golongan diperlukan"),
-  tmt_pns: z.string().min(1, "TMT PNS diperlukan"),
-  tmt_pensiun: z.string().min(1, "TMT Pensiun diperlukan"),
-  kriteria_asn: z.string().min(1, "Kriteria ASN diperlukan"),
+  nip: z.string().optional(),
+  phone: z.string().optional(),
+  work_unit: z.string().optional(),
+  jabatan: z.string().optional(),
+  pangkat_golongan: z.string().optional(),
+  tmt_pns: z.string().optional(),
+  tmt_pensiun: z.string().optional(),
+  kriteria_asn: z.string().optional(),
   riwayat_jabatan: z.array(employmentHistorySchema).optional(),
   riwayat_mutasi: z.array(mutationHistorySchema).optional(),
   password: z.string().min(6, "Password minimal 6 karakter"),
@@ -178,11 +178,11 @@ export default function Auth() {
 
     switch (step) {
       case 1:
-        fieldsToValidate = ["name", "email", "nip", "phone", "work_unit"];
+        fieldsToValidate = ["email"];
         break;
       case 2:
-        fieldsToValidate = ["jabatan", "pangkat_golongan", "tmt_pns", "tmt_pensiun", "kriteria_asn"];
-        break;
+        // All fields in step 2 are now optional
+        return true;
       case 3:
         // Riwayat is optional, always valid
         return true;
@@ -223,14 +223,14 @@ export default function Auth() {
       name: data.name,
       email: data.email,
       password: data.password,
-      work_unit_id: parseInt(data.work_unit),
-      nip: data.nip,
-      phone: data.phone,
-      jabatan: data.jabatan,
-      pangkat_golongan: data.pangkat_golongan,
-      tmt_pns: data.tmt_pns,
-      tmt_pensiun: data.tmt_pensiun,
-      kriteria_asn: data.kriteria_asn,
+      work_unit_id: data.work_unit ? parseInt(data.work_unit) : null,
+      nip: data.nip || null,
+      phone: data.phone || null,
+      jabatan: data.jabatan || null,
+      pangkat_golongan: data.pangkat_golongan || null,
+      tmt_pns: data.tmt_pns || null,
+      tmt_pensiun: data.tmt_pensiun || null,
+      kriteria_asn: data.kriteria_asn || null,
       riwayat_jabatan: data.riwayat_jabatan,
       riwayat_mutasi: data.riwayat_mutasi,
     };
