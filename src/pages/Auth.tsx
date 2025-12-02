@@ -592,8 +592,8 @@ export default function Auth() {
 
                 <div className="space-y-4">
                   {jabatanFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-4 items-end p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                      <div className="flex-1 space-y-2">
+                    <div key={field.id} className="flex flex-col md:flex-row gap-3 md:gap-4 items-end p-3 md:p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                      <div className="flex-1 w-full space-y-2">
                         <Label className="text-sm font-semibold">Nama Jabatan</Label>
                         <Input
                           placeholder="Nama Jabatan"
@@ -601,7 +601,7 @@ export default function Auth() {
                           {...registerForm.register(`riwayat_jabatan.${index}.jabatan`)}
                         />
                       </div>
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 w-full space-y-2">
                         <Label className="text-sm font-semibold">TMT Jabatan</Label>
                         <Input
                           type="date"
@@ -613,7 +613,7 @@ export default function Auth() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 self-end md:self-auto"
                         onClick={() => removeJabatan(index)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -649,8 +649,8 @@ export default function Auth() {
 
                 <div className="space-y-4">
                   {mutasiFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-4 items-end p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                      <div className="flex-1 space-y-2">
+                    <div key={field.id} className="flex flex-col md:flex-row gap-3 md:gap-4 items-end p-3 md:p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                      <div className="flex-1 w-full space-y-2">
                         <Label className="text-sm font-semibold">Jenis Mutasi / Unit Kerja</Label>
                         <Input
                           placeholder="Contoh: Mutasi ke Dinas X"
@@ -658,7 +658,7 @@ export default function Auth() {
                           {...registerForm.register(`riwayat_mutasi.${index}.jenis_mutasi`)}
                         />
                       </div>
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 w-full space-y-2">
                         <Label className="text-sm font-semibold">TMT Mutasi</Label>
                         <Input
                           type="date"
@@ -670,7 +670,7 @@ export default function Auth() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 self-end md:self-auto"
                         onClick={() => removeMutasi(index)}
                       >
                         <Trash2 className="h-4 w-4" />

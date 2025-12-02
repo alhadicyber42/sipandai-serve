@@ -124,7 +124,7 @@ export default function NewConsultation() {
                   }
                   className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
-                  <div>
+                  <div className="md:col-span-1">
                     <RadioGroupItem
                       value="admin_unit"
                       id="admin_unit"
@@ -132,22 +132,22 @@ export default function NewConsultation() {
                     />
                     <Label
                       htmlFor="admin_unit"
-                      className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-card p-4 md:p-6 hover:bg-accent/50 hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full"
                     >
-                      <div className="p-3 bg-blue-100 dark:bg-blue-950 rounded-full mb-3">
-                        <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      <div className="p-3 md:p-4 bg-blue-100 dark:bg-blue-950 rounded-full mb-3 md:mb-4">
+                        <Building2 className="h-6 w-6 md:h-8 md:w-8 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div className="space-y-1 text-center">
-                        <p className="text-sm font-semibold leading-none">
+                      <div className="space-y-1 md:space-y-2 text-center">
+                        <p className="text-sm md:text-base font-bold leading-none">
                           Admin Unit
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground leading-snug">
                           Pimpinan Unit Kerja Anda
                         </p>
                       </div>
                     </Label>
                   </div>
-                  <div>
+                  <div className="md:col-span-1">
                     <RadioGroupItem
                       value="admin_pusat"
                       id="admin_pusat"
@@ -155,16 +155,16 @@ export default function NewConsultation() {
                     />
                     <Label
                       htmlFor="admin_pusat"
-                      className="flex flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-card p-4 md:p-6 hover:bg-accent/50 hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-full"
                     >
-                      <div className="p-3 bg-purple-100 dark:bg-purple-950 rounded-full mb-3">
-                        <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                      <div className="p-3 md:p-4 bg-purple-100 dark:bg-purple-950 rounded-full mb-3 md:mb-4">
+                        <Users className="h-6 w-6 md:h-8 md:w-8 text-purple-600 dark:text-purple-400" />
                       </div>
-                      <div className="space-y-1 text-center">
-                        <p className="text-sm font-semibold leading-none">
+                      <div className="space-y-1 md:space-y-2 text-center">
+                        <p className="text-sm md:text-base font-bold leading-none">
                           Admin Pusat
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground leading-snug">
                           Bagian SDM Aparatur Setditjen Binalavotas
                         </p>
                       </div>

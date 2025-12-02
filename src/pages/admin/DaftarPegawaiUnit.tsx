@@ -236,11 +236,11 @@ export default function DaftarPegawaiUnit() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nama</TableHead>
-                      <TableHead>NIP</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Telepon</TableHead>
-                      <TableHead>Unit Kerja</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead className="hidden md:table-cell">NIP</TableHead>
+                      <TableHead className="hidden lg:table-cell">Email</TableHead>
+                      <TableHead className="hidden xl:table-cell">Telepon</TableHead>
+                      <TableHead className="hidden sm:table-cell">Unit Kerja</TableHead>
+                      <TableHead className="hidden sm:table-cell">Role</TableHead>
                       <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -263,14 +263,23 @@ export default function DaftarPegawaiUnit() {
                     ) : (
                       filteredEmployees.map((emp) => (
                         <TableRow key={emp.id}>
-                          <TableCell className="font-medium">
-                            {emp.name}
-                          </TableCell>
-                          <TableCell>{emp.nip}</TableCell>
-                          <TableCell>{emp.email}</TableCell>
-                          <TableCell>{emp.phone || "-"}</TableCell>
-                          <TableCell>{emp.work_unit_name}</TableCell>
                           <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{emp.name}</span>
+                              <span className="text-xs text-muted-foreground md:hidden">{emp.nip}</span>
+                              <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1">{emp.work_unit_name}</span>
+                              <div className="mt-1 sm:hidden">
+                                <Badge variant={getRoleBadgeVariant(emp.role)} className="text-[10px] h-5 px-1.5">
+                                  {getRoleName(emp.role)}
+                                </Badge>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{emp.nip}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{emp.email}</TableCell>
+                          <TableCell className="hidden xl:table-cell">{emp.phone || "-"}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{emp.work_unit_name}</TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <Badge variant={getRoleBadgeVariant(emp.role)}>
                               {getRoleName(emp.role)}
                             </Badge>
@@ -280,9 +289,9 @@ export default function DaftarPegawaiUnit() {
                               variant="ghost"
                               size="sm"
                               onClick={() => navigate(`/admin/employee/${emp.id}`)}
-                              className="gap-2"
+                              className="h-8 w-8 p-0 md:w-auto md:h-9 md:px-4 md:py-2"
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-4 w-4 md:mr-2" />
                               <span className="hidden md:inline">Lihat Detail</span>
                             </Button>
                           </TableCell>

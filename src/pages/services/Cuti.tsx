@@ -576,13 +576,13 @@ export default function Cuti() {
                                 <PopoverTrigger asChild>
                                   <Button
                                     variant="outline"
-                                    className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                    className={cn("w-full justify-start text-left font-normal h-10", !startDate && "text-muted-foreground")}
                                   >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {startDate ? format(startDate, "PPP", { locale: localeId }) : "Pilih tanggal"}
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
+                                <PopoverContent className="w-auto p-0" align="start">
                                   <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className="pointer-events-auto" />
                                 </PopoverContent>
                               </Popover>
@@ -593,13 +593,13 @@ export default function Cuti() {
                                 <PopoverTrigger asChild>
                                   <Button
                                     variant="outline"
-                                    className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
+                                    className={cn("w-full justify-start text-left font-normal h-10", !endDate && "text-muted-foreground")}
                                   >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {endDate ? format(endDate, "PPP", { locale: localeId }) : "Pilih tanggal"}
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
+                                <PopoverContent className="w-auto p-0" align="start">
                                   <Calendar mode="single" selected={endDate} onSelect={setEndDate} disabled={(date) => startDate ? date < startDate : false} initialFocus className="pointer-events-auto" />
                                 </PopoverContent>
                               </Popover>
@@ -637,16 +637,17 @@ export default function Cuti() {
                                       addDocumentLink();
                                     }
                                   }}
+                                  className="h-10"
                                 />
                               </div>
-                              <Button type="button" onClick={addDocumentLink} variant="outline" size="icon">
+                              <Button type="button" onClick={addDocumentLink} variant="outline" size="icon" className="h-10 w-10 shrink-0">
                                 <Plus className="h-4 w-4" />
                               </Button>
                             </div>
                             {documentLinks.length > 0 && (
                               <div className="space-y-2 mt-2">
                                 {documentLinks.map((link, index) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg border border-border/50">
                                     <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                     <a
                                       href={link}
@@ -661,9 +662,9 @@ export default function Cuti() {
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => removeDocumentLink(index)}
-                                      className="h-8 w-8 flex-shrink-0"
+                                      className="h-8 w-8 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
                                     >
-                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
                                 ))}

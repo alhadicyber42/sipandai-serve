@@ -585,7 +585,7 @@ export default function EmployeeOfTheMonth() {
                                                                 <div
                                                                     key={entry.employeeId}
                                                                     className={`
-                                                                        flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                        flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
                                                                         ${isWinner ? 'bg-gradient-to-r from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-400 dark:border-yellow-600' :
                                                                             isTop3 ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10 border-blue-300 dark:border-blue-700' :
                                                                                 'bg-muted/30 border-border hover:border-primary/50'}
@@ -593,35 +593,35 @@ export default function EmployeeOfTheMonth() {
                                                                 >
                                                                     {/* Rank Badge */}
                                                                     <div className={`
-                                                                        flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-lg shrink-0
+                                                                        flex items-center justify-center w-6 h-6 sm:w-12 sm:h-12 rounded-full font-black text-xs sm:text-lg shrink-0
                                                                         ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg' :
                                                                             rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
                                                                                 rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
                                                                                     'bg-muted text-muted-foreground'}
                                                                     `}>
-                                                                        {isWinner ? <Crown className="h-4 w-4 sm:h-6 sm:w-6" /> :
-                                                                            rank === 2 ? <Medal className="h-4 w-4 sm:h-6 sm:w-6" /> :
-                                                                                rank === 3 ? <Medal className="h-4 w-4 sm:h-6 sm:w-6" /> :
+                                                                        {isWinner ? <Crown className="h-3 w-3 sm:h-6 sm:w-6" /> :
+                                                                            rank === 2 ? <Medal className="h-3 w-3 sm:h-6 sm:w-6" /> :
+                                                                                rank === 3 ? <Medal className="h-3 w-3 sm:h-6 sm:w-6" /> :
                                                                                     `#${rank}`}
                                                                     </div>
 
                                                                     {/* Avatar */}
-                                                                    <Avatar className={`h-10 w-10 sm:h-14 sm:w-14 ${isTop3 ? 'border-2 sm:border-4' : 'border-2'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
+                                                                    <Avatar className={`h-8 w-8 sm:h-14 sm:w-14 ${isTop3 ? 'border sm:border-4' : 'border'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
                                                                         <AvatarImage
                                                                             src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
                                                                             alt={entry.employee.name}
                                                                         />
-                                                                        <AvatarFallback className={isWinner ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' : ''}>
+                                                                        <AvatarFallback className={isWinner ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-[10px] sm:text-base' : 'text-[10px] sm:text-base'}>
                                                                             {getInitials(entry.employee.name)}
                                                                         </AvatarFallback>
                                                                     </Avatar>
 
                                                                     {/* Employee Info */}
-                                                                    <div className="flex-1 min-w-0 pr-2">
-                                                                        <h3 className={`font-bold line-clamp-2 leading-tight ${isWinner ? 'text-sm sm:text-lg text-yellow-700 dark:text-yellow-400' : 'text-sm sm:text-base'}`}>
+                                                                    <div className="flex-1 min-w-0 pr-1.5 sm:pr-2">
+                                                                        <h3 className={`font-bold line-clamp-2 leading-none sm:leading-tight ${isWinner ? 'text-xs sm:text-lg text-yellow-700 dark:text-yellow-400' : 'text-xs sm:text-base'}`}>
                                                                             {entry.employee.name}
                                                                         </h3>
-                                                                        <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
+                                                                        <p className="text-[10px] sm:text-sm text-muted-foreground truncate mt-0.5">
                                                                             {entry.employee.nip}
                                                                         </p>
                                                                     </div>
@@ -630,11 +630,11 @@ export default function EmployeeOfTheMonth() {
                                                                     <div className="text-right shrink-0">
                                                                         <div className={`flex items-center justify-end gap-1 sm:gap-2 ${isWinner ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}>
                                                                             <Star className={`h-3 w-3 sm:h-5 sm:w-5 ${isWinner ? 'fill-current' : ''}`} />
-                                                                            <span className="text-lg sm:text-2xl font-black">
+                                                                            <span className="text-sm sm:text-2xl font-black">
                                                                                 {entry.totalPoints}
                                                                             </span>
                                                                         </div>
-                                                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                                                                        <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                                                                             {entry.ratingCount} penilaian
                                                                         </p>
                                                                     </div>
@@ -736,32 +736,32 @@ export default function EmployeeOfTheMonth() {
                                                                     <div
                                                                         key={entry.employeeId}
                                                                         className={`
-                                                                            flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                            flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
                                                                             ${isWinner ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20 border-purple-400 dark:border-purple-600' :
                                                                                 'bg-muted/30 border-border hover:border-primary/50'}
                                                                         `}
                                                                     >
                                                                         <div className={`
-                                                                            flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-lg shrink-0
+                                                                            flex items-center justify-center w-6 h-6 sm:w-12 sm:h-12 rounded-full font-black text-xs sm:text-lg shrink-0
                                                                             ${isWinner ? 'bg-gradient-to-br from-purple-400 to-pink-600 text-white shadow-lg' :
                                                                                 'bg-muted text-muted-foreground'}
                                                                         `}>
-                                                                            {isWinner ? <Crown className="h-4 w-4 sm:h-6 sm:w-6" /> : `#${rank}`}
+                                                                            {isWinner ? <Crown className="h-3 w-3 sm:h-6 sm:w-6" /> : `#${rank}`}
                                                                         </div>
 
-                                                                        <Avatar className={`h-10 w-10 sm:h-14 sm:w-14 ${isWinner ? 'border-2 sm:border-4 border-purple-400' : 'border-2 border-border'}`}>
+                                                                        <Avatar className={`h-8 w-8 sm:h-14 sm:w-14 ${isWinner ? 'border sm:border-4 border-purple-400' : 'border border-border'}`}>
                                                                             <AvatarImage
                                                                                 src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
                                                                                 alt={entry.employee.name}
                                                                             />
-                                                                            <AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback>
+                                                                            <AvatarFallback className="text-[10px] sm:text-base">{getInitials(entry.employee.name)}</AvatarFallback>
                                                                         </Avatar>
 
-                                                                        <div className="flex-1 min-w-0 pr-2">
-                                                                            <h3 className="font-bold line-clamp-2 leading-tight text-sm sm:text-base">
+                                                                        <div className="flex-1 min-w-0 pr-1.5 sm:pr-2">
+                                                                            <h3 className="font-bold line-clamp-2 leading-none sm:leading-tight text-xs sm:text-base">
                                                                                 {entry.employee.name}
                                                                             </h3>
-                                                                            <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
+                                                                            <p className="text-[10px] sm:text-sm text-muted-foreground truncate mt-0.5">
                                                                                 {entry.employee.nip}
                                                                             </p>
                                                                         </div>
@@ -769,11 +769,11 @@ export default function EmployeeOfTheMonth() {
                                                                         <div className="text-right shrink-0">
                                                                             <div className="flex items-center justify-end gap-1 sm:gap-2 text-purple-600 dark:text-purple-400">
                                                                                 <Star className="h-3 w-3 sm:h-5 sm:w-5 fill-current" />
-                                                                                <span className="text-lg sm:text-2xl font-black">
+                                                                                <span className="text-sm sm:text-2xl font-black">
                                                                                     {entry.totalPoints}
                                                                                 </span>
                                                                             </div>
-                                                                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                                                                            <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                                                                                 Total {entry.ratingCount} penilaian
                                                                             </p>
                                                                         </div>
