@@ -68,7 +68,12 @@ export default function Pengumuman() {
     try {
       let query = supabase
         .from("announcements")
-        .select("*, profiles:author_id(name)")
+        .select(`
+          *,
+          profiles!announcements_author_id_fkey (
+            name
+          )
+        `)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
