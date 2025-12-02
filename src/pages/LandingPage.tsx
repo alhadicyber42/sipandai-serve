@@ -80,7 +80,7 @@ export default function LandingPage() {
                         <div className="space-y-4 md:space-y-6">
                             <h1 className="text-3xl md:text-5xl font-black tracking-tight lg:text-6xl xl:text-7xl leading-tight">
                                 <span className="block text-foreground">SIPANDAI</span>
-                                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent text-2xl md:text-3xl lg:text-5xl leading-tight">
+                                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent text-2xl md:text-3xl lg:text-5xl leading-tight py-[10px]">
                                     Sistem Informasi Pelayanan Administrasi Digital ASN Terintegrasi
                                 </span>
                             </h1>
