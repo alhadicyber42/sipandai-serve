@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { STATUS_COLORS, STATUS_LABELS } from "@/lib/constants";
 
@@ -6,7 +7,7 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
+export const StatusBadge = memo(({ status, className }: StatusBadgeProps) => {
   return (
     <span
       className={cn(
@@ -14,8 +15,12 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
         STATUS_COLORS[status as keyof typeof STATUS_COLORS] || "bg-muted text-muted-foreground",
         className
       )}
+      role="status"
+      aria-label={`Status: ${STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status}`}
     >
       {STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status}
     </span>
   );
-};
+});
+
+StatusBadge.displayName = "StatusBadge";

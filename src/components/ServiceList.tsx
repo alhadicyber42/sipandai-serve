@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -403,16 +403,18 @@ export function ServiceList({
       : null;
   };
 
-  const filteredServices = services.filter((service) => {
-    const matchesSearch =
-      service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.profiles?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.work_units?.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredServices = useMemo(() => {
+    return services.filter((service) => {
+      const matchesSearch =
+        service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.profiles?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.work_units?.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || service.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || service.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+  }, [services, searchQuery, statusFilter]);
 
   const canTakeAction = (service: Service) => {
     if (!allowActions) return false;
@@ -437,30 +439,32 @@ export function ServiceList({
             <div className="grid md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   <Input
                     placeholder="Cari berdasarkan judul, pemohon, atau unit..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 min-h-[44px]"
+                    aria-label="Cari usulan layanan"
+                    type="search"
                   />
                 </div>
               </div>
               <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <Filter className="h-4 w-4 mr-2" />
+                  <SelectTrigger className="min-h-[44px] sm:min-h-0" aria-label="Filter status usulan">
+                    <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
                     <SelectValue placeholder="Filter Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="submitted">Diajukan</SelectItem>
-                    <SelectItem value="approved_by_unit">Disetujui Unit</SelectItem>
-                    <SelectItem value="approved_final">Disetujui Final</SelectItem>
-                    <SelectItem value="returned_to_user">Dikembalikan ke User</SelectItem>
-                    <SelectItem value="returned_to_unit">Dikembalikan ke Unit</SelectItem>
-                    <SelectItem value="rejected">Ditolak</SelectItem>
+                    <SelectItem value="all" className="min-h-[44px]">Semua Status</SelectItem>
+                    <SelectItem value="draft" className="min-h-[44px]">Draft</SelectItem>
+                    <SelectItem value="submitted" className="min-h-[44px]">Diajukan</SelectItem>
+                    <SelectItem value="approved_by_unit" className="min-h-[44px]">Disetujui Unit</SelectItem>
+                    <SelectItem value="approved_final" className="min-h-[44px]">Disetujui Final</SelectItem>
+                    <SelectItem value="returned_to_user" className="min-h-[44px]">Dikembalikan ke User</SelectItem>
+                    <SelectItem value="returned_to_unit" className="min-h-[44px]">Dikembalikan ke Unit</SelectItem>
+                    <SelectItem value="rejected" className="min-h-[44px]">Ditolak</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -487,10 +491,12 @@ export function ServiceList({
                 disabled={isExporting}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 min-h-[44px] sm:min-h-0"
+                aria-label={isExporting ? "Mengekspor data" : "Ekspor data ke Excel"}
               >
-                <Download className="h-4 w-4" />
-                {isExporting ? "Exporting..." : "Export Excel"}
+                <Download className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export Excel"}</span>
+                <span className="sm:hidden">{isExporting ? "..." : "Export"}</span>
               </Button>
             )}
           </div>
@@ -508,15 +514,15 @@ export function ServiceList({
             )
           ) : (
             <ResponsiveTableWrapper>
-              <Table>
+              <Table role="table" aria-label="Daftar usulan layanan">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Judul</TableHead>
-                    <TableHead className="hidden md:table-cell">Pemohon</TableHead>
-                    <TableHead className="hidden lg:table-cell">Unit Kerja</TableHead>
-                    <TableHead className="hidden sm:table-cell">Tanggal</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead scope="col">Judul</TableHead>
+                    <TableHead scope="col" className="hidden md:table-cell">Pemohon</TableHead>
+                    <TableHead scope="col" className="hidden lg:table-cell">Unit Kerja</TableHead>
+                    <TableHead scope="col" className="hidden sm:table-cell">Tanggal</TableHead>
+                    <TableHead scope="col">Status</TableHead>
+                    <TableHead scope="col" className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -551,19 +557,29 @@ export function ServiceList({
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button 
+                              variant="ghost" 
+                              className="h-9 w-9 sm:h-8 sm:w-8 p-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+                              aria-label="Menu aksi untuk usulan"
+                            >
                               <span className="sr-only">Open menu</span>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="min-w-[180px]">
                             <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleDetailOpen(service)}>
+                            <DropdownMenuItem 
+                              onClick={() => handleDetailOpen(service)}
+                              className="min-h-[44px] cursor-pointer"
+                            >
                               <Eye className="mr-2 h-4 w-4" />
                               Detail
                             </DropdownMenuItem>
                             {canEditService(service) && (
-                              <DropdownMenuItem onClick={() => onEditService!(service)}>
+                              <DropdownMenuItem 
+                                onClick={() => onEditService!(service)}
+                                className="min-h-[44px] cursor-pointer"
+                              >
                                 <FileText className="mr-2 h-4 w-4" />
                                 Perbaiki
                               </DropdownMenuItem>
@@ -574,6 +590,7 @@ export function ServiceList({
                                   setSelectedService(service);
                                   setIsTrackingDialogOpen(true);
                                 }}
+                                className="min-h-[44px] cursor-pointer"
                               >
                                 <Activity className="mr-2 h-4 w-4" />
                                 Update Status
@@ -584,6 +601,7 @@ export function ServiceList({
                               onGenerateCertificate && (
                                 <DropdownMenuItem
                                   onClick={() => onGenerateCertificate(service)}
+                                  className="min-h-[44px] cursor-pointer"
                                 >
                                   <FileText className="mr-2 h-4 w-4" />
                                   Generate Surat
@@ -592,13 +610,16 @@ export function ServiceList({
                             {canTakeAction(service) && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openActionDialog(service, "approve")}>
+                                <DropdownMenuItem 
+                                  onClick={() => openActionDialog(service, "approve")}
+                                  className="min-h-[44px] cursor-pointer"
+                                >
                                   <CheckCircle className="mr-2 h-4 w-4" />
                                   Setujui
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => openActionDialog(service, "return")}
-                                  className="text-destructive focus:text-destructive"
+                                  className="text-destructive focus:text-destructive min-h-[44px] cursor-pointer"
                                 >
                                   <XCircle className="mr-2 h-4 w-4" />
                                   Kembalikan
@@ -612,7 +633,7 @@ export function ServiceList({
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </ResponsiveTableWrapper>
           )}
         </CardContent>
       </Card>
