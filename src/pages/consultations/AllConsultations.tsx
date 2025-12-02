@@ -335,38 +335,38 @@ export default function AllConsultations() {
                       onClick={() => navigate(`/konsultasi/${consultation.id}`)}
                     >
                       <CardContent className="p-4 md:p-6">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                                <MessageSquare className="h-5 w-5 text-primary" />
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
+                          <div className="flex-1 space-y-2 md:space-y-3 min-w-0">
+                            <div className="flex items-start gap-2 md:gap-3">
+                              <div className="p-1.5 md:p-2 bg-primary/10 rounded-lg mt-1 shrink-0">
+                                <MessageSquare className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                               </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-base md:text-lg group-hover:text-primary transition-colors">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <h3 className="font-semibold text-base md:text-lg group-hover:text-primary transition-colors truncate max-w-full">
                                     {consultation.subject}
                                   </h3>
                                   {consultation.is_escalated && (
-                                    <Badge variant="destructive" className="gap-1">
+                                    <Badge variant="destructive" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 shrink-0">
                                       <AlertCircle className="h-3 w-3" />
                                       Tereskalasi
                                     </Badge>
                                   )}
                                 </div>
 
-                                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mb-2">
                                   {consultation.description}
                                 </p>
 
-                                <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] md:text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1 shrink-0">
                                     <Building2 className="h-3 w-3" />
                                     <span>{(consultation.profiles as any)?.name}</span>
                                   </div>
-                                  <span>•</span>
-                                  <span>{(consultation.work_units as any)?.name}</span>
-                                  <span>•</span>
-                                  <div className="flex items-center gap-1">
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="shrink-0">{(consultation.work_units as any)?.name}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <div className="flex items-center gap-1 shrink-0">
                                     <Clock className="h-3 w-3" />
                                     <span>
                                       {format(new Date(consultation.created_at), "d MMM yyyy HH:mm", {
@@ -379,11 +379,11 @@ export default function AllConsultations() {
                             </div>
                           </div>
 
-                          <div className="flex flex-row md:flex-col items-start gap-2">
-                            <Badge className={getStatusColor(consultation.status)}>
+                          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 mt-2 md:mt-0">
+                            <Badge className={`${getStatusColor(consultation.status)} text-[10px] md:text-xs`}>
                               {getStatusLabel(consultation.status)}
                             </Badge>
-                            <Badge className={getPriorityColor(consultation.priority)}>
+                            <Badge className={`${getPriorityColor(consultation.priority)} text-[10px] md:text-xs`}>
                               {getPriorityLabel(consultation.priority)}
                             </Badge>
                           </div>

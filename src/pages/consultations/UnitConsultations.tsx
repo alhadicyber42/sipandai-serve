@@ -365,10 +365,10 @@ export default function UnitConsultations() {
                     }}
                   >
                     <CardContent className="p-4 md:p-6">
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2 mb-2">
-                            <h3 className="font-semibold text-base md:text-lg truncate">
+                          <div className="flex items-start gap-2 mb-2 flex-wrap">
+                            <h3 className="font-semibold text-base md:text-lg truncate max-w-full">
                               {consultation.subject}
                             </h3>
                           </div>
@@ -377,20 +377,20 @@ export default function UnitConsultations() {
                             {consultation.description}
                           </p>
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1 shrink-0">
                               <User className="h-3 w-3" />
                               {(consultation.profiles as any)?.name}
                             </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
+                            <span className="hidden sm:inline">•</span>
+                            <span className="flex items-center gap-1 shrink-0">
                               <Clock className="h-3 w-3" />
                               {format(new Date(consultation.created_at), "d MMM yyyy HH:mm", { locale: localeId })}
                             </span>
                             {consultation.is_escalated && (
                               <>
-                                <span>•</span>
-                                <Badge variant="destructive" className="text-xs">
+                                <span className="hidden sm:inline">•</span>
+                                <Badge variant="destructive" className="text-[10px] md:text-xs h-5 md:h-auto">
                                   <AlertCircle className="h-3 w-3 mr-1" />
                                   Tereskalasi
                                 </Badge>
@@ -399,8 +399,8 @@ export default function UnitConsultations() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col gap-2">
+                        <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 mt-2 md:mt-0">
+                          <div className="flex gap-2">
                             {getStatusBadge(consultation.status)}
                             {getPriorityBadge(consultation.priority)}
                           </div>

@@ -402,26 +402,26 @@ export default function KenaikanPangkat() {
                       <span className="sm:hidden">Ajukan</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl md:text-2xl flex items-center gap-2">
+                  <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col p-4 sm:p-6">
+                    <DialogHeader className="pb-2">
+                      <DialogTitle className="text-lg md:text-2xl flex items-center gap-2">
                         <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                         Ajukan Kenaikan Pangkat
                       </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                      <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                        <div className="space-y-6 pb-4">
+                      <ScrollArea className="flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <div className="space-y-4 sm:space-y-6 pb-4 pt-2">
                           {/* Category Selection */}
                           <div className="space-y-2">
-                            <Label htmlFor="category" className="text-base font-semibold">Kategori Kenaikan Pangkat *</Label>
+                            <Label htmlFor="category" className="text-sm sm:text-base font-semibold">Kategori Kenaikan Pangkat *</Label>
                             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base">
                                 <SelectValue placeholder="Pilih kategori kenaikan pangkat" />
                               </SelectTrigger>
                               <SelectContent>
                                 {PROMOTION_CATEGORIES.map(category => (
-                                  <SelectItem key={category.id} value={category.id}>
+                                  <SelectItem key={category.id} value={category.id} className="text-sm sm:text-base">
                                     {category.name}
                                   </SelectItem>
                                 ))}
@@ -430,11 +430,11 @@ export default function KenaikanPangkat() {
                           </div>
 
                           {/* Period Selection */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="month" className="text-base font-semibold">Bulan Periode *</Label>
+                              <Label htmlFor="month" className="text-sm sm:text-base font-semibold">Bulan Periode *</Label>
                               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="h-12">
+                                <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base">
                                   <SelectValue placeholder="Pilih bulan" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -447,9 +447,9 @@ export default function KenaikanPangkat() {
                               </Select>
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="year" className="text-base font-semibold">Tahun Periode *</Label>
+                              <Label htmlFor="year" className="text-sm sm:text-base font-semibold">Tahun Periode *</Label>
                               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger className="h-12">
+                                <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base">
                                   <SelectValue placeholder="Pilih tahun" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -465,43 +465,41 @@ export default function KenaikanPangkat() {
 
                           {/* Description */}
                           <div className="space-y-2">
-                            <Label htmlFor="description" className="text-base font-semibold">Catatan Tambahan</Label>
+                            <Label htmlFor="description" className="text-sm sm:text-base font-semibold">Catatan Tambahan</Label>
                             <Textarea
                               id="description"
                               name="description"
                               placeholder="Tambahkan catatan atau informasi tambahan (opsional)..."
-                              rows={4}
-                              className="resize-none"
+                              rows={3}
+                              className="resize-none text-sm sm:text-base"
                             />
                           </div>
 
                           {/* Document Requirements */}
                           {selectedCategoryData && (
-                            <div className="space-y-4 border-t pt-6">
+                            <div className="space-y-4 border-t pt-4 sm:pt-6">
                               <Alert className="bg-primary/5 border-primary/20">
-                                <AlertCircle className="h-5 w-5 text-primary" />
-                                <AlertDescription className="ml-2">
-                                  <h4 className="font-semibold text-base mb-1">Dokumen Persyaratan</h4>
-                                  <p className="text-sm text-muted-foreground">
+                                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                                <AlertDescription className="ml-2 text-xs sm:text-sm">
+                                  <h4 className="font-semibold mb-1">Dokumen Persyaratan</h4>
+                                  <p className="text-muted-foreground">
                                     Masukkan link/URL untuk setiap dokumen yang diperlukan. Pastikan link dapat diakses oleh admin.
                                   </p>
                                 </AlertDescription>
                               </Alert>
 
-                              <div className="space-y-4">
+                              <div className="space-y-3 sm:space-y-4">
                                 {selectedCategoryData.documents.map((doc, index) => (
-                                  <Card key={index} className="border-2 hover:border-primary/30 transition-colors">
-                                    <CardContent className="p-4">
-                                      <Label htmlFor={`doc-${index}`} className="flex items-start mb-3">
-                                        <span className="font-semibold text-base">{index + 1}. {doc.name} *</span>
+                                  <Card key={index} className="border hover:border-primary/30 transition-colors shadow-sm">
+                                    <CardContent className="p-3 sm:p-4">
+                                      <Label htmlFor={`doc-${index}`} className="flex items-start mb-2 sm:mb-3">
+                                        <span className="font-semibold text-sm sm:text-base leading-tight">{index + 1}. {doc.name} <span className="text-destructive">*</span></span>
                                       </Label>
                                       {doc.note && (
-                                        <Alert className="mb-3 bg-muted/50">
-                                          <AlertDescription className="text-xs">
-                                            <span className="font-medium">Catatan: </span>
-                                            {doc.note}
-                                          </AlertDescription>
-                                        </Alert>
+                                        <p className="text-xs text-muted-foreground mb-2 sm:mb-3 bg-muted/50 p-2 rounded">
+                                          <span className="font-medium">Catatan: </span>
+                                          {doc.note}
+                                        </p>
                                       )}
                                       <DocumentSelector
                                         label=""
@@ -520,7 +518,7 @@ export default function KenaikanPangkat() {
                         </div>
                       </ScrollArea>
 
-                      <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t mt-4">
+                      <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t mt-auto">
                         <Button
                           type="button"
                           variant="outline"
@@ -531,14 +529,14 @@ export default function KenaikanPangkat() {
                             setSelectedYear("");
                             setDocumentLinks({});
                           }}
-                          className="w-full sm:w-auto h-12"
+                          className="w-full sm:w-auto h-10 sm:h-12 text-sm sm:text-base"
                         >
                           Batal
                         </Button>
                         <Button
                           type="submit"
                           disabled={isSubmitting || !selectedCategoryData}
-                          className="w-full sm:w-auto h-12 gap-2"
+                          className="w-full sm:w-auto h-10 sm:h-12 gap-2 text-sm sm:text-base"
                         >
                           {isSubmitting ? (
                             <>

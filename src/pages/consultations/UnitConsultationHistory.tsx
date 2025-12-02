@@ -230,11 +230,11 @@ export default function UnitConsultationHistory() {
                                         className="hover:shadow-md transition-shadow cursor-pointer"
                                         onClick={() => navigate(`/konsultasi/${consultation.id}`)}
                                     >
-                                        <CardContent className="p-6">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1 space-y-2">
+                                        <CardContent className="p-4 md:p-6">
+                                            <div className="flex flex-col md:flex-row items-start justify-between gap-3 md:gap-4">
+                                                <div className="flex-1 space-y-2 min-w-0 w-full">
                                                     <div className="flex items-center gap-2">
-                                                        <h3 className="font-semibold text-lg">
+                                                        <h3 className="font-semibold text-base md:text-lg truncate">
                                                             {consultation.subject}
                                                         </h3>
                                                     </div>
@@ -243,50 +243,56 @@ export default function UnitConsultationHistory() {
                                                         {consultation.description}
                                                     </p>
 
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <span className="text-muted-foreground">
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground">
+                                                        <span className="shrink-0">
                                                             {(consultation.profiles as any)?.name}
                                                         </span>
-                                                        <span className="text-muted-foreground">•</span>
-                                                        <Clock className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="text-muted-foreground">
-                                                            {format(
-                                                                new Date(consultation.created_at),
-                                                                "d MMM yyyy HH:mm",
-                                                                { locale: localeId }
-                                                            )}
-                                                        </span>
+                                                        <span className="hidden sm:inline text-muted-foreground">•</span>
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <Clock className="h-3 w-3 text-muted-foreground" />
+                                                            <span>
+                                                                {format(
+                                                                    new Date(consultation.created_at),
+                                                                    "d MMM yyyy HH:mm",
+                                                                    { locale: localeId }
+                                                                )}
+                                                            </span>
+                                                        </div>
                                                         {consultation.resolved_at && (
                                                             <>
-                                                                <span className="text-muted-foreground">•</span>
-                                                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                                                <span className="text-green-600 text-xs">
-                                                                    Selesai: {format(
-                                                                        new Date(consultation.resolved_at),
-                                                                        "d MMM yyyy",
-                                                                        { locale: localeId }
-                                                                    )}
-                                                                </span>
+                                                                <span className="hidden sm:inline text-muted-foreground">•</span>
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <CheckCircle className="h-3 w-3 text-green-600" />
+                                                                    <span className="text-green-600 text-xs">
+                                                                        Selesai: {format(
+                                                                            new Date(consultation.resolved_at),
+                                                                            "d MMM yyyy",
+                                                                            { locale: localeId }
+                                                                        )}
+                                                                    </span>
+                                                                </div>
                                                             </>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                <Badge
-                                                    variant={
-                                                        consultation.status === "resolved"
-                                                            ? "outline"
-                                                            : "secondary"
-                                                    }
-                                                    className={
-                                                        consultation.status === "resolved"
-                                                            ? "border-green-600 text-green-600"
-                                                            : ""
-                                                    }
-                                                >
-                                                    {consultation.status === "resolved" && "Selesai"}
-                                                    {consultation.status === "closed" && "Ditutup"}
-                                                </Badge>
+                                                <div className="flex items-center pt-2 md:pt-0 border-t md:border-t-0 w-full md:w-auto mt-2 md:mt-0">
+                                                    <Badge
+                                                        variant={
+                                                            consultation.status === "resolved"
+                                                                ? "outline"
+                                                                : "secondary"
+                                                        }
+                                                        className={`text-[10px] md:text-xs ${
+                                                            consultation.status === "resolved"
+                                                                ? "border-green-600 text-green-600"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        {consultation.status === "resolved" && "Selesai"}
+                                                        {consultation.status === "closed" && "Ditutup"}
+                                                    </Badge>
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>

@@ -228,22 +228,22 @@ export default function Pensiun() {
                                             <span className="sm:hidden">Ajukan</span>
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
-                                        <DialogHeader>
-                                            <DialogTitle>Ajukan Usulan Pensiun</DialogTitle>
+                                    <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6">
+                                        <DialogHeader className="pb-2">
+                                            <DialogTitle className="text-lg md:text-2xl">Ajukan Usulan Pensiun</DialogTitle>
                                         </DialogHeader>
                                         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                                            <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                                                <div className="space-y-6 pb-4">
+                                            <ScrollArea className="flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+                                                <div className="space-y-4 sm:space-y-6 pb-4 pt-2">
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="category">Kategori Pensiun *</Label>
+                                                        <Label htmlFor="category" className="text-sm sm:text-base font-semibold">Kategori Pensiun *</Label>
                                                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                                            <SelectTrigger>
+                                                            <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base">
                                                                 <SelectValue placeholder="Pilih kategori pensiun" />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {RETIREMENT_CATEGORIES.map((category) => (
-                                                                    <SelectItem key={category.id} value={category.id}>
+                                                                    <SelectItem key={category.id} value={category.id} className="text-sm sm:text-base">
                                                                         {category.name}
                                                                     </SelectItem>
                                                                 ))}
@@ -253,21 +253,21 @@ export default function Pensiun() {
 
                                                     {selectedCategoryData && (
                                                         <div className="space-y-4">
-                                                            <div className="bg-muted/50 p-4 rounded-lg">
-                                                                <h3 className="font-semibold mb-3">Dokumen Persyaratan</h3>
-                                                                <p className="text-sm text-muted-foreground mb-4">
+                                                            <div className="bg-muted/50 p-3 sm:p-4 rounded-lg">
+                                                                <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Dokumen Persyaratan</h3>
+                                                                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                                                                     Masukkan link/URL untuk setiap dokumen yang diperlukan
                                                                 </p>
-                                                                <div className="space-y-4">
+                                                                <div className="space-y-3 sm:space-y-4">
                                                                     {selectedCategoryData.documents.map((doc, index) => (
                                                                         <div key={index} className="space-y-2 p-3 border rounded-lg bg-background">
-                                                                            <Label htmlFor={`doc-${index}`} className="flex items-start gap-2">
-                                                                                <span className="flex-1">
+                                                                            <Label htmlFor={`doc-${index}`} className="flex items-start gap-2 text-sm font-medium">
+                                                                                <span className="flex-1 leading-tight">
                                                                                     {index + 1}. {doc.name}
                                                                                 </span>
                                                                             </Label>
                                                                             {doc.note && (
-                                                                                <div className="flex items-start gap-2 text-xs text-muted-foreground mb-2">
+                                                                                <div className="flex items-start gap-2 text-xs text-muted-foreground mb-2 bg-muted/50 p-1.5 rounded">
                                                                                     <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                                                                                     <span>{doc.note}</span>
                                                                                 </div>
@@ -294,16 +294,16 @@ export default function Pensiun() {
                                                 </div>
                                             </ScrollArea>
 
-                                            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                                            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-auto">
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     onClick={() => handleDialogOpenChange(false)}
-                                                    className="w-full sm:w-auto"
+                                                    className="w-full sm:w-auto h-10 sm:h-11 text-sm"
                                                 >
                                                     Batal
                                                 </Button>
-                                                <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
+                                                <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto h-10 sm:h-11 text-sm">
                                                     {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
                                                 </Button>
                                             </div>

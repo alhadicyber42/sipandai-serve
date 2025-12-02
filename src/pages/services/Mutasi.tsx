@@ -415,30 +415,30 @@ export default function Mutasi() {
                                             <span className="sm:hidden">Ajukan</span>
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
-                                        <DialogHeader>
-                                            <DialogTitle>Ajukan Mutasi Pegawai</DialogTitle>
+                                    <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6">
+                                        <DialogHeader className="pb-2">
+                                            <DialogTitle className="text-lg md:text-2xl">Ajukan Mutasi Pegawai</DialogTitle>
                                         </DialogHeader>
                                         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                                            <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
-                                                <div className="space-y-6 pb-4">
+                                            <ScrollArea className="flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+                                                <div className="space-y-4 sm:space-y-6 pb-4 pt-2">
 
                                                     {/* Target Unit & Formation Selection */}
-                                                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
-                                                        <h3 className="font-semibold flex items-center gap-2">
+                                                    <div className="space-y-4 p-3 sm:p-4 bg-muted/50 rounded-lg border">
+                                                        <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                                                             <Building2 className="h-4 w-4" />
                                                             Tujuan Mutasi
                                                         </h3>
-                                                        <div className="grid gap-4 sm:grid-cols-2">
+                                                        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                                                             <div className="space-y-2">
-                                                                <Label>Unit Kerja Tujuan</Label>
+                                                                <Label className="text-xs sm:text-sm">Unit Kerja Tujuan</Label>
                                                                 <Select value={targetUnitId} onValueChange={setTargetUnitId}>
-                                                                    <SelectTrigger>
+                                                                    <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                                                                         <SelectValue placeholder="Pilih Unit Tujuan" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
                                                                         {workUnits.map((unit) => (
-                                                                            <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                                            <SelectItem key={unit.id} value={unit.id.toString()} className="text-xs sm:text-sm">
                                                                                 {unit.name}
                                                                             </SelectItem>
                                                                         ))}
@@ -446,18 +446,18 @@ export default function Mutasi() {
                                                                 </Select>
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <Label>Formasi Jabatan</Label>
+                                                                <Label className="text-xs sm:text-sm">Formasi Jabatan</Label>
                                                                 <Select
                                                                     value={targetFormationId}
                                                                     onValueChange={setTargetFormationId}
                                                                     disabled={!targetUnitId}
                                                                 >
-                                                                    <SelectTrigger>
+                                                                    <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                                                                         <SelectValue placeholder={targetUnitId ? "Pilih Jabatan" : "Pilih Unit Dulu"} />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
                                                                         {jobFormations.map((formation) => (
-                                                                            <SelectItem key={formation.id} value={formation.id}>
+                                                                            <SelectItem key={formation.id} value={formation.id} className="text-xs sm:text-sm">
                                                                                 {formation.position_name} (Sisa: {formation.quota})
                                                                             </SelectItem>
                                                                         ))}
@@ -468,24 +468,24 @@ export default function Mutasi() {
                                                     </div>
 
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="category">Kategori Mutasi *</Label>
+                                                        <Label htmlFor="category" className="text-sm sm:text-base font-semibold">Kategori Mutasi *</Label>
                                                         <Select
                                                             value={selectedCategory?.id || ""}
                                                             onValueChange={handleCategoryChange}
                                                         >
-                                                            <SelectTrigger id="category">
+                                                            <SelectTrigger id="category" className="h-10 sm:h-12 text-sm sm:text-base">
                                                                 <SelectValue placeholder="Pilih kategori mutasi" />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {TRANSFER_CATEGORIES.map((category) => (
-                                                                    <SelectItem key={category.id} value={category.id}>
+                                                                    <SelectItem key={category.id} value={category.id} className="text-sm sm:text-base">
                                                                         {category.name}
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
                                                         {selectedCategory && (
-                                                            <p className="text-sm text-muted-foreground">
+                                                            <p className="text-xs sm:text-sm text-muted-foreground">
                                                                 {selectedCategory.description}
                                                             </p>
                                                         )}
@@ -494,17 +494,17 @@ export default function Mutasi() {
                                                     {selectedCategory && (
                                                         <div className="space-y-4">
                                                             <div className="border-t pt-4">
-                                                                <h3 className="font-semibold mb-4">
+                                                                <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">
                                                                     Dokumen Persyaratan ({selectedCategory.documents.length})
                                                                 </h3>
-                                                                <div className="space-y-4">
+                                                                <div className="space-y-3 sm:space-y-4">
                                                                     {selectedCategory.documents.map((doc, index) => (
-                                                                        <div key={index} className="space-y-2 p-3 border rounded-lg">
-                                                                            <Label htmlFor={`doc-${index}`}>
-                                                                                {index + 1}. {doc.name} *
+                                                                        <div key={index} className="space-y-2 p-3 border rounded-lg bg-card">
+                                                                            <Label htmlFor={`doc-${index}`} className="text-sm font-medium leading-tight block">
+                                                                                {index + 1}. {doc.name} <span className="text-destructive">*</span>
                                                                             </Label>
                                                                             {doc.note && (
-                                                                                <p className="text-xs text-muted-foreground flex items-start gap-1">
+                                                                                <p className="text-xs text-muted-foreground flex items-start gap-1 bg-muted/50 p-1.5 rounded">
                                                                                     <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                                                                     {doc.note}
                                                                                 </p>
@@ -526,16 +526,16 @@ export default function Mutasi() {
                                                 </div>
                                             </ScrollArea>
 
-                                            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-4">
+                                            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4 border-t mt-auto">
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     onClick={() => handleDialogOpenChange(false)}
-                                                    className="w-full sm:w-auto"
+                                                    className="w-full sm:w-auto h-10 sm:h-11 text-sm"
                                                 >
                                                     Batal
                                                 </Button>
-                                                <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto">
+                                                <Button type="submit" disabled={isSubmitting || !selectedCategory} className="w-full sm:w-auto h-10 sm:h-11 text-sm">
                                                     {isSubmitting ? "Mengirim..." : "Ajukan Usulan"}
                                                 </Button>
                                             </div>

@@ -355,17 +355,17 @@ export default function ConsultationDetail() {
               </CardHeader>
               <CardContent className="p-0">
                 {/* Messages Container */}
-                <div className="h-[500px] md:h-[600px] overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/50 scroll-smooth">
+                <div className="h-[calc(100vh-350px)] sm:h-[500px] md:h-[600px] overflow-y-auto p-3 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-900/50 scroll-smooth">
                   {/* Initial Message */}
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 md:gap-3">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <User className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                     </div>
-                    <div className="flex-1">
-                      <div className="bg-white dark:bg-card rounded-2xl rounded-tl-none p-4 shadow-sm border">
-                        <p className="text-sm md:text-base">{consultation.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-white dark:bg-card rounded-2xl rounded-tl-none p-3 md:p-4 shadow-sm border break-words">
+                        <p className="text-sm md:text-base whitespace-pre-wrap">{consultation.description}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 ml-2">
+                      <p className="text-[10px] md:text-xs text-muted-foreground mt-1 ml-2">
                         {format(new Date(consultation.created_at), "HH:mm", {
                           locale: localeId,
                         })}
@@ -381,23 +381,23 @@ export default function ConsultationDetail() {
                     return (
                       <div
                         key={message.id}
-                        className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
+                        className={`flex gap-2 md:gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
                       >
                         <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isOwnMessage ? "bg-primary" : "bg-secondary"
                           }`}>
                           <User className={`h-4 w-4 md:h-5 md:w-5 ${isOwnMessage ? "text-primary-foreground" : ""}`} />
                         </div>
                         <div className={`flex-1 max-w-[85%] md:max-w-[75%] ${isOwnMessage ? "items-end" : ""}`}>
-                          <div className={`rounded-2xl p-4 shadow-sm ${isOwnMessage
+                          <div className={`rounded-2xl p-3 md:p-4 shadow-sm break-words ${isOwnMessage
                             ? "bg-primary text-primary-foreground rounded-tr-none"
                             : "bg-white dark:bg-card rounded-tl-none border"
                             }`}>
-                            <p className="text-xs md:text-sm font-medium mb-1">
+                            <p className="text-[10px] md:text-xs font-medium mb-1 opacity-90">
                               {message.sender_name}
                             </p>
-                            <p className="text-sm md:text-base">{message.content}</p>
+                            <p className="text-sm md:text-base whitespace-pre-wrap">{message.content}</p>
                           </div>
-                          <p className={`text-xs text-muted-foreground mt-1 ${isOwnMessage ? "text-right mr-2" : "ml-2"}`}>
+                          <p className={`text-[10px] md:text-xs text-muted-foreground mt-1 ${isOwnMessage ? "text-right mr-2" : "ml-2"}`}>
                             {format(new Date(message.created_at), "HH:mm", {
                               locale: localeId,
                             })}
@@ -411,7 +411,7 @@ export default function ConsultationDetail() {
 
                 {/* Message Input */}
                 {consultation.status !== "closed" && (
-                  <div className="p-4 md:p-6 border-t bg-background">
+                  <div className="p-3 md:p-4 border-t bg-background sticky bottom-0 z-10">
                     <div className="flex gap-2">
                       <Textarea
                         placeholder="Ketik pesan Anda..."
@@ -423,18 +423,18 @@ export default function ConsultationDetail() {
                             handleSendMessage();
                           }
                         }}
-                        rows={2}
-                        className="resize-none"
+                        rows={1}
+                        className="resize-none min-h-[44px] max-h-[120px] py-3"
                       />
                       <Button
                         onClick={handleSendMessage}
                         isLoading={isSending}
                         disabled={!newMessage.trim()}
-                        className="gap-2 shrink-0"
+                        className="gap-2 shrink-0 h-[44px] w-[44px] md:w-auto px-0 md:px-4"
                         size="lg"
                       >
                         <Send className="h-4 w-4" />
-                        <span className="hidden sm:inline">Kirim</span>
+                        <span className="hidden md:inline">Kirim</span>
                       </Button>
                     </div>
                   </div>
