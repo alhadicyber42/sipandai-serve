@@ -376,103 +376,64 @@ export default function Dashboard() {
   // Pagination constants
   const ANNOUNCEMENTS_PER_PAGE = 3;
 
-  // Dummy announcements data
-  const allAnnouncements = [
-    {
-      id: 1,
-      title: "Update Sistem SIPANDAI",
-      content: "Sistem SIPANDAI akan mengalami maintenance pada tanggal 30 November 2025 pukul 22:00 - 24:00 WIB. Mohon maaf atas ketidaknyamanannya.",
-      author: "Admin Pusat",
-      authorRole: "admin_pusat",
-      date: "2025-11-25",
-      isPinned: true,
-      workUnitId: null, // null = all units
-      workUnit: "Semua Unit"
-    },
-    {
-      id: 2,
-      title: "Pengumpulan Dokumen Kenaikan Pangkat",
-      content: "Batas akhir pengumpulan dokumen untuk kenaikan pangkat periode April 2026 adalah tanggal 15 Desember 2025.",
-      author: "Admin Unit - Setditjen Binalavotas",
-      authorRole: "admin_unit",
-      date: "2025-11-24",
-      isPinned: false,
-      workUnitId: 1, // Only for unit 1
-      workUnit: "Setditjen Binalavotas"
-    },
-    {
-      id: 3,
-      title: "Libur Nasional & Cuti Bersama 2026",
-      content: "Telah ditetapkan jadwal libur nasional dan cuti bersama tahun 2026. Silakan ajukan cuti Anda lebih awal untuk perencanaan yang lebih baik.",
-      author: "Admin Pusat",
-      authorRole: "admin_pusat",
-      date: "2025-11-23",
-      isPinned: false,
-      workUnitId: null, // null = all units
-      workUnit: "Semua Unit"
-    },
-    {
-      id: 4,
-      title: "Workshop Peningkatan Kompetensi",
-      content: "Akan diadakan workshop peningkatan kompetensi untuk pegawai pada tanggal 5-7 Desember 2025. Pendaftaran dibuka mulai hari ini.",
-      author: "Admin Pusat",
-      authorRole: "admin_pusat",
-      date: "2025-11-22",
-      isPinned: false,
-      workUnitId: null, // null = all units
-      workUnit: "Semua Unit"
-    },
-    {
-      id: 5,
-      title: "Perubahan Jam Kerja Ramadan 2026",
-      content: "Pengumuman perubahan jam kerja selama bulan Ramadan 2026 akan disampaikan paling lambat bulan Februari 2026.",
-      author: "Admin Pusat",
-      authorRole: "admin_pusat",
-      date: "2025-11-21",
-      isPinned: false,
-      workUnitId: null, // null = all units
-      workUnit: "Semua Unit"
-    },
-    {
-      id: 6,
-      title: "Pengumuman Khusus Unit Stankomproglat",
-      content: "Rapat koordinasi unit akan diadakan pada hari Senin, 2 Desember 2025 pukul 09:00 WIB di ruang rapat.",
-      author: "Admin Unit - Direktorat Bina Stankomproglat",
-      authorRole: "admin_unit",
-      date: "2025-11-20",
-      isPinned: false,
-      workUnitId: 2, // Only for unit 2
-      workUnit: "Direktorat Bina Stankomproglat"
-    }
-  ];
+  // State for announcements
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
-  // Filter announcements based on user's role and work unit
-  const dummyAnnouncements = allAnnouncements.filter((announcement) => {
-    // Admin Pusat can see all announcements
-    if (user?.role === "admin_pusat") {
-      return true;
+  // Load announcements from database
+  useEffect(() => {
+    if (user) {
+      loadAnnouncements();
     }
+  }, [user]);
 
-    // Admin Unit and User Unit can see:
-    // 1. Announcements from Admin Pusat (workUnitId = null)
-    // 2. Announcements for their work unit
-    if (user?.role === "admin_unit" || user?.role === "user_unit") {
-      return announcement.workUnitId === null || announcement.workUnitId === user?.work_unit_id;
+  const loadAnnouncements = async () => {
+    if (!user) return;
+
+    try {
+      let query = supabase
+        .from("announcements")
+        .select(`
+          *,
+          profiles!announcements_author_id_fkey (
+            name
+          )
+        `)
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      // Filter based on role
+      if (user.role === "admin_unit" || user.role === "user_unit") {
+        // Users can see announcements for all units (null) or their specific unit
+        query = query.or(`work_unit_id.is.null,work_unit_id.eq.${user.work_unit_id}`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error loading announcements:", error);
+      } else {
+        setAnnouncements(data || []);
+      }
+    } catch (error) {
+      console.error("Error loading announcements:", error);
     }
+  };
 
-    return false;
-  });
+  const getWorkUnitName = (workUnitId: number | null) => {
+    if (workUnitId === null) return "Semua Unit";
+    return WORK_UNITS.find(u => u.id === workUnitId)?.name || "Unit Tidak Diketahui";
+  };
 
   // Calculate pagination
   const totalActivitiesPages = Math.ceil(recentActivities.length / activitiesPerPage);
-  const totalAnnouncementsPages = Math.ceil(dummyAnnouncements.length / ANNOUNCEMENTS_PER_PAGE);
+  const totalAnnouncementsPages = Math.ceil(announcements.length / ANNOUNCEMENTS_PER_PAGE);
 
   const paginatedActivities = recentActivities.slice(
     (activitiesPage - 1) * activitiesPerPage,
     activitiesPage * activitiesPerPage
   );
 
-  const paginatedAnnouncements = dummyAnnouncements.slice(
+  const paginatedAnnouncements = announcements.slice(
     (announcementsPage - 1) * ANNOUNCEMENTS_PER_PAGE,
     announcementsPage * ANNOUNCEMENTS_PER_PAGE
   );
@@ -1042,20 +1003,20 @@ export default function Dashboard() {
             {paginatedAnnouncements.map((announcement) => (
               <div
                 key={announcement.id}
-                className={`group p-4 rounded-lg border transition-all duration-300 hover:shadow-md mb-3 ${announcement.isPinned
+                className={`group p-4 rounded-lg border transition-all duration-300 hover:shadow-md mb-3 ${announcement.is_pinned
                   ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800'
                   : 'bg-muted/20 border-muted-foreground/20 hover:border-primary/30'
                   }`}
               >
                 <div className="flex items-start gap-3">
-                  {announcement.isPinned && (
+                  {announcement.is_pinned && (
                     <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-1" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-semibold text-base flex items-center gap-2">
                         {announcement.title}
-                        {announcement.isPinned && (
+                        {announcement.is_pinned && (
                           <Badge variant="secondary" className="text-xs">
                             Disematkan
                           </Badge>
@@ -1066,13 +1027,13 @@ export default function Dashboard() {
                       {announcement.content}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-medium">{announcement.author}</span>
+                      <span className="font-medium">{announcement.profiles?.name || 'Admin'}</span>
                       <span>•</span>
-                      <span>{announcement.workUnit}</span>
+                      <span>{getWorkUnitName(announcement.work_unit_id)}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {new Date(announcement.date).toLocaleDateString("id-ID", {
+                        {new Date(announcement.created_at).toLocaleDateString("id-ID", {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric'
@@ -1085,7 +1046,7 @@ export default function Dashboard() {
             ))}
 
             {/* Pagination Controls for Announcements */}
-            {dummyAnnouncements.length > ANNOUNCEMENTS_PER_PAGE && (
+            {announcements.length > ANNOUNCEMENTS_PER_PAGE && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <Button
                   variant="outline"
