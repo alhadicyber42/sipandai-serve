@@ -538,84 +538,106 @@ export default function EmployeeOfTheMonth() {
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                {leaderboardWithDetails.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                                        <p className="text-muted-foreground text-lg">
-                                            Belum ada data penilaian untuk periode ini
-                                        </p>
-                                        <p className="text-sm text-muted-foreground mt-2">
-                                            Mulai berikan penilaian kepada rekan kerja Anda!
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {leaderboardWithDetails.map((entry) => {
-                                            const isTop3 = entry.rank <= 3;
-                                            const isWinner = entry.rank === 1;
+                                <Tabs defaultValue="asn" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                                        <TabsTrigger value="asn">ASN</TabsTrigger>
+                                        <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
+                                    </TabsList>
 
-                                            return (
-                                                <div
-                                                    key={entry.employeeId}
-                                                    className={`
-                                                        flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
-                                                        ${isWinner ? 'bg-gradient-to-r from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-400 dark:border-yellow-600' :
-                                                            isTop3 ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10 border-blue-300 dark:border-blue-700' :
-                                                                'bg-muted/30 border-border hover:border-primary/50'}
-                                                    `}
-                                                >
-                                                    {/* Rank Badge */}
-                                                    <div className={`
-                                                        flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
-                                                        ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg' :
-                                                            entry.rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
-                                                                entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
-                                                                    'bg-muted text-muted-foreground'}
-                                                    `}>
-                                                        {isWinner ? <Crown className="h-6 w-6" /> :
-                                                            entry.rank === 2 ? <Medal className="h-6 w-6" /> :
-                                                                entry.rank === 3 ? <Medal className="h-6 w-6" /> :
-                                                                    `#${entry.rank}`}
-                                                    </div>
-
-                                                    {/* Avatar */}
-                                                    <Avatar className={`h-14 w-14 ${isTop3 ? 'border-4' : 'border-2'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
-                                                        <AvatarImage
-                                                            src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
-                                                            alt={entry.employee.name}
-                                                        />
-                                                        <AvatarFallback className={isWinner ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' : ''}>
-                                                            {getInitials(entry.employee.name)}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-
-                                                    {/* Employee Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className={`font-bold truncate ${isWinner ? 'text-lg text-yellow-700 dark:text-yellow-400' : 'text-base'}`}>
-                                                            {entry.employee.name}
-                                                        </h3>
-                                                        <p className="text-sm text-muted-foreground truncate">
-                                                            {entry.employee.nip}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Points */}
-                                                    <div className="text-right">
-                                                        <div className={`flex items-center gap-2 ${isWinner ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}>
-                                                            <Star className={`h-5 w-5 ${isWinner ? 'fill-current' : ''}`} />
-                                                            <span className="text-2xl font-black">
-                                                                {entry.totalPoints}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                            {entry.ratingCount} penilaian
-                                                        </p>
-                                                    </div>
+                                    {["asn", "non_asn"].map((type) => (
+                                        <TabsContent key={type} value={type}>
+                                            {leaderboardWithDetails.filter(e =>
+                                                type === "asn"
+                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                    : e.employee.kriteria_asn === "Non ASN"
+                                            ).length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                                    <p className="text-muted-foreground text-lg">
+                                                        Belum ada data penilaian {type === "asn" ? "ASN" : "Non ASN"} untuk periode ini
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground mt-2">
+                                                        Mulai berikan penilaian kepada rekan kerja Anda!
+                                                    </p>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {leaderboardWithDetails
+                                                        .filter(e =>
+                                                            type === "asn"
+                                                                ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                                : e.employee.kriteria_asn === "Non ASN"
+                                                        )
+                                                        .map((entry, index) => {
+                                                            const rank = index + 1;
+                                                            const isTop3 = rank <= 3;
+                                                            const isWinner = rank === 1;
+
+                                                            return (
+                                                                <div
+                                                                    key={entry.employeeId}
+                                                                    className={`
+                                                                        flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                        ${isWinner ? 'bg-gradient-to-r from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-400 dark:border-yellow-600' :
+                                                                            isTop3 ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10 border-blue-300 dark:border-blue-700' :
+                                                                                'bg-muted/30 border-border hover:border-primary/50'}
+                                                                    `}
+                                                                >
+                                                                    {/* Rank Badge */}
+                                                                    <div className={`
+                                                                        flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
+                                                                        ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg' :
+                                                                            rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
+                                                                                rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
+                                                                                    'bg-muted text-muted-foreground'}
+                                                                    `}>
+                                                                        {isWinner ? <Crown className="h-6 w-6" /> :
+                                                                            rank === 2 ? <Medal className="h-6 w-6" /> :
+                                                                                rank === 3 ? <Medal className="h-6 w-6" /> :
+                                                                                    `#${rank}`}
+                                                                    </div>
+
+                                                                    {/* Avatar */}
+                                                                    <Avatar className={`h-14 w-14 ${isTop3 ? 'border-4' : 'border-2'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
+                                                                        <AvatarImage
+                                                                            src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
+                                                                            alt={entry.employee.name}
+                                                                        />
+                                                                        <AvatarFallback className={isWinner ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' : ''}>
+                                                                            {getInitials(entry.employee.name)}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+
+                                                                    {/* Employee Info */}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h3 className={`font-bold truncate ${isWinner ? 'text-lg text-yellow-700 dark:text-yellow-400' : 'text-base'}`}>
+                                                                            {entry.employee.name}
+                                                                        </h3>
+                                                                        <p className="text-sm text-muted-foreground truncate">
+                                                                            {entry.employee.nip}
+                                                                        </p>
+                                                                    </div>
+
+                                                                    {/* Points */}
+                                                                    <div className="text-right">
+                                                                        <div className={`flex items-center gap-2 ${isWinner ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}>
+                                                                            <Star className={`h-5 w-5 ${isWinner ? 'fill-current' : ''}`} />
+                                                                            <span className="text-2xl font-black">
+                                                                                {entry.totalPoints}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                            {entry.ratingCount} penilaian
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            )}
+                                        </TabsContent>
+                                    ))}
+                                </Tabs>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -633,89 +655,129 @@ export default function EmployeeOfTheMonth() {
                                 </p>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {yearlyLeaderboardWithDetails.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Crown className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                                        <p className="text-muted-foreground text-lg">
-                                            Belum ada data penilaian untuk tahun ini
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {/* Top 1 Yearly Winner Display */}
-                                        {yearlyLeaderboardWithDetails[0] && (
-                                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-8 text-white shadow-xl mb-8">
-                                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
-                                                <div className="flex flex-col items-center text-center relative z-10">
-                                                    <div className="bg-white/20 p-3 rounded-full mb-4 backdrop-blur-sm">
-                                                        <Crown className="h-12 w-12 text-white" />
-                                                    </div>
-                                                    <h3 className="text-xl font-medium text-white/90 mb-2">Kandidat Terkuat</h3>
-                                                    <h2 className="text-4xl font-bold mb-4">{yearlyLeaderboardWithDetails[0].employee.name}</h2>
-                                                    <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-                                                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                                                        <span className="text-2xl font-bold">{yearlyLeaderboardWithDetails[0].totalPoints} Poin</span>
+                                <Tabs defaultValue="asn" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                                        <TabsTrigger value="asn">ASN</TabsTrigger>
+                                        <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
+                                    </TabsList>
+
+                                    {["asn", "non_asn"].map((type) => (
+                                        <TabsContent key={type} value={type}>
+                                            {yearlyLeaderboardWithDetails.filter(e =>
+                                                type === "asn"
+                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                    : e.employee.kriteria_asn === "Non ASN"
+                                            ).length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <Crown className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                                    <p className="text-muted-foreground text-lg">
+                                                        Belum ada data penilaian {type === "asn" ? "ASN" : "Non ASN"} untuk tahun ini
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {/* Top 1 Yearly Winner Display */}
+                                                    {yearlyLeaderboardWithDetails
+                                                        .filter(e =>
+                                                            type === "asn"
+                                                                ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                                : e.employee.kriteria_asn === "Non ASN"
+                                                        )[0] && (
+                                                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-8 text-white shadow-xl mb-8">
+                                                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+                                                                <div className="flex flex-col items-center text-center relative z-10">
+                                                                    <div className="bg-white/20 p-3 rounded-full mb-4 backdrop-blur-sm">
+                                                                        <Crown className="h-12 w-12 text-white" />
+                                                                    </div>
+                                                                    <h3 className="text-xl font-medium text-white/90 mb-2">Kandidat Terkuat {type === "asn" ? "ASN" : "Non ASN"}</h3>
+                                                                    <h2 className="text-4xl font-bold mb-4">
+                                                                        {yearlyLeaderboardWithDetails
+                                                                            .filter(e =>
+                                                                                type === "asn"
+                                                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                                                    : e.employee.kriteria_asn === "Non ASN"
+                                                                            )[0].employee.name}
+                                                                    </h2>
+                                                                    <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+                                                                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                                                                        <span className="text-2xl font-bold">
+                                                                            {yearlyLeaderboardWithDetails
+                                                                                .filter(e =>
+                                                                                    type === "asn"
+                                                                                        ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                                                        : e.employee.kriteria_asn === "Non ASN"
+                                                                                )[0].totalPoints} Poin
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                    <div className="space-y-3">
+                                                        {yearlyLeaderboardWithDetails
+                                                            .filter(e =>
+                                                                type === "asn"
+                                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
+                                                                    : e.employee.kriteria_asn === "Non ASN"
+                                                            )
+                                                            .map((entry, index) => {
+                                                                const rank = index + 1;
+                                                                const isWinner = rank === 1;
+
+                                                                return (
+                                                                    <div
+                                                                        key={entry.employeeId}
+                                                                        className={`
+                                                                            flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                            ${isWinner ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20 border-purple-400 dark:border-purple-600' :
+                                                                                'bg-muted/30 border-border hover:border-primary/50'}
+                                                                        `}
+                                                                    >
+                                                                        <div className={`
+                                                                            flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
+                                                                            ${isWinner ? 'bg-gradient-to-br from-purple-400 to-pink-600 text-white shadow-lg' :
+                                                                                'bg-muted text-muted-foreground'}
+                                                                        `}>
+                                                                            {isWinner ? <Crown className="h-6 w-6" /> : `#${rank}`}
+                                                                        </div>
+
+                                                                        <Avatar className={`h-14 w-14 ${isWinner ? 'border-4 border-purple-400' : 'border-2 border-border'}`}>
+                                                                            <AvatarImage
+                                                                                src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
+                                                                                alt={entry.employee.name}
+                                                                            />
+                                                                            <AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback>
+                                                                        </Avatar>
+
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h3 className="font-bold truncate text-base">
+                                                                                {entry.employee.name}
+                                                                            </h3>
+                                                                            <p className="text-sm text-muted-foreground truncate">
+                                                                                {entry.employee.nip}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="text-right">
+                                                                            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                                                                <Star className="h-5 w-5 fill-current" />
+                                                                                <span className="text-2xl font-black">
+                                                                                    {entry.totalPoints}
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                                Total {entry.ratingCount} penilaian
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-3">
-                                            {yearlyLeaderboardWithDetails.map((entry) => {
-                                                const isTop3 = entry.rank <= 3;
-                                                const isWinner = entry.rank === 1;
-
-                                                return (
-                                                    <div
-                                                        key={entry.employeeId}
-                                                        className={`
-                                                            flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
-                                                            ${isWinner ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20 border-purple-400 dark:border-purple-600' :
-                                                                'bg-muted/30 border-border hover:border-primary/50'}
-                                                        `}
-                                                    >
-                                                        <div className={`
-                                                            flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
-                                                            ${isWinner ? 'bg-gradient-to-br from-purple-400 to-pink-600 text-white shadow-lg' :
-                                                                'bg-muted text-muted-foreground'}
-                                                        `}>
-                                                            {isWinner ? <Crown className="h-6 w-6" /> : `#${entry.rank}`}
-                                                        </div>
-
-                                                        <Avatar className={`h-14 w-14 ${isWinner ? 'border-4 border-purple-400' : 'border-2 border-border'}`}>
-                                                            <AvatarImage
-                                                                src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
-                                                                alt={entry.employee.name}
-                                                            />
-                                                            <AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback>
-                                                        </Avatar>
-
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="font-bold truncate text-base">
-                                                                {entry.employee.name}
-                                                            </h3>
-                                                            <p className="text-sm text-muted-foreground truncate">
-                                                                {entry.employee.nip}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="text-right">
-                                                            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                                                <Star className="h-5 w-5 fill-current" />
-                                                                <span className="text-2xl font-black">
-                                                                    {entry.totalPoints}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                Total {entry.ratingCount} penilaian
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
+                                            )}
+                                        </TabsContent>
+                                    ))}
+                                </Tabs>
                             </CardContent>
                         </Card>
                     </TabsContent>
