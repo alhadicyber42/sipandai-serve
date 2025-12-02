@@ -25,15 +25,17 @@ export default function EmployeeOfTheMonth() {
     const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     const [activeTab, setActiveTab] = useState("employees");
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
 
     useEffect(() => {
         loadEmployees();
         loadLeaderboard();
+        loadYearlyLeaderboard();
     }, []);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
-        if (leaderboard.length > 0 && activeTab === "leaderboard") {
+        if ((leaderboard.length > 0 && activeTab === "leaderboard") || (yearlyLeaderboard.length > 0 && activeTab === "yearly")) {
             // Delay to ensure page is rendered
             const timer = setTimeout(() => {
                 const duration = 5 * 1000; // 5 seconds
@@ -78,7 +80,7 @@ export default function EmployeeOfTheMonth() {
 
             return () => clearTimeout(timer);
         }
-    }, [leaderboard, activeTab]);
+    }, [leaderboard, yearlyLeaderboard, activeTab]);
 
     const loadEmployees = async () => {
         setIsLoading(true);
@@ -169,6 +171,47 @@ export default function EmployeeOfTheMonth() {
         }
     };
 
+    const loadYearlyLeaderboard = async () => {
+        try {
+            const now = new Date();
+            const currentYear = now.getFullYear().toString();
+
+            // Fetch all ratings for the current year
+            const { data: ratings, error } = await supabase
+                .from("employee_ratings")
+                .select("*")
+                .ilike("rating_period", `${currentYear}-%`);
+
+            if (error) {
+                console.error('Error loading yearly ratings:', error);
+                return;
+            }
+
+            // Aggregate points by employee
+            const pointsByEmployee: Record<string, { totalPoints: number, count: number }> = {};
+
+            (ratings || []).forEach((rating: any) => {
+                const employeeId = rating.rated_employee_id;
+                if (!pointsByEmployee[employeeId]) {
+                    pointsByEmployee[employeeId] = { totalPoints: 0, count: 0 };
+                }
+                pointsByEmployee[employeeId].totalPoints += rating.total_points || 0;
+                pointsByEmployee[employeeId].count += 1;
+            });
+
+            // Convert to array and sort by total points
+            const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => ({
+                employeeId,
+                totalPoints: data.totalPoints,
+                ratingCount: data.count
+            })).sort((a, b) => b.totalPoints - a.totalPoints);
+
+            setYearlyLeaderboard(leaderboardData);
+        } catch (error) {
+            console.error('Error loading yearly leaderboard:', error);
+        }
+    };
+
     const getInitials = (name: string) => {
         return name
             .split(' ')
@@ -193,6 +236,15 @@ export default function EmployeeOfTheMonth() {
             employee
         };
     }).filter(entry => entry.employee); // Filter out entries without employee data
+
+    const yearlyLeaderboardWithDetails = yearlyLeaderboard.map((entry, index) => {
+        const employee = employees.find(e => e.id === entry.employeeId);
+        return {
+            ...entry,
+            rank: index + 1,
+            employee
+        };
+    }).filter(entry => entry.employee);
 
     const topEmployee = leaderboardWithDetails[0];
 
@@ -228,7 +280,7 @@ export default function EmployeeOfTheMonth() {
                 </div>
 
                 {/* Winner Section with Testimonials */}
-                {topEmployee && (
+                {topEmployee && activeTab !== "yearly" && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                         {/* Winner Card */}
                         <Card className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 dark:from-yellow-950/30 dark:via-background dark:to-yellow-950/20 border-yellow-200 dark:border-yellow-800 shadow-xl overflow-hidden relative h-full">
@@ -347,7 +399,7 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 h-12 bg-muted/50">
+                    <TabsList className="grid w-full grid-cols-3 h-12 bg-muted/50">
                         <TabsTrigger
                             value="employees"
                             className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
@@ -360,7 +412,14 @@ export default function EmployeeOfTheMonth() {
                             className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white"
                         >
                             <TrendingUp className="h-4 w-4 mr-2" />
-                            Leaderboard
+                            Leaderboard Bulanan
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="yearly"
+                            className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white"
+                        >
+                            <Crown className="h-4 w-4 mr-2" />
+                            Employee of The Year
                         </TabsTrigger>
                     </TabsList>
 
@@ -385,62 +444,83 @@ export default function EmployeeOfTheMonth() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-md border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[50px]">No</TableHead>
-                                                <TableHead>Nama Pegawai</TableHead>
-                                                <TableHead>NIP</TableHead>
-                                                <TableHead>Jabatan</TableHead>
-                                                <TableHead className="text-right">Aksi</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredEmployees.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                                        Tidak ada pegawai ditemukan
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                filteredEmployees.map((employee, index) => (
-                                                    <TableRow key={employee.id}>
-                                                        <TableCell>{index + 1}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar className="h-8 w-8">
-                                                                    <AvatarImage
-                                                                        src={employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.name}`}
-                                                                        alt={employee.name}
-                                                                    />
-                                                                    <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="font-medium">{employee.name}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>{employee.nip}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant="outline" className="capitalize">
-                                                                {employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' ')}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button
-                                                                size="sm"
-                                                                onClick={() => navigate(`/employee-of-the-month/rate/${employee.id}`)}
-                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                                                            >
-                                                                <ThumbsUp className="h-4 w-4 mr-2" />
-                                                                Nilai Pegawai
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                <Tabs defaultValue="asn" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                                        <TabsTrigger value="asn">ASN</TabsTrigger>
+                                        <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
+                                    </TabsList>
+
+                                    {["asn", "non_asn"].map((type) => (
+                                        <TabsContent key={type} value={type}>
+                                            <div className="rounded-md border">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="w-[50px]">No</TableHead>
+                                                            <TableHead>Nama Pegawai</TableHead>
+                                                            <TableHead>NIP</TableHead>
+                                                            <TableHead>Jabatan</TableHead>
+                                                            <TableHead className="text-right">Aksi</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {filteredEmployees.filter(e =>
+                                                            type === "asn"
+                                                                ? (e.kriteria_asn === "ASN" || !e.kriteria_asn)
+                                                                : e.kriteria_asn === "Non ASN"
+                                                        ).length === 0 ? (
+                                                            <TableRow>
+                                                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                                                    Tidak ada pegawai {type === "asn" ? "ASN" : "Non ASN"} ditemukan
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ) : (
+                                                            filteredEmployees
+                                                                .filter(e =>
+                                                                    type === "asn"
+                                                                        ? (e.kriteria_asn === "ASN" || !e.kriteria_asn)
+                                                                        : e.kriteria_asn === "Non ASN"
+                                                                )
+                                                                .map((employee, index) => (
+                                                                    <TableRow key={employee.id}>
+                                                                        <TableCell>{index + 1}</TableCell>
+                                                                        <TableCell>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <Avatar className="h-8 w-8">
+                                                                                    <AvatarImage
+                                                                                        src={employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.name}`}
+                                                                                        alt={employee.name}
+                                                                                    />
+                                                                                    <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span className="font-medium">{employee.name}</span>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                        <TableCell>{employee.nip || "-"}</TableCell>
+                                                                        <TableCell>
+                                                                            <Badge variant="outline" className="capitalize">
+                                                                                {employee.jabatan || (employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' '))}
+                                                                            </Badge>
+                                                                        </TableCell>
+                                                                        <TableCell className="text-right">
+                                                                            <Button
+                                                                                size="sm"
+                                                                                onClick={() => navigate(`/employee-of-the-month/rate/${employee.id}`)}
+                                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                                                            >
+                                                                                <ThumbsUp className="h-4 w-4 mr-2" />
+                                                                                Nilai Pegawai
+                                                                            </Button>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ))
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        </TabsContent>
+                                    ))}
+                                </Tabs>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -451,10 +531,10 @@ export default function EmployeeOfTheMonth() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <TrendingUp className="h-5 w-5 text-yellow-600" />
-                                    Leaderboard - Ranking Pegawai
+                                    Leaderboard Bulanan
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground mt-2">
-                                    Peringkat berdasarkan total poin yang diperoleh dari penilaian rekan kerja
+                                    Peringkat berdasarkan total poin yang diperoleh dari penilaian rekan kerja bulan ini
                                 </p>
                             </CardHeader>
                             <CardContent>
@@ -534,6 +614,106 @@ export default function EmployeeOfTheMonth() {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Yearly Leaderboard Tab */}
+                    <TabsContent value="yearly" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
+                        <Card className="border-purple-200 dark:border-purple-800">
+                            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20">
+                                <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-400">
+                                    <Crown className="h-6 w-6" />
+                                    Employee of The Year {new Date().getFullYear()}
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Akumulasi total poin sepanjang tahun ini. Pemenang akan dinobatkan di akhir tahun!
+                                </p>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                {yearlyLeaderboardWithDetails.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Crown className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                        <p className="text-muted-foreground text-lg">
+                                            Belum ada data penilaian untuk tahun ini
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {/* Top 1 Yearly Winner Display */}
+                                        {yearlyLeaderboardWithDetails[0] && (
+                                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-8 text-white shadow-xl mb-8">
+                                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+                                                <div className="flex flex-col items-center text-center relative z-10">
+                                                    <div className="bg-white/20 p-3 rounded-full mb-4 backdrop-blur-sm">
+                                                        <Crown className="h-12 w-12 text-white" />
+                                                    </div>
+                                                    <h3 className="text-xl font-medium text-white/90 mb-2">Kandidat Terkuat</h3>
+                                                    <h2 className="text-4xl font-bold mb-4">{yearlyLeaderboardWithDetails[0].employee.name}</h2>
+                                                    <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
+                                                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                                                        <span className="text-2xl font-bold">{yearlyLeaderboardWithDetails[0].totalPoints} Poin</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {yearlyLeaderboardWithDetails.map((entry) => {
+                                                const isTop3 = entry.rank <= 3;
+                                                const isWinner = entry.rank === 1;
+
+                                                return (
+                                                    <div
+                                                        key={entry.employeeId}
+                                                        className={`
+                                                            flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                            ${isWinner ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20 border-purple-400 dark:border-purple-600' :
+                                                                'bg-muted/30 border-border hover:border-primary/50'}
+                                                        `}
+                                                    >
+                                                        <div className={`
+                                                            flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
+                                                            ${isWinner ? 'bg-gradient-to-br from-purple-400 to-pink-600 text-white shadow-lg' :
+                                                                'bg-muted text-muted-foreground'}
+                                                        `}>
+                                                            {isWinner ? <Crown className="h-6 w-6" /> : `#${entry.rank}`}
+                                                        </div>
+
+                                                        <Avatar className={`h-14 w-14 ${isWinner ? 'border-4 border-purple-400' : 'border-2 border-border'}`}>
+                                                            <AvatarImage
+                                                                src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
+                                                                alt={entry.employee.name}
+                                                            />
+                                                            <AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback>
+                                                        </Avatar>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-bold truncate text-base">
+                                                                {entry.employee.name}
+                                                            </h3>
+                                                            <p className="text-sm text-muted-foreground truncate">
+                                                                {entry.employee.nip}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="text-right">
+                                                            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                                                <Star className="h-5 w-5 fill-current" />
+                                                                <span className="text-2xl font-black">
+                                                                    {entry.totalPoints}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                Total {entry.ratingCount} penilaian
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </CardContent>
