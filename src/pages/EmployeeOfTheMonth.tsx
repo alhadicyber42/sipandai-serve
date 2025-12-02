@@ -252,27 +252,27 @@ export default function EmployeeOfTheMonth() {
         <DashboardLayout>
             <div className="space-y-8">
                 {/* Enhanced Header with Gradient */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-6 md:p-8 text-white shadow-xl">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-4 sm:p-6 md:p-8 text-white shadow-xl">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
 
                     <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                                <Trophy className="h-8 w-8 text-white" />
+                        <div className="flex items-start gap-3 sm:gap-4">
+                            <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
                                     Employee of The Month
                                 </h1>
-                                <p className="text-white/90 mt-1 text-sm md:text-base">
+                                <p className="text-white/90 mt-1 text-xs sm:text-sm md:text-base">
                                     Berikan apresiasi "Good Point" kepada rekan kerja terbaik Anda!
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 shadow-sm">
-                            <Trophy className="h-5 w-5 text-white" />
-                            <span className="font-semibold text-white text-sm">
+                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/30 shadow-sm w-fit">
+                            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                            <span className="font-semibold text-white text-xs sm:text-sm">
                                 Periode: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                             </span>
                         </div>
@@ -285,19 +285,19 @@ export default function EmployeeOfTheMonth() {
                         {/* Winner Card */}
                         <Card className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 dark:from-yellow-950/30 dark:via-background dark:to-yellow-950/20 border-yellow-200 dark:border-yellow-800 shadow-xl overflow-hidden relative h-full">
                             <div className="absolute top-0 right-0 p-4 opacity-5">
-                                <Trophy className="h-96 w-96 text-yellow-500" />
+                                <Trophy className="h-64 w-64 sm:h-96 sm:w-96 text-yellow-500" />
                             </div>
                             <CardContent className="p-4 sm:p-6 md:p-12 h-full flex flex-col justify-center">
                                 <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 relative z-10">
                                     {/* Crown Icon */}
                                     <div className="relative">
-                                        <Crown className="h-12 w-12 sm:h-16 sm:w-16 text-yellow-500 drop-shadow-lg animate-pulse" />
+                                        <Crown className="h-10 w-10 sm:h-16 sm:w-16 text-yellow-500 drop-shadow-lg animate-pulse" />
                                     </div>
 
                                     {/* Avatar */}
                                     <div className="relative">
                                         <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                                        <Avatar className="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48 border-4 sm:border-8 border-yellow-400 shadow-2xl relative z-10 ring-2 sm:ring-4 ring-yellow-200 dark:ring-yellow-800">
+                                        <Avatar className="h-28 w-28 sm:h-40 sm:w-40 md:h-48 md:w-48 border-4 sm:border-8 border-yellow-400 shadow-2xl relative z-10 ring-2 sm:ring-4 ring-yellow-200 dark:ring-yellow-800">
                                             <AvatarImage
                                                 src={topEmployee.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topEmployee.employee.name}`}
                                                 alt={topEmployee.employee.name}
@@ -307,35 +307,35 @@ export default function EmployeeOfTheMonth() {
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                                            <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white border-none px-4 py-1 text-sm font-bold shadow-lg">
+                                            <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white border-none px-3 sm:px-4 py-0.5 sm:py-1 text-xs sm:text-sm font-bold shadow-lg whitespace-nowrap">
                                                 🏆 WINNER
                                             </Badge>
                                         </div>
                                     </div>
 
                                     {/* Employee Info */}
-                                    <div className="space-y-3">
-                                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent break-words">
+                                    <div className="space-y-2 sm:space-y-3 w-full">
+                                        <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent break-words px-2">
                                             {topEmployee.employee.name}
                                         </h2>
-                                        <p className="text-base sm:text-lg md:text-xl text-muted-foreground font-medium">
+                                        <p className="text-sm sm:text-lg md:text-xl text-muted-foreground font-medium">
                                             NIP: {topEmployee.employee.nip}
                                         </p>
 
                                         {/* Jabatan dan Unit Kerja */}
-                                        <div className="flex flex-col gap-2 mt-3">
+                                        <div className="flex flex-col gap-1 sm:gap-2 mt-2 sm:mt-3">
                                             {topEmployee.employee.jabatan && (
-                                                <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
-                                                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                                                    <span className="font-semibold text-center">{topEmployee.employee.jabatan}</span>
+                                                <div className="flex items-center justify-center gap-2 text-xs sm:text-base px-2">
+                                                    <Briefcase className="h-3 w-3 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                                                    <span className="font-semibold text-center line-clamp-2">{topEmployee.employee.jabatan}</span>
                                                 </div>
                                             )}
                                             {topEmployee.employee.work_unit_id && (() => {
                                                 const workUnit = WORK_UNITS.find(u => u.id === topEmployee.employee.work_unit_id);
                                                 return workUnit ? (
-                                                    <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
-                                                        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                                                        <span className="font-semibold text-center">{workUnit.name}</span>
+                                                    <div className="flex items-center justify-center gap-2 text-xs sm:text-base px-2">
+                                                        <Building2 className="h-3 w-3 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                                                        <span className="font-semibold text-center line-clamp-2">{workUnit.name}</span>
                                                     </div>
                                                 ) : null;
                                             })()}
@@ -343,21 +343,21 @@ export default function EmployeeOfTheMonth() {
                                     </div>
 
                                     {/* Points Display */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 mt-4 sm:mt-6 w-full sm:w-auto">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 mt-4 sm:mt-6 w-full sm:w-auto px-2 sm:px-0">
                                         <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 dark:from-yellow-500/10 dark:to-yellow-600/10 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-yellow-400 dark:border-yellow-600 w-full sm:w-auto justify-center">
-                                            <Star className="h-8 w-8 sm:h-10 sm:w-10 fill-yellow-500 text-yellow-500" />
+                                            <Star className="h-6 w-6 sm:h-10 sm:w-10 fill-yellow-500 text-yellow-500 shrink-0" />
                                             <div className="text-left">
-                                                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Poin</p>
-                                                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-yellow-600 dark:text-yellow-400">
+                                                <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Poin</p>
+                                                <p className="text-xl sm:text-3xl md:text-4xl font-black text-yellow-600 dark:text-yellow-400">
                                                     {topEmployee.totalPoints}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl w-full sm:w-auto justify-center">
-                                            <Award className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                                            <Award className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground shrink-0" />
                                             <div className="text-left">
-                                                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Penilaian</p>
-                                                <p className="text-xl sm:text-2xl font-bold">
+                                                <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">Penilaian</p>
+                                                <p className="text-lg sm:text-2xl font-bold">
                                                     {topEmployee.ratingCount}x
                                                 </p>
                                             </div>
@@ -455,14 +455,14 @@ export default function EmployeeOfTheMonth() {
 
                                     {["asn", "non_asn"].map((type) => (
                                         <TabsContent key={type} value={type}>
-                                            <div className="rounded-md border">
+                                            <div className="rounded-md border overflow-x-auto">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead className="w-[50px]">No</TableHead>
                                                             <TableHead>Nama Pegawai</TableHead>
-                                                            <TableHead>NIP</TableHead>
-                                                            <TableHead>Jabatan</TableHead>
+                                                            <TableHead className="hidden md:table-cell">NIP</TableHead>
+                                                            <TableHead className="hidden lg:table-cell">Jabatan</TableHead>
                                                             <TableHead className="text-right">Aksi</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
@@ -496,11 +496,15 @@ export default function EmployeeOfTheMonth() {
                                                                                     />
                                                                                     <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
                                                                                 </Avatar>
-                                                                                <span className="font-medium">{employee.name}</span>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="font-medium text-sm sm:text-base">{employee.name}</span>
+                                                                                    <span className="text-xs text-muted-foreground md:hidden">{employee.nip}</span>
+                                                                                    <span className="text-[10px] text-muted-foreground lg:hidden line-clamp-1">{employee.jabatan || (employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' '))}</span>
+                                                                                </div>
                                                                             </div>
                                                                         </TableCell>
-                                                                        <TableCell>{employee.nip || "-"}</TableCell>
-                                                                        <TableCell>
+                                                                        <TableCell className="hidden md:table-cell">{employee.nip || "-"}</TableCell>
+                                                                        <TableCell className="hidden lg:table-cell">
                                                                             <Badge variant="outline" className="capitalize">
                                                                                 {employee.jabatan || (employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' '))}
                                                                             </Badge>
@@ -509,10 +513,11 @@ export default function EmployeeOfTheMonth() {
                                                                             <Button
                                                                                 size="sm"
                                                                                 onClick={() => navigate(`/employee-of-the-month/rate/${employee.id}`)}
-                                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-8 px-3"
                                                                             >
-                                                                                <ThumbsUp className="h-4 w-4 mr-2" />
-                                                                                Nilai Pegawai
+                                                                                <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                                                                <span className="hidden sm:inline">Nilai Pegawai</span>
+                                                                                <span className="sm:hidden">Nilai</span>
                                                                             </Button>
                                                                         </TableCell>
                                                                     </TableRow>
@@ -580,7 +585,7 @@ export default function EmployeeOfTheMonth() {
                                                                 <div
                                                                     key={entry.employeeId}
                                                                     className={`
-                                                                        flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                        flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
                                                                         ${isWinner ? 'bg-gradient-to-r from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border-yellow-400 dark:border-yellow-600' :
                                                                             isTop3 ? 'bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10 border-blue-300 dark:border-blue-700' :
                                                                                 'bg-muted/30 border-border hover:border-primary/50'}
@@ -588,20 +593,20 @@ export default function EmployeeOfTheMonth() {
                                                                 >
                                                                     {/* Rank Badge */}
                                                                     <div className={`
-                                                                        flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
+                                                                        flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-lg shrink-0
                                                                         ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg' :
                                                                             rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
                                                                                 rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
                                                                                     'bg-muted text-muted-foreground'}
                                                                     `}>
-                                                                        {isWinner ? <Crown className="h-6 w-6" /> :
-                                                                            rank === 2 ? <Medal className="h-6 w-6" /> :
-                                                                                rank === 3 ? <Medal className="h-6 w-6" /> :
+                                                                        {isWinner ? <Crown className="h-4 w-4 sm:h-6 sm:w-6" /> :
+                                                                            rank === 2 ? <Medal className="h-4 w-4 sm:h-6 sm:w-6" /> :
+                                                                                rank === 3 ? <Medal className="h-4 w-4 sm:h-6 sm:w-6" /> :
                                                                                     `#${rank}`}
                                                                     </div>
 
                                                                     {/* Avatar */}
-                                                                    <Avatar className={`h-14 w-14 ${isTop3 ? 'border-4' : 'border-2'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
+                                                                    <Avatar className={`h-10 w-10 sm:h-14 sm:w-14 ${isTop3 ? 'border-2 sm:border-4' : 'border-2'} ${isWinner ? 'border-yellow-400' : isTop3 ? 'border-blue-400' : 'border-border'}`}>
                                                                         <AvatarImage
                                                                             src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
                                                                             alt={entry.employee.name}
@@ -613,23 +618,23 @@ export default function EmployeeOfTheMonth() {
 
                                                                     {/* Employee Info */}
                                                                     <div className="flex-1 min-w-0">
-                                                                        <h3 className={`font-bold truncate ${isWinner ? 'text-lg text-yellow-700 dark:text-yellow-400' : 'text-base'}`}>
+                                                                        <h3 className={`font-bold truncate ${isWinner ? 'text-sm sm:text-lg text-yellow-700 dark:text-yellow-400' : 'text-sm sm:text-base'}`}>
                                                                             {entry.employee.name}
                                                                         </h3>
-                                                                        <p className="text-sm text-muted-foreground truncate">
+                                                                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
                                                                             {entry.employee.nip}
                                                                         </p>
                                                                     </div>
 
                                                                     {/* Points */}
-                                                                    <div className="text-right">
-                                                                        <div className={`flex items-center gap-2 ${isWinner ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}>
-                                                                            <Star className={`h-5 w-5 ${isWinner ? 'fill-current' : ''}`} />
-                                                                            <span className="text-2xl font-black">
+                                                                    <div className="text-right shrink-0">
+                                                                        <div className={`flex items-center justify-end gap-1 sm:gap-2 ${isWinner ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}>
+                                                                            <Star className={`h-3 w-3 sm:h-5 sm:w-5 ${isWinner ? 'fill-current' : ''}`} />
+                                                                            <span className="text-lg sm:text-2xl font-black">
                                                                                 {entry.totalPoints}
                                                                             </span>
                                                                         </div>
-                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                                                                             {entry.ratingCount} penilaian
                                                                         </p>
                                                                     </div>
@@ -686,14 +691,14 @@ export default function EmployeeOfTheMonth() {
                                                                 ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
                                                                 : e.employee.kriteria_asn === "Non ASN"
                                                         )[0] && (
-                                                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-8 text-white shadow-xl mb-8">
+                                                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-4 sm:p-8 text-white shadow-xl mb-6 sm:mb-8">
                                                                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
                                                                 <div className="flex flex-col items-center text-center relative z-10">
-                                                                    <div className="bg-white/20 p-3 rounded-full mb-4 backdrop-blur-sm">
-                                                                        <Crown className="h-12 w-12 text-white" />
+                                                                    <div className="bg-white/20 p-2 sm:p-3 rounded-full mb-3 sm:mb-4 backdrop-blur-sm">
+                                                                        <Crown className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
                                                                     </div>
-                                                                    <h3 className="text-xl font-medium text-white/90 mb-2">Kandidat Terkuat {type === "asn" ? "ASN" : "Non ASN"}</h3>
-                                                                    <h2 className="text-4xl font-bold mb-4">
+                                                                    <h3 className="text-sm sm:text-xl font-medium text-white/90 mb-1 sm:mb-2">Kandidat Terkuat {type === "asn" ? "ASN" : "Non ASN"}</h3>
+                                                                    <h2 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4 px-2 break-words">
                                                                         {yearlyLeaderboardWithDetails
                                                                             .filter(e =>
                                                                                 type === "asn"
@@ -701,9 +706,9 @@ export default function EmployeeOfTheMonth() {
                                                                                     : e.employee.kriteria_asn === "Non ASN"
                                                                             )[0].employee.name}
                                                                     </h2>
-                                                                    <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full backdrop-blur-sm">
-                                                                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                                                                        <span className="text-2xl font-bold">
+                                                                    <div className="flex items-center gap-2 bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-full backdrop-blur-sm">
+                                                                        <Star className="h-4 w-4 sm:h-6 sm:w-6 fill-yellow-400 text-yellow-400" />
+                                                                        <span className="text-lg sm:text-2xl font-bold">
                                                                             {yearlyLeaderboardWithDetails
                                                                                 .filter(e =>
                                                                                     type === "asn"
@@ -731,20 +736,20 @@ export default function EmployeeOfTheMonth() {
                                                                     <div
                                                                         key={entry.employeeId}
                                                                         className={`
-                                                                            flex items-center gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                                            flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
                                                                             ${isWinner ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/20 border-purple-400 dark:border-purple-600' :
                                                                                 'bg-muted/30 border-border hover:border-primary/50'}
                                                                         `}
                                                                     >
                                                                         <div className={`
-                                                                            flex items-center justify-center w-12 h-12 rounded-full font-black text-lg shrink-0
+                                                                            flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-lg shrink-0
                                                                             ${isWinner ? 'bg-gradient-to-br from-purple-400 to-pink-600 text-white shadow-lg' :
                                                                                 'bg-muted text-muted-foreground'}
                                                                         `}>
-                                                                            {isWinner ? <Crown className="h-6 w-6" /> : `#${rank}`}
+                                                                            {isWinner ? <Crown className="h-4 w-4 sm:h-6 sm:w-6" /> : `#${rank}`}
                                                                         </div>
 
-                                                                        <Avatar className={`h-14 w-14 ${isWinner ? 'border-4 border-purple-400' : 'border-2 border-border'}`}>
+                                                                        <Avatar className={`h-10 w-10 sm:h-14 sm:w-14 ${isWinner ? 'border-2 sm:border-4 border-purple-400' : 'border-2 border-border'}`}>
                                                                             <AvatarImage
                                                                                 src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`}
                                                                                 alt={entry.employee.name}
@@ -753,22 +758,22 @@ export default function EmployeeOfTheMonth() {
                                                                         </Avatar>
 
                                                                         <div className="flex-1 min-w-0">
-                                                                            <h3 className="font-bold truncate text-base">
+                                                                            <h3 className="font-bold truncate text-sm sm:text-base">
                                                                                 {entry.employee.name}
                                                                             </h3>
-                                                                            <p className="text-sm text-muted-foreground truncate">
+                                                                            <p className="text-xs sm:text-sm text-muted-foreground truncate">
                                                                                 {entry.employee.nip}
                                                                             </p>
                                                                         </div>
 
-                                                                        <div className="text-right">
-                                                                            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                                                                <Star className="h-5 w-5 fill-current" />
-                                                                                <span className="text-2xl font-black">
+                                                                        <div className="text-right shrink-0">
+                                                                            <div className="flex items-center justify-end gap-1 sm:gap-2 text-purple-600 dark:text-purple-400">
+                                                                                <Star className="h-3 w-3 sm:h-5 sm:w-5 fill-current" />
+                                                                                <span className="text-lg sm:text-2xl font-black">
                                                                                     {entry.totalPoints}
                                                                                 </span>
                                                                             </div>
-                                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                                                                                 Total {entry.ratingCount} penilaian
                                                                             </p>
                                                                         </div>

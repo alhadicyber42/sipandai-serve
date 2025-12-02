@@ -76,7 +76,7 @@ export function TestimonialCarousel({
 
     return (
         <div className="relative w-full max-w-4xl mx-auto">
-            <div className="relative h-[400px] perspective-1000">
+            <div className="relative h-[550px] sm:h-[400px] perspective-1000">
                 <AnimatePresence initial={false} custom={direction}>
                     <motion.div
                         key={currentIndex}
@@ -93,7 +93,7 @@ export function TestimonialCarousel({
                         }}
                         className="absolute inset-0"
                     >
-                        <div className="relative h-full bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 overflow-hidden group shadow-2xl dark:from-black/40 dark:to-black/20 dark:border-white/10">
+                        <div className="relative h-full bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-4 sm:p-8 overflow-hidden group shadow-2xl dark:from-black/40 dark:to-black/20 dark:border-white/10">
                             {/* Animated background gradient */}
                             <motion.div
                                 className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-rose-500/10 dark:from-indigo-500/20 dark:via-purple-500/10 dark:to-rose-500/20 rounded-3xl"
