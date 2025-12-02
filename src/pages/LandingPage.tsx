@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Building2, FileText, Award, MessageSquare, ShieldCheck, Clock, CheckCircle2, TrendingUp, Briefcase, UserCheck, Calendar, Sparkles, Zap, Globe, Lock, BarChart3, Users } from "lucide-react";
-import { InstallPrompt } from "@/components/InstallPrompt";
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({
@@ -22,9 +21,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
   return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 flex flex-col overflow-x-hidden relative">
-        {/* PWA Install Prompt */}
-        <InstallPrompt />
-        
         {/* Animated Background Elements */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
             <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl" style={{

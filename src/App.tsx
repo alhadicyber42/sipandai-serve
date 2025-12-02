@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { DashboardSkeleton, ProfileSkeleton, ServiceListSkeleton } from "./components/skeletons";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Building2 } from "lucide-react";
 
 import ReloadPrompt from "./components/ReloadPrompt";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
@@ -55,15 +56,29 @@ const queryClient = new QueryClient({
   },
 });
 
+import { Building2 } from "lucide-react";
+
+// ...
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Memuat...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+          <div className="relative p-4 bg-background/80 backdrop-blur-sm rounded-2xl shadow-lg border border-primary/10">
+            <Building2 className="h-10 w-10 text-primary animate-pulse" />
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <h2 className="font-bold text-lg tracking-tight">SIPANDAI</h2>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+            <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+            <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
         </div>
       </div>
     );

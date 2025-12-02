@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, Download, CalendarX, Briefcase, Bell } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, CalendarX, Briefcase, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -22,14 +21,6 @@ export const DashboardLayout = ({
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<string[]>(["layanan"]);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(() => {
-    // Check if app is already installed
-    const standalone = window.matchMedia('(display-mode: standalone)').matches
-      || (window.navigator as any).standalone
-      || document.referrer.includes('android-app://');
-    return standalone;
-  });
 
   const handleLogout = () => {
     logout();
@@ -39,12 +30,6 @@ export const DashboardLayout = ({
     setOpenMenus(prev => prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]);
   };
   const isActive = (path: string) => location.pathname === path;
-
-  const handleManualInstall = () => {
-    // Clear localStorage to force showing prompt
-    localStorage.removeItem('sipandai-install-dismissed');
-    setShowInstallPrompt(true);
-  };
 
   // Menu items based on role
   const getMenuItems = () => {
@@ -234,17 +219,6 @@ export const DashboardLayout = ({
 
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
-      {/* PWA Install Prompt - Manual Trigger */}
-      {showInstallPrompt && (
-        <InstallPrompt
-          isManual={true}
-          onClose={() => setShowInstallPrompt(false)}
-        />
-      )}
-
-      {/* Auto Install Prompt */}
-      <InstallPrompt />
-
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground border-b border-primary/20 shadow-md">
         <div className="flex items-center justify-between p-3 md:p-4">
@@ -312,20 +286,6 @@ export const DashboardLayout = ({
             <item.icon className={cn("h-4 w-4 md:h-5 md:w-5 flex-shrink-0", isActive(item.path) ? "text-white" : "text-white/70 group-hover:text-white")} />
             <span className="text-xs md:text-sm font-medium">{item.label}</span>
           </Link>)}
-
-          {/* Install PWA Button - Only show if not already installed */}
-          {!isStandalone && (
-            <div className="mt-4 pt-3 border-t border-white/10">
-              <Button
-                onClick={handleManualInstall}
-                variant="ghost"
-                className="w-full justify-start gap-2 md:gap-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 transition-colors px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg"
-              >
-                <Download className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-                <span className="text-xs md:text-sm font-medium">Install Aplikasi</span>
-              </Button>
-            </div>
-          )}
         </nav>
 
         {/* Theme Toggle & Logout */}
@@ -349,7 +309,6 @@ export const DashboardLayout = ({
         <div className="p-3 md:p-4 lg:p-6 xl:p-8">{children}</div>
       </main>
 
-      <InstallPrompt />
       <NetworkStatus />
     </div>
   );
