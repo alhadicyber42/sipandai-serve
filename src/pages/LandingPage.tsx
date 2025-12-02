@@ -6,39 +6,39 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Building2, FileText, Award, MessageSquare, ShieldCheck, Clock, CheckCircle2, TrendingUp, Briefcase, UserCheck, Calendar, Sparkles, Zap, Globe, Lock, BarChart3, Users } from "lucide-react";
 import { InstallPrompt } from "@/components/InstallPrompt";
 export default function LandingPage() {
-    const navigate = useNavigate();
-    const [mousePosition, setMousePosition] = useState({
-        x: 0,
-        y: 0
-    });
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            setMousePosition({
-                x: e.clientX,
-                y: e.clientY
-            });
-        };
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, []);
-    return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 flex flex-col overflow-x-hidden relative">
+  const navigate = useNavigate();
+  const [mousePosition, setMousePosition] = useState({
+    x: 0,
+    y: 0
+  });
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: e.clientX,
+        y: e.clientY
+      });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+  return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-blue-950/30 dark:to-indigo-950/40 flex flex-col overflow-x-hidden relative">
         {/* PWA Install Prompt */}
         <InstallPrompt />
         
         {/* Animated Background Elements */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
             <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl" style={{
-                top: '10%',
-                left: '10%',
-                transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
-                transition: 'transform 0.3s ease-out'
-            }} />
+        top: '10%',
+        left: '10%',
+        transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
+        transition: 'transform 0.3s ease-out'
+      }} />
             <div className="absolute w-[600px] h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl" style={{
-                bottom: '10%',
-                right: '10%',
-                transform: `translate(${mousePosition.x * -0.03}px, ${mousePosition.y * -0.03}px)`,
-                transition: 'transform 0.3s ease-out'
-            }} />
+        bottom: '10%',
+        right: '10%',
+        transform: `translate(${mousePosition.x * -0.03}px, ${mousePosition.y * -0.03}px)`,
+        transition: 'transform 0.3s ease-out'
+      }} />
             <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-full blur-3xl animate-pulse" />
         </div>
 
@@ -94,7 +94,7 @@ export default function LandingPage() {
                             <div className="flex items-center gap-3 text-sm text-muted-foreground bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200/50 dark:border-blue-800/30">
                                 <ShieldCheck className="h-5 w-5 text-blue-600 flex-shrink-0" />
                                 <p className="text-xs md:text-sm">
-                                    Platform resmi untuk ASN di lingkungan BPSDM Perhubungan
+                                    Platform resmi untuk ASN di lingkungan Ditjen Binalavotas 
                                 </p>
                             </div>
                         </div>
@@ -105,24 +105,26 @@ export default function LandingPage() {
                                 <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
                             <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-14 font-semibold border-2 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all" onClick={() => {
-                                const infoSection = document.getElementById('fitur-layanan');
-                                infoSection?.scrollIntoView({ behavior: 'smooth' });
-                            }}>
+                const infoSection = document.getElementById('fitur-layanan');
+                infoSection?.scrollIntoView({
+                  behavior: 'smooth'
+                });
+              }}>
                                 Lihat Fitur
                             </Button>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm">
                             {[{
-                                icon: ShieldCheck,
-                                text: "Aman & Terenkripsi"
-                            }, {
-                                icon: CheckCircle2,
-                                text: "Terintegrasi"
-                            }, {
-                                icon: Users,
-                                text: "Untuk ASN"
-                            }].map((item, i) => <div key={i} className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/30">
+                icon: ShieldCheck,
+                text: "Aman & Terenkripsi"
+              }, {
+                icon: CheckCircle2,
+                text: "Terintegrasi"
+              }, {
+                icon: Users,
+                text: "Untuk ASN"
+              }].map((item, i) => <div key={i} className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/30">
                                 <item.icon className="h-3 w-3 md:h-4 md:w-4 text-blue-600 flex-shrink-0" />
                                 <span className="font-medium whitespace-nowrap text-xs md:text-sm text-foreground/80">{item.text}</span>
                             </div>)}
@@ -138,8 +140,8 @@ export default function LandingPage() {
                             {/* Main card */}
                             <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/20 bg-gradient-to-br from-white/80 to-white/40 dark:from-slate-900/80 dark:to-slate-800/40 backdrop-blur-xl p-3">
                                 <img src="/hero-illustration.png" alt="SIPANDAI Dashboard Preview" className="rounded-2xl w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" onError={e => {
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80";
-                                }} />
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80";
+                }} />
 
                                 {/* Floating stats badges */}
                                 <div className="absolute top-6 right-6 px-4 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg border border-white/20 animate-in fade-in zoom-in duration-500 delay-700">
@@ -294,9 +296,11 @@ export default function LandingPage() {
                             <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                         </Button>
                         <Button size="lg" variant="outline" className="text-base md:text-lg px-6 md:px-10 h-12 md:h-16 font-semibold bg-transparent text-white border-2 border-white/30 hover:bg-white/10 transition-all" onClick={() => {
-                            const infoSection = document.getElementById('fitur-layanan');
-                            infoSection?.scrollIntoView({ behavior: 'smooth' });
-                        }}>
+              const infoSection = document.getElementById('fitur-layanan');
+              infoSection?.scrollIntoView({
+                behavior: 'smooth'
+              });
+            }}>
                             Pelajari Lebih Lanjut
                         </Button>
                     </div>
@@ -343,15 +347,15 @@ export default function LandingPage() {
     </div>;
 }
 function StatCard({
-    icon,
-    number,
-    label
+  icon,
+  number,
+  label
 }: {
-    icon: React.ReactNode;
-    number: string;
-    label: string;
+  icon: React.ReactNode;
+  number: string;
+  label: string;
 }) {
-    return <div className="text-center space-y-2 md:space-y-3 group cursor-default">
+  return <div className="text-center space-y-2 md:space-y-3 group cursor-default">
         <div className="inline-flex p-2 md:p-3 rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 group-hover:scale-110 transition-transform">
             <div className="text-white [&>svg]:h-5 [&>svg]:w-5 md:[&>svg]:h-6 md:[&>svg]:w-6">{icon}</div>
         </div>
@@ -360,17 +364,17 @@ function StatCard({
     </div>;
 }
 function FeatureCard({
-    icon,
-    title,
-    description,
-    gradient
+  icon,
+  title,
+  description,
+  gradient
 }: {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-    gradient: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  gradient: string;
 }) {
-    return <Card className="group relative border-2 border-white/20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+  return <Card className="group relative border-2 border-white/20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
         <CardContent className="pt-6 md:pt-10 pb-6 md:pb-8 relative">
             <div className={`mb-4 md:mb-6 inline-flex p-3 md:p-5 bg-gradient-to-br ${gradient} rounded-xl md:rounded-2xl text-white shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 [&>svg]:h-8 [&>svg]:w-8 md:[&>svg]:h-12 md:[&>svg]:w-12`}>
@@ -384,15 +388,15 @@ function FeatureCard({
     </Card>;
 }
 function BenefitItem({
-    icon,
-    title,
-    description
+  icon,
+  title,
+  description
 }: {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
 }) {
-    return <div className="flex gap-3 md:gap-5 p-3 md:p-5 rounded-xl md:rounded-2xl hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all group cursor-default">
+  return <div className="flex gap-3 md:gap-5 p-3 md:p-5 rounded-xl md:rounded-2xl hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all group cursor-default">
         <div className="flex-shrink-0 mt-1 group-hover:scale-110 transition-transform [&>svg]:h-5 [&>svg]:w-5 md:[&>svg]:h-6 md:[&>svg]:w-6">{icon}</div>
         <div>
             <h4 className="font-bold text-base md:text-lg mb-1 md:mb-2 group-hover:text-blue-600 transition-colors">{title}</h4>
