@@ -617,11 +617,11 @@ export default function EmployeeOfTheMonth() {
                                                                     </Avatar>
 
                                                                     {/* Employee Info */}
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h3 className={`font-bold truncate ${isWinner ? 'text-sm sm:text-lg text-yellow-700 dark:text-yellow-400' : 'text-sm sm:text-base'}`}>
+                                                                    <div className="flex-1 min-w-0 pr-2">
+                                                                        <h3 className={`font-bold line-clamp-2 leading-tight ${isWinner ? 'text-sm sm:text-lg text-yellow-700 dark:text-yellow-400' : 'text-sm sm:text-base'}`}>
                                                                             {entry.employee.name}
                                                                         </h3>
-                                                                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                                                        <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
                                                                             {entry.employee.nip}
                                                                         </p>
                                                                     </div>
@@ -757,11 +757,11 @@ export default function EmployeeOfTheMonth() {
                                                                             <AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback>
                                                                         </Avatar>
 
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <h3 className="font-bold truncate text-sm sm:text-base">
+                                                                        <div className="flex-1 min-w-0 pr-2">
+                                                                            <h3 className="font-bold line-clamp-2 leading-tight text-sm sm:text-base">
                                                                                 {entry.employee.name}
                                                                             </h3>
-                                                                            <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                                                            <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
                                                                                 {entry.employee.nip}
                                                                             </p>
                                                                         </div>
