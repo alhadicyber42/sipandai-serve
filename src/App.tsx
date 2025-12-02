@@ -56,10 +56,6 @@ const queryClient = new QueryClient({
   },
 });
 
-import { Building2 } from "lucide-react";
-
-// ...
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
