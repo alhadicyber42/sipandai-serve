@@ -144,6 +144,9 @@ export function useAutoSave<T>({
 /**
  * Hook for form draft management
  * Simpler version focused on localStorage backup only
+ * 
+ * @deprecated Use useAutoSave with storageKey instead
+ * This function is kept for backward compatibility
  */
 export function useFormDraft<T>(storageKey: string, defaultValues: T) {
   const [draftData, setDraftData] = useState<T>(() => {
@@ -190,4 +193,31 @@ export function useFormDraft<T>(storageKey: string, defaultValues: T) {
     clearDraft,
     hasDraft,
   };
+}
+
+/**
+ * Unified form auto-save hook
+ * Combines functionality from useAutoSave and useFormAutoSave
+ */
+export function useFormAutoSaveUnified<T extends Record<string, any>>(
+  storageKey: string,
+  formData: T,
+  options: {
+    debounceMs?: number;
+    enabled?: boolean;
+    onSave?: (data: T) => Promise<void>;
+    showNotification?: boolean;
+  } = {}
+) {
+  const { debounceMs = 1000, enabled = true, onSave, showNotification = false } = options;
+
+  // Use the main useAutoSave hook
+  return useAutoSave({
+    data: formData,
+    onSave: onSave || (async () => {}), // No-op if not provided
+    delay: debounceMs,
+    enabled,
+    storageKey,
+    showNotification,
+  });
 }
