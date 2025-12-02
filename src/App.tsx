@@ -12,6 +12,8 @@ import { Building2 } from "lucide-react";
 
 import ReloadPrompt from "./components/ReloadPrompt";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { PageTitle } from "./components/PageTitle";
+import { useWebVitals } from "./hooks/useWebVitals";
 
 // Lazy load all pages for code splitting
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -87,17 +89,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <ReloadPrompt />
-            <PWAInstallPrompt />
-            <BrowserRouter>
+const AppContent = () => {
+  // Track Web Vitals for performance monitoring
+  useWebVitals();
+
+  return (
+    <BrowserRouter>
+              <PageTitle />
               <Suspense fallback={<DashboardSkeleton />}>
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
@@ -136,7 +134,21 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
-            </BrowserRouter>
+    </BrowserRouter>
+  );
+};
+
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <ReloadPrompt />
+            <PWAInstallPrompt />
+            <AppContent />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
