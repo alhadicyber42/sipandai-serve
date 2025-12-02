@@ -491,86 +491,91 @@ export default function LeaveDeferralManagement() {
                             <CardHeader>
                                 <CardTitle>Daftar Penangguhan Cuti</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Pegawai</TableHead>
-                                            <TableHead>NIP</TableHead>
-                                            <TableHead>Tahun</TableHead>
-                                            <TableHead>Jumlah Hari</TableHead>
-                                            <TableHead>Dokumen</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Aksi</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {activeDeferrals.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                                    Belum ada data penangguhan cuti
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            activeDeferrals.map((deferral) => (
-                                                <TableRow key={deferral.id}>
-                                                    <TableCell className="font-medium">{deferral.profiles?.name || "-"}</TableCell>
-                                                    <TableCell>{deferral.profiles?.nip || "-"}</TableCell>
-                                                    <TableCell>{deferral.deferral_year}</TableCell>
-                                                    <TableCell>{deferral.days_deferred} Hari</TableCell>
-                                                    <TableCell>
-                                                        <a
-                                                            href={deferral.approval_document}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center text-blue-600 hover:underline"
-                                                        >
-                                                            <LinkIcon className="h-3 w-3 mr-1" />
-                                                            Lihat Dokumen
-                                                        </a>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Select
-                                                            defaultValue={deferral.status}
-                                                            onValueChange={(value) => handleStatusChange(deferral.id, value as any)}
-                                                        >
-                                                            <SelectTrigger className="w-[130px] h-8">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="active">Aktif</SelectItem>
-                                                                <SelectItem value="used">Terpakai</SelectItem>
-                                                                <SelectItem value="expired">Kadaluarsa</SelectItem>
-                                                                <SelectItem value="rejected">Ditolak</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                                onClick={() => handleOpenDialog(deferral)}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                                onClick={() => handleDelete(deferral.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
+                                <CardContent className="p-0 sm:p-6">
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="pl-4 min-w-[150px]">Pegawai</TableHead>
+                                                    <TableHead className="hidden md:table-cell">NIP</TableHead>
+                                                    <TableHead className="text-center">Tahun</TableHead>
+                                                    <TableHead className="text-center">Jml Hari</TableHead>
+                                                    <TableHead className="hidden lg:table-cell">Dokumen</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="text-right pr-4">Aksi</TableHead>
                                                 </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {activeDeferrals.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                            Belum ada data penangguhan cuti
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    activeDeferrals.map((deferral) => (
+                                                        <TableRow key={deferral.id}>
+                                                            <TableCell className="font-medium pl-4">
+                                                                <div>{deferral.profiles?.name || "-"}</div>
+                                                                <div className="md:hidden text-xs text-muted-foreground">{deferral.profiles?.nip || "-"}</div>
+                                                            </TableCell>
+                                                            <TableCell className="hidden md:table-cell">{deferral.profiles?.nip || "-"}</TableCell>
+                                                            <TableCell className="text-center">{deferral.deferral_year}</TableCell>
+                                                            <TableCell className="text-center">{deferral.days_deferred}</TableCell>
+                                                            <TableCell className="hidden lg:table-cell">
+                                                                <a
+                                                                    href={deferral.approval_document}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center text-blue-600 hover:underline"
+                                                                >
+                                                                    <LinkIcon className="h-3 w-3 mr-1" />
+                                                                    Lihat
+                                                                </a>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Select
+                                                                    defaultValue={deferral.status}
+                                                                    onValueChange={(value) => handleStatusChange(deferral.id, value as any)}
+                                                                >
+                                                                    <SelectTrigger className="w-[100px] sm:w-[130px] h-8 text-xs sm:text-sm">
+                                                                        <SelectValue />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="active">Aktif</SelectItem>
+                                                                        <SelectItem value="used">Terpakai</SelectItem>
+                                                                        <SelectItem value="expired">Kadaluarsa</SelectItem>
+                                                                        <SelectItem value="rejected">Ditolak</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </TableCell>
+                                                            <TableCell className="text-right pr-4">
+                                                                <div className="flex items-center justify-end gap-1">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8"
+                                                                        onClick={() => handleOpenDialog(deferral)}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                                        onClick={() => handleDelete(deferral.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
                         </Card>
                     </TabsContent>
 

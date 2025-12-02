@@ -273,57 +273,63 @@ export default function JobFormationManagement() {
                         <CardHeader>
                             <CardTitle>Daftar Formasi Jabatan</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nama Jabatan</TableHead>
-                                        <TableHead>Kuota</TableHead>
-                                        <TableHead className="w-[100px]">Aksi</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {formations.length === 0 ? (
+                        <CardContent className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
-                                            <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                                Belum ada data formasi jabatan
-                                            </TableCell>
+                                            <TableHead className="pl-4 w-[60%] sm:w-auto">Nama Jabatan</TableHead>
+                                            <TableHead className="text-center w-[20%] sm:w-auto">Kuota</TableHead>
+                                            <TableHead className="w-[20%] sm:w-[100px] text-right pr-4">Aksi</TableHead>
                                         </TableRow>
-                                    ) : (
-                                        formations.map((formation) => (
-                                            <TableRow key={formation.id}>
-                                                <TableCell className="font-medium">
-                                                    <div className="flex items-center gap-2">
-                                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                                        {formation.position_name}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{formation.quota}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8"
-                                                            onClick={() => handleOpenDialog(formation)}
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                            onClick={() => handleDelete(formation.id)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {formations.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                                    Belum ada data formasi jabatan
                                                 </TableCell>
                                             </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                                        ) : (
+                                            formations.map((formation) => (
+                                                <TableRow key={formation.id}>
+                                                    <TableCell className="font-medium pl-4">
+                                                        <div className="flex items-start sm:items-center gap-2">
+                                                            <Briefcase className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 sm:mt-0" />
+                                                            <span className="line-clamp-2 text-sm sm:text-base">{formation.position_name}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <span className="inline-flex items-center justify-center min-w-[2rem] h-8 rounded-full bg-secondary text-sm font-medium">
+                                                            {formation.quota}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-right pr-4">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
+                                                                onClick={() => handleOpenDialog(formation)}
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                                onClick={() => handleDelete(formation.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 ) : (

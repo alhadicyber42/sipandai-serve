@@ -390,14 +390,23 @@ export default function KelolaAdminUnit() {
                     ) : (
                       filteredUsers.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">
-                            {user.name}
-                          </TableCell>
-                          <TableCell>{user.nip}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone || "-"}</TableCell>
-                          <TableCell>{user.work_unit_name}</TableCell>
                           <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm sm:text-base">{user.name}</span>
+                              <span className="text-xs text-muted-foreground md:hidden">{user.nip}</span>
+                              <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1 mt-0.5">{user.work_unit_name}</span>
+                              <div className="mt-1 sm:hidden">
+                                <Badge variant={getRoleBadgeVariant(user.role)} className="text-[10px] px-1.5 py-0 h-5">
+                                  {getRoleName(user.role)}
+                                </Badge>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{user.nip}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{user.email}</TableCell>
+                          <TableCell className="hidden xl:table-cell">{user.phone || "-"}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{user.work_unit_name}</TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <Badge variant={getRoleBadgeVariant(user.role)}>
                               {getRoleName(user.role)}
                             </Badge>
@@ -407,10 +416,10 @@ export default function KelolaAdminUnit() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleOpenRoleDialog(user)}
-                              className="gap-2"
+                              className="gap-2 h-8 px-2 md:h-9 md:px-4"
                             >
                               <UserCog className="h-4 w-4" />
-                              Ubah Role
+                              <span className="hidden md:inline">Ubah Role</span>
                             </Button>
                           </TableCell>
                         </TableRow>

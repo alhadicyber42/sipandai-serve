@@ -234,60 +234,67 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {templates.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/50">
-                        <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                    <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/50 text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                         <p className="text-lg font-medium text-muted-foreground">Belum ada template</p>
-                        <p className="text-sm text-muted-foreground mb-4">
+                        <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
                             Buat template baru untuk kategori ini
                         </p>
                     </div>
                 ) : (
                     templates.map((template) => (
-                        <Card key={template.id} className="flex flex-col">
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            {template.template_name}
+                        <Card key={template.id} className="flex flex-col h-full shadow-sm hover:shadow-md transition-shadow">
+                            <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                            <CardTitle className="text-base md:text-lg truncate max-w-full" title={template.template_name}>
+                                                {template.template_name}
+                                            </CardTitle>
                                             {template.is_default && (
-                                                <Badge variant="default" className="ml-2">
+                                                <Badge variant="default" className="text-[10px] h-5 shrink-0">
                                                     <Star className="h-3 w-3 mr-1" />
                                                     Default
                                                 </Badge>
                                             )}
-                                        </CardTitle>
-                                        <CardDescription className="mt-2">
-                                            <Badge variant="outline">
+                                        </div>
+                                        <CardDescription>
+                                            <Badge variant="outline" className="text-[10px] sm:text-xs font-normal">
                                                 {LETTER_CATEGORIES.find(c => c.value === template.category)?.label || template.category}
                                             </Badge>
                                         </CardDescription>
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-1">
-                                <div className="text-sm text-muted-foreground space-y-1">
-                                    <p>Unit: {workUnits.find(u => u.id === template.work_unit_id)?.name}</p>
+                            <CardContent className="flex-1 pb-3">
+                                <div className="text-xs sm:text-sm text-muted-foreground space-y-1.5">
+                                    <p className="truncate">Unit: {workUnits.find(u => u.id === template.work_unit_id)?.name}</p>
                                     <p>Dibuat: {new Date(template.created_at).toLocaleDateString('id-ID')}</p>
                                     {template.file_name && (
-                                        <p className="truncate">File: {template.file_name}</p>
+                                        <p className="truncate flex items-center gap-1" title={template.file_name}>
+                                            <FileText className="h-3 w-3" />
+                                            {template.file_name}
+                                        </p>
                                     )}
                                 </div>
                             </CardContent>
-                            <CardFooter className="flex flex-wrap gap-2">
+                            <CardFooter className="flex flex-wrap gap-2 pt-0">
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handlePreview(template)}
+                                    className="flex-1 h-8 text-xs"
                                 >
-                                    <Eye className="h-4 w-4 mr-1" />
+                                    <Eye className="h-3.5 w-3.5 mr-1.5" />
                                     Preview
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleEdit(template)}
+                                    className="flex-1 h-8 text-xs"
                                 >
-                                    <Edit className="h-4 w-4 mr-1" />
+                                    <Edit className="h-3.5 w-3.5 mr-1.5" />
                                     Edit
                                 </Button>
                                 {!template.is_default && (
@@ -295,18 +302,20 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleSetDefault(template.id)}
+                                        className="h-8 w-8 p-0 shrink-0"
+                                        title="Set Default"
                                     >
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Set Default
+                                        <Check className="h-4 w-4" />
                                     </Button>
                                 )}
                                 <Button
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => handleDelete(template.id)}
+                                    className="h-8 w-8 p-0 shrink-0"
+                                    title="Hapus"
                                 >
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    Hapus
+                                    <Trash2 className="h-4 w-4" />
                                 </Button>
                             </CardFooter>
                         </Card>

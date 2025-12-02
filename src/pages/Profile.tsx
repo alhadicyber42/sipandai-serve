@@ -457,14 +457,14 @@ export default function Profile() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Cari dokumen (misal: SK Pangkat, Ijazah, KTP...)"
+                      placeholder="Cari dokumen..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-9 h-10 text-sm"
                     />
                   </div>
                   {searchQuery && (
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-xs md:text-sm text-muted-foreground mt-2">
                       Menampilkan {REQUIRED_DOCUMENTS.filter(doc =>
                         doc.label.toLowerCase().includes(searchQuery.toLowerCase())
                       ).length} dari {REQUIRED_DOCUMENTS.length} dokumen
@@ -472,8 +472,8 @@ export default function Profile() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-6">
+              <CardContent className="space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {REQUIRED_DOCUMENTS
                     .filter(doc =>
                       searchQuery === "" ||
@@ -491,13 +491,13 @@ export default function Profile() {
                 {searchQuery && REQUIRED_DOCUMENTS.filter(doc =>
                   doc.label.toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 && (
-                    <div className="text-center py-12">
-                      <Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                      <p className="text-muted-foreground">Tidak ada dokumen yang cocok dengan "{searchQuery}"</p>
+                    <div className="text-center py-8 md:py-12">
+                      <Search className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground/50 mb-3 md:mb-4" />
+                      <p className="text-sm md:text-base text-muted-foreground">Tidak ada dokumen yang cocok dengan "{searchQuery}"</p>
                       <Button
                         variant="link"
                         onClick={() => setSearchQuery("")}
-                        className="mt-2"
+                        className="mt-1 md:mt-2 text-sm"
                       >
                         Hapus pencarian
                       </Button>

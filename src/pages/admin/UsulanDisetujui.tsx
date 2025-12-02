@@ -254,20 +254,20 @@ export default function UsulanDisetujui() {
                     key={service.id}
                     className="hover:shadow-md transition-shadow"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <h3 className="font-semibold text-lg">{service.title}</h3>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="outline">
+                    <CardContent className="p-4 md:p-6">
+                      <div className="flex flex-col md:flex-row items-start justify-between gap-3 md:gap-4">
+                        <div className="flex-1 space-y-2 min-w-0 w-full">
+                          <h3 className="font-semibold text-base md:text-lg truncate">{service.title}</h3>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm">
+                            <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 md:px-2">
                               {getServiceTypeLabel(service.service_type)}
                             </Badge>
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground truncate max-w-[150px] md:max-w-none">
                               {(service as any).profiles?.name || "-"}
                             </span>
                             {service.approved_at && (
                               <>
-                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground hidden sm:inline">•</span>
                                 <span className="text-muted-foreground">
                                   Disetujui:{" "}
                                   {format(
@@ -281,44 +281,47 @@ export default function UsulanDisetujui() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(service.status)}
+                        <div className="flex items-center gap-2 mt-2 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(service.status)}
+                          </div>
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedService(service)}
+                                className="h-8 md:h-9"
                               >
-                                <Eye className="mr-2 h-4 w-4" />
+                                <Eye className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                                 Detail
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
                               <DialogHeader>
                                 <DialogTitle>Detail Usulan</DialogTitle>
                               </DialogHeader>
                               {selectedService && (
                                 <div className="space-y-6">
-                                  <div className="grid grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                      <Label>Judul</Label>
-                                      <p className="text-sm mt-1">{selectedService.title}</p>
+                                      <Label className="text-xs md:text-sm">Judul</Label>
+                                      <p className="text-sm md:text-base mt-1">{selectedService.title}</p>
                                     </div>
                                     <div>
-                                      <Label>Jenis Layanan</Label>
-                                      <p className="text-sm mt-1">
+                                      <Label className="text-xs md:text-sm">Jenis Layanan</Label>
+                                      <p className="text-sm md:text-base mt-1">
                                         {getServiceTypeLabel(selectedService.service_type)}
                                       </p>
                                     </div>
                                     <div>
-                                      <Label>Nama Pegawai</Label>
-                                      <p className="text-sm mt-1">
+                                      <Label className="text-xs md:text-sm">Nama Pegawai</Label>
+                                      <p className="text-sm md:text-base mt-1">
                                         {selectedService.profiles.name}
                                       </p>
                                     </div>
                                     <div>
-                                      <Label>Status</Label>
+                                      <Label className="text-xs md:text-sm">Status</Label>
                                       <div className="mt-1">
                                         {getStatusBadge(selectedService.status)}
                                       </div>

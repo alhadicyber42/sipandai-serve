@@ -361,7 +361,7 @@ export default function Pengumuman() {
                 </p>
               </div>
             ) : (
-              announcements.map((announcement) => (
+                  announcements.map((announcement) => (
                 <div
                   key={announcement.id}
                   className={`p-4 rounded-lg border transition-all duration-300 ${announcement.is_pinned
@@ -369,30 +369,30 @@ export default function Pengumuman() {
                       : 'bg-muted/20 border-muted-foreground/20'
                     }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {announcement.is_pinned && (
-                          <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                          <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
                         )}
-                        <h3 className="font-semibold text-base">
+                        <h3 className="font-semibold text-base break-words line-clamp-2">
                           {announcement.title}
                         </h3>
                         {announcement.is_pinned && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs shrink-0 h-5">
                             Disematkan
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap break-words">
                         {announcement.content}
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-medium">{getAuthorName(announcement)}</span>
-                        <span>•</span>
-                        <span>{getWorkUnitName(announcement.work_unit_id)}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                        <span className="font-medium shrink-0">{getAuthorName(announcement)}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="shrink-0">{getWorkUnitName(announcement.work_unit_id)}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="flex items-center gap-1 shrink-0">
                           <Clock className="h-3 w-3" />
                           {new Date(announcement.created_at).toLocaleDateString("id-ID", {
                             day: 'numeric',
@@ -402,12 +402,13 @@ export default function Pengumuman() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-start mt-2 sm:mt-0 border-t sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto justify-end">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => togglePin(announcement.id, announcement.is_pinned)}
                         title={announcement.is_pinned ? "Lepas sematan" : "Sematkan"}
+                        className="h-8 w-8 p-0 sm:w-auto sm:h-9 sm:px-3"
                       >
                         {announcement.is_pinned ? (
                           <PinOff className="h-4 w-4" />
@@ -419,6 +420,7 @@ export default function Pengumuman() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleEdit(announcement)}
+                        className="h-8 w-8 p-0 sm:w-auto sm:h-9 sm:px-3"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -426,7 +428,7 @@ export default function Pengumuman() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(announcement.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="h-8 w-8 p-0 sm:w-auto sm:h-9 sm:px-3 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

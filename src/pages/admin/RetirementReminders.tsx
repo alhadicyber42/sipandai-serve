@@ -303,17 +303,17 @@ const RetirementReminders = () => {
                                     )}
                                 </div>
 
-                                <div className="rounded-md border">
+                                <div className="rounded-md border overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Nama</TableHead>
-                                                <TableHead>NIP</TableHead>
-                                                <TableHead>Unit Kerja</TableHead>
-                                                <TableHead>Tanggal Pensiun</TableHead>
+                                                <TableHead className="min-w-[150px] pl-4">Nama</TableHead>
+                                                <TableHead className="hidden md:table-cell">NIP</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Unit Kerja</TableHead>
+                                                <TableHead className="min-w-[120px]">Tanggal Pensiun</TableHead>
                                                 <TableHead>Status</TableHead>
-                                                <TableHead>Reminder Terakhir</TableHead>
-                                                <TableHead className="text-right">Aksi</TableHead>
+                                                <TableHead className="hidden xl:table-cell">Reminder Terakhir</TableHead>
+                                                <TableHead className="text-right pr-4">Aksi</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -331,13 +331,17 @@ const RetirementReminders = () => {
 
                                                     return (
                                                         <TableRow key={employee.id}>
-                                                            <TableCell className="font-medium">{employee.name}</TableCell>
-                                                            <TableCell>{employee.nip}</TableCell>
-                                                            <TableCell>{employee.work_units?.name || "-"}</TableCell>
+                                                            <TableCell className="pl-4">
+                                                                <div className="font-medium text-sm sm:text-base">{employee.name}</div>
+                                                                <div className="md:hidden text-xs text-muted-foreground">{employee.nip}</div>
+                                                                <div className="lg:hidden text-xs text-muted-foreground line-clamp-1">{employee.work_units?.name}</div>
+                                                            </TableCell>
+                                                            <TableCell className="hidden md:table-cell">{employee.nip}</TableCell>
+                                                            <TableCell className="hidden lg:table-cell">{employee.work_units?.name || "-"}</TableCell>
                                                             <TableCell>
                                                                 {retirementDate ? (
                                                                     <div>
-                                                                        <div>{formatDateIndonesian(retirementDate)}</div>
+                                                                        <div className="whitespace-nowrap text-sm sm:text-base">{formatDateIndonesian(retirementDate)}</div>
                                                                         <div className="text-xs text-muted-foreground">
                                                                             {daysUntil} hari lagi
                                                                         </div>
@@ -345,11 +349,11 @@ const RetirementReminders = () => {
                                                                 ) : "-"}
                                                             </TableCell>
                                                             <TableCell>
-                                                                <Badge variant={getRetirementStatusColor(monthsUntil) as any}>
+                                                                <Badge variant={getRetirementStatusColor(monthsUntil) as any} className="whitespace-nowrap text-[10px] sm:text-xs">
                                                                     {getRetirementStatusText(monthsUntil)}
                                                                 </Badge>
                                                             </TableCell>
-                                                            <TableCell>
+                                                            <TableCell className="hidden xl:table-cell">
                                                                 {employee.retirement_reminder_sent_at ? (
                                                                     <div className="text-sm">
                                                                         {formatDateIndonesian(new Date(employee.retirement_reminder_sent_at))}
@@ -358,24 +362,28 @@ const RetirementReminders = () => {
                                                                     <span className="text-muted-foreground text-sm">Belum pernah</span>
                                                                 )}
                                                             </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex justify-end gap-2">
+                                                            <TableCell className="text-right pr-4">
+                                                                <div className="flex justify-end gap-1 sm:gap-2">
                                                                     <Button
                                                                         size="sm"
                                                                         variant="outline"
                                                                         onClick={() => handleSendEmail(employee)}
                                                                         disabled={sendingEmail || !employee.email}
+                                                                        className="h-8 w-8 p-0 sm:w-auto sm:h-9 sm:px-3 sm:py-2"
+                                                                        title="Kirim Email"
                                                                     >
-                                                                        <Mail className="h-4 w-4 mr-1" />
-                                                                        Email
+                                                                        <Mail className="h-4 w-4 sm:mr-1" />
+                                                                        <span className="hidden sm:inline">Email</span>
                                                                     </Button>
                                                                     <Button
                                                                         size="sm"
                                                                         variant="outline"
                                                                         onClick={() => handleOpenWhatsAppDialog(employee)}
+                                                                        className="h-8 w-8 p-0 sm:w-auto sm:h-9 sm:px-3 sm:py-2"
+                                                                        title="Kirim WhatsApp"
                                                                     >
-                                                                        <MessageCircle className="h-4 w-4 mr-1" />
-                                                                        WhatsApp
+                                                                        <MessageCircle className="h-4 w-4 sm:mr-1" />
+                                                                        <span className="hidden sm:inline">WhatsApp</span>
                                                                     </Button>
                                                                 </div>
                                                             </TableCell>

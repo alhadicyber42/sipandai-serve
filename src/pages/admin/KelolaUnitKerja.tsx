@@ -322,8 +322,8 @@ export default function KelolaUnitKerja() {
                     <TableRow>
                       <TableHead>Kode</TableHead>
                       <TableHead>Nama Unit</TableHead>
-                      <TableHead>Administrator</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden md:table-cell">Administrator</TableHead>
+                      <TableHead className="hidden sm:table-cell">Status</TableHead>
                       <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -343,25 +343,38 @@ export default function KelolaUnitKerja() {
                     ) : (
                       filteredUnits.map((unit) => (
                         <TableRow key={unit.id}>
-                          <TableCell className="font-mono font-medium">{unit.code}</TableCell>
-                          <TableCell className="font-medium">{unit.name}</TableCell>
+                          <TableCell className="font-mono font-medium text-xs sm:text-sm">{unit.code}</TableCell>
                           <TableCell>
+                            <div className="font-medium text-sm sm:text-base">{unit.name}</div>
+                            <div className="md:hidden text-xs text-muted-foreground mt-1">
+                              Admin: {unit.admin_name || "Belum ada"}
+                            </div>
+                            <div className="sm:hidden mt-1">
+                              {unit.admin_unit_id ? (
+                                <Badge variant="default" className="text-[10px] px-1.5 py-0">Aktif</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Belum Ada Admin</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
                             {unit.admin_name || (
                               <span className="text-muted-foreground">Belum ditentukan</span>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             {unit.admin_unit_id ? (
                               <Badge variant="default">Aktif</Badge>
                             ) : (
                               <Badge variant="secondary">Belum Ada Admin</Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-right space-x-2">
+                          <TableCell className="text-right space-x-1 sm:space-x-2">
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleOpenDialog(unit)}
+                              className="h-8 w-8"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -372,6 +385,7 @@ export default function KelolaUnitKerja() {
                                 setSelectedUnit(unit);
                                 setIsDeleteDialogOpen(true);
                               }}
+                              className="h-8 w-8"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

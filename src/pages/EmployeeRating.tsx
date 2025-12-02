@@ -291,29 +291,30 @@ export default function EmployeeRating() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-4 md:space-y-6">
                             {criteria.items.map((item, itemIndex) => (
-                                <div key={itemIndex} className="space-y-3 pb-4 border-b last:border-b-0 last:pb-0">
-                                    <Label className="text-sm font-medium leading-relaxed block">
+                                <div key={itemIndex} className="space-y-2 md:space-y-3 pb-3 md:pb-4 border-b last:border-b-0 last:pb-0">
+                                    <Label className="text-sm font-medium leading-relaxed block text-foreground/90">
                                         {itemIndex + 1}. {item}
                                     </Label>
                                     <RadioGroup
                                         value={ratings[criteria.id]?.[itemIndex]?.toString() || ""}
                                         onValueChange={(value) => handleRatingChange(criteria.id, itemIndex, value)}
-                                        className="flex gap-3"
+                                        className="flex flex-wrap gap-2 md:gap-3"
                                     >
                                         {[1, 2, 3, 4, 5].map((value) => (
-                                            <div key={value} className="flex items-center space-x-2">
+                                            <div key={value} className="flex items-center space-x-1 md:space-x-2 bg-muted/30 p-1.5 md:p-2 rounded-lg border hover:bg-muted/50 transition-colors">
                                                 <RadioGroupItem
                                                     value={value.toString()}
                                                     id={`${criteria.id}-${itemIndex}-${value}`}
+                                                    className="h-4 w-4 md:h-4 md:w-4"
                                                 />
                                                 <Label
                                                     htmlFor={`${criteria.id}-${itemIndex}-${value}`}
-                                                    className="cursor-pointer flex items-center gap-1 font-normal"
+                                                    className="cursor-pointer flex items-center gap-1 font-normal select-none"
                                                 >
-                                                    <Star className={`h-4 w-4 ${ratings[criteria.id]?.[itemIndex] >= value ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                                                    <span className="text-sm">{value}</span>
+                                                    <Star className={`h-3.5 w-3.5 md:h-4 md:w-4 ${ratings[criteria.id]?.[itemIndex] >= value ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                                    <span className="text-sm font-medium">{value}</span>
                                                 </Label>
                                             </div>
                                         ))}

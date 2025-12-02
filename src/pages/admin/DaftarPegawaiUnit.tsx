@@ -265,11 +265,11 @@ export default function DaftarPegawaiUnit() {
                         <TableRow key={emp.id}>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="font-medium">{emp.name}</span>
+                              <span className="font-medium text-sm sm:text-base">{emp.name}</span>
                               <span className="text-xs text-muted-foreground md:hidden">{emp.nip}</span>
-                              <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1">{emp.work_unit_name}</span>
+                              <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1 mt-0.5">{emp.work_unit_name}</span>
                               <div className="mt-1 sm:hidden">
-                                <Badge variant={getRoleBadgeVariant(emp.role)} className="text-[10px] h-5 px-1.5">
+                                <Badge variant={getRoleBadgeVariant(emp.role)} className="text-[10px] px-1.5 py-0 h-5">
                                   {getRoleName(emp.role)}
                                 </Badge>
                               </div>
