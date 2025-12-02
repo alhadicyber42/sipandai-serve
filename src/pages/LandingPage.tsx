@@ -77,7 +77,7 @@ export default function LandingPage() {
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 backdrop-blur-sm">
                             <Building2 className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
                             <span className="text-xs md:text-sm font-semibold text-blue-700 dark:text-blue-400">
-                                Ditjen Binalavotas - Kementerian Perhubungan RI
+                                Ditjen Binalavotas - Kementerian Ketenagakerjaan RI
                             </span>
                         </div>
 
