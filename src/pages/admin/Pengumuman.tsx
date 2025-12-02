@@ -63,7 +63,7 @@ export default function Pengumuman() {
 
   const loadAnnouncements = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       let query = supabase
@@ -77,10 +77,11 @@ export default function Pengumuman() {
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
-      // Admin unit can only see their own announcements
-      if (user.role === "admin_unit") {
-        query = query.eq("work_unit_id", user.work_unit_id);
-      }
+      // Admin unit can only see their own announcements or global ones
+      // We rely on RLS to filter this correctly
+      // if (user.role === "admin_unit") {
+      //   query = query.eq("work_unit_id", user.work_unit_id);
+      // }
 
       const { data, error } = await query;
 
@@ -219,7 +220,7 @@ export default function Pengumuman() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 via-orange-500 to-red-400 p-6 md:p-8 text-white shadow-xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-16 -translate-x-16 blur-2xl" />
-          
+
           <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -255,7 +256,7 @@ export default function Pengumuman() {
                       Pengumuman akan ditampilkan di dashboard untuk unit yang dipilih.
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="title">Judul Pengumuman *</Label>
@@ -283,7 +284,7 @@ export default function Pengumuman() {
                     {user?.role === "admin_pusat" && (
                       <div className="space-y-2">
                         <Label htmlFor="workUnit">Tujuan Pengumuman *</Label>
-                        <Select 
+                        <Select
                           value={formData.workUnitId}
                           onValueChange={(value) => setFormData({ ...formData, workUnitId: value })}
                         >
@@ -354,8 +355,8 @@ export default function Pengumuman() {
               <div className="text-center py-12">
                 <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                 <p className="text-muted-foreground">
-                  {user?.role === "admin_unit" 
-                    ? "Belum ada pengumuman untuk unit Anda" 
+                  {user?.role === "admin_unit"
+                    ? "Belum ada pengumuman untuk unit Anda"
                     : "Belum ada pengumuman"}
                 </p>
               </div>
@@ -363,11 +364,10 @@ export default function Pengumuman() {
               announcements.map((announcement) => (
                 <div
                   key={announcement.id}
-                  className={`p-4 rounded-lg border transition-all duration-300 ${
-                    announcement.is_pinned 
-                      ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800' 
+                  className={`p-4 rounded-lg border transition-all duration-300 ${announcement.is_pinned
+                      ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800'
                       : 'bg-muted/20 border-muted-foreground/20'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
