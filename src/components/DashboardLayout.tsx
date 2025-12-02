@@ -219,7 +219,6 @@ export const DashboardLayout = ({
 
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
-      <SkipToContent />
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground border-b border-primary/20 shadow-md">
         <div className="flex items-center justify-between p-3 md:p-4">
@@ -306,12 +305,7 @@ export const DashboardLayout = ({
       {isSidebarOpen && <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
       {/* Main Content */}
-      <main 
-        id="main-content" 
-        className="flex-1 overflow-y-auto pt-14 md:pt-16 lg:pt-0"
-        tabIndex={-1}
-        aria-label="Main content"
-      >
+      <main className="flex-1 overflow-y-auto pt-14 md:pt-16 lg:pt-0">
         <div className="p-3 md:p-4 lg:p-6 xl:p-8">{children}</div>
       </main>
 

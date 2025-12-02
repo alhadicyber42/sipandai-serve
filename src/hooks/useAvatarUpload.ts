@@ -19,30 +19,15 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
             setUploading(true);
             setProgress(0);
 
-            // Security: Validate file type with whitelist
-            const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedImageTypes.includes(file.type)) {
-                toast.error('File harus berupa gambar (JPG, PNG, atau WebP)');
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toast.error('File harus berupa gambar');
                 return null;
             }
 
-            // Security: Validate file extension
-            const extension = file.name.split('.').pop()?.toLowerCase();
-            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-            if (!extension || !allowedExtensions.includes(extension)) {
-                toast.error('Ekstensi file tidak diizinkan. Hanya JPG, PNG, atau WebP yang diperbolehkan.');
-                return null;
-            }
-
-            // Security: Validate file size (max 5MB before compression)
+            // Validate file size (max 5MB before compression)
             if (file.size > 5 * 1024 * 1024) {
                 toast.error('Ukuran file maksimal 5MB');
-                return null;
-            }
-
-            // Security: Check for empty files
-            if (file.size === 0) {
-                toast.error('File tidak boleh kosong');
                 return null;
             }
 

@@ -40,56 +40,13 @@ export function FileUpload({
                 return;
             }
 
-            // Security: Validate each file
-            const allowedMimeTypes = [
-                'application/pdf',
-                'image/jpeg',
-                'image/jpg',
-                'image/png',
-                'image/webp',
-            ];
-
-            for (const file of fileArray) {
-                // Check file size
-                if (file.size > maxSize * 1024 * 1024) {
-                    setUploadError(`Ukuran file maksimal ${maxSize}MB`);
-                    return;
-                }
-
-                // Security: Validate MIME type
-                const isValidMimeType = allowedMimeTypes.some(
-                    (type) => file.type === type || file.type.startsWith(type.split('/')[0] + '/')
-                );
-
-                if (!isValidMimeType) {
-                    setUploadError(`Tipe file tidak diizinkan. Hanya PDF dan gambar yang diperbolehkan.`);
-                    return;
-                }
-
-                // Security: Validate file extension
-                const extension = file.name.split('.').pop()?.toLowerCase();
-                const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
-                if (!extension || !allowedExtensions.includes(extension)) {
-                    setUploadError(`Ekstensi file tidak diizinkan. Hanya PDF dan gambar yang diperbolehkan.`);
-                    return;
-                }
-
-                // Security: Sanitize file name
-                const sanitizedName = file.name
-                    .replace(/[\/\\?%*:|"<>]/g, '_')
-                    .replace(/\.\./g, '_')
-                    .substring(0, 255);
-                
-                if (sanitizedName !== file.name) {
-                    setUploadError(`Nama file mengandung karakter tidak valid`);
-                    return;
-                }
-
-                // Security: Check for empty files
-                if (file.size === 0) {
-                    setUploadError(`File tidak boleh kosong`);
-                    return;
-                }
+            // Check file sizes
+            const oversizedFiles = fileArray.filter(
+                (file) => file.size > maxSize * 1024 * 1024
+            );
+            if (oversizedFiles.length > 0) {
+                setUploadError(`Ukuran file maksimal ${maxSize}MB`);
+                return;
             }
 
             const updatedFiles = [...files, ...fileArray];

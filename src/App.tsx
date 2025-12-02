@@ -12,8 +12,6 @@ import { Building2 } from "lucide-react";
 
 import ReloadPrompt from "./components/ReloadPrompt";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
-import { PageTitle } from "./components/PageTitle";
-import { useWebVitals } from "./hooks/useWebVitals";
 
 // Lazy load all pages for code splitting
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -58,12 +56,7 @@ const queryClient = new QueryClient({
   },
 });
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: 'admin_pusat' | 'admin_unit' | 'user_unit' | ('admin_pusat' | 'admin_unit' | 'user_unit')[];
-}
-
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -91,77 +84,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check role if required
-  if (requiredRole) {
-    const userRole = user.role as 'admin_pusat' | 'admin_unit' | 'user_unit';
-    const roleHierarchy: Record<string, number> = {
-      admin_pusat: 3,
-      admin_unit: 2,
-      user_unit: 1,
-    };
-    
-    const userLevel = roleHierarchy[userRole];
-    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    const hasAccess = requiredRoles.some(role => {
-      const requiredLevel = roleHierarchy[role];
-      return userLevel >= requiredLevel;
-    });
-
-    if (!hasAccess) {
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
-
   return <>{children}</>;
-};
-
-const AppContent = () => {
-  // Track Web Vitals for performance monitoring
-  useWebVitals();
-
-  return (
-    <BrowserRouter>
-              <PageTitle />
-              <Suspense fallback={<DashboardSkeleton />}>
-                <Routes>
-                  <Route path={ROUTES.HOME} element={<LandingPage />} />
-                  <Route path={ROUTES.PRIVACY} element={<PrivacyPolicy />} />
-                  <Route path={ROUTES.AUTH} element={<Auth />} />
-                  <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path={ROUTES.SERVICES.KENAIKAN_PANGKAT} element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
-                  <Route path={ROUTES.SERVICES.MUTASI} element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
-                  <Route path={ROUTES.SERVICES.PENSIUN} element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
-                  <Route path={ROUTES.SERVICES.CUTI} element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROPOSALS.KENAIKAN_PANGKAT} element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROPOSALS.MUTASI} element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROPOSALS.PENSIUN} element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROPOSALS.CUTI} element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.KELOLA_ADMIN} element={<ProtectedRoute requiredRole="admin_pusat"><KelolaAdminUnit /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.KELOLA_UNIT} element={<ProtectedRoute requiredRole="admin_pusat"><KelolaUnitKerja /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.DAFTAR_PEGAWAI} element={<ProtectedRoute requiredRole="admin_pusat"><DaftarPegawaiUnit /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.FORMASI_JABATAN} element={<ProtectedRoute requiredRole="admin_pusat"><JobFormationManagement /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.REMINDER_PENSIUN} element={<ProtectedRoute requiredRole="admin_pusat"><RetirementReminders /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROPOSALS.DISETUJUI} element={<ProtectedRoute requiredRole={['admin_pusat', 'admin_unit']}><UsulanDisetujui /></ProtectedRoute>} />
-                  <Route path={ROUTES.ANNOUNCEMENTS} element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.NEW} element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.HISTORY} element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.UNIT_HISTORY} element={<ProtectedRoute requiredRole={['admin_pusat', 'admin_unit']}><UnitConsultationHistory /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.ESCALATED} element={<ProtectedRoute requiredRole="admin_pusat"><AllConsultations /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.ALL} element={<ProtectedRoute requiredRole="admin_pusat"><AllConsultations /></ProtectedRoute>} />
-                  <Route path={ROUTES.CONSULTATIONS.INBOX} element={<ProtectedRoute requiredRole={['admin_pusat', 'admin_unit']}><UnitConsultations /></ProtectedRoute>} />
-                  <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
-                  <Route path={ROUTES.EMPLOYEE.OF_THE_MONTH} element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
-                  <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.EMPLOYEE_RATINGS} element={<ProtectedRoute requiredRole="admin_pusat"><AdminEmployeeRatings /></ProtectedRoute>} />
-                  <Route path="/admin/employee/:employeeId" element={<ProtectedRoute requiredRole="admin_pusat"><EmployeeProfile /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.PENANGGUHAN_CUTI} element={<ProtectedRoute requiredRole="admin_pusat"><LeaveDeferralManagement /></ProtectedRoute>} />
-                  <Route path={ROUTES.ADMIN.BUAT_SURAT} element={<ProtectedRoute requiredRole="admin_pusat"><LetterGenerator /></ProtectedRoute>} />
-                  <Route path={ROUTES.PROFILE} element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-    </BrowserRouter>
-  );
 };
 
 const App = () => (
@@ -174,7 +97,46 @@ const App = () => (
             <Sonner />
             <ReloadPrompt />
             <PWAInstallPrompt />
-            <AppContent />
+            <BrowserRouter>
+              <Suspense fallback={<DashboardSkeleton />}>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/layanan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
+                  <Route path="/layanan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+                  <Route path="/layanan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
+                  <Route path="/layanan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
+                  <Route path="/usulan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
+                  <Route path="/usulan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
+                  <Route path="/usulan/pensiun" element={<ProtectedRoute><Pensiun /></ProtectedRoute>} />
+                  <Route path="/usulan/cuti" element={<ProtectedRoute><Cuti /></ProtectedRoute>} />
+                  <Route path="/admin/kelola-admin" element={<ProtectedRoute><KelolaAdminUnit /></ProtectedRoute>} />
+                  <Route path="/admin/kelola-unit" element={<ProtectedRoute><KelolaUnitKerja /></ProtectedRoute>} />
+                  <Route path="/admin/daftar-pegawai" element={<ProtectedRoute><DaftarPegawaiUnit /></ProtectedRoute>} />
+                  <Route path="/admin/formasi-jabatan" element={<ProtectedRoute><JobFormationManagement /></ProtectedRoute>} />
+                  <Route path="/admin/reminder-pensiun" element={<ProtectedRoute><RetirementReminders /></ProtectedRoute>} />
+                  <Route path="/usulan/disetujui" element={<ProtectedRoute><UsulanDisetujui /></ProtectedRoute>} />
+                  <Route path="/pengumuman" element={<ProtectedRoute><Pengumuman /></ProtectedRoute>} />
+                  <Route path="/konsultasi/baru" element={<ProtectedRoute><NewConsultation /></ProtectedRoute>} />
+                  <Route path="/konsultasi/riwayat" element={<ProtectedRoute><MyConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/riwayat-unit" element={<ProtectedRoute><UnitConsultationHistory /></ProtectedRoute>} />
+                  <Route path="/konsultasi/tereskalasi" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/semua" element={<ProtectedRoute><AllConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/masuk" element={<ProtectedRoute><UnitConsultations /></ProtectedRoute>} />
+                  <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
+                  <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
+                  <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
+                  <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
+                  <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
+                  <Route path="/admin/penangguhan-cuti" element={<ProtectedRoute><LeaveDeferralManagement /></ProtectedRoute>} />
+                  <Route path="/admin/buat-surat" element={<ProtectedRoute><LetterGenerator /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

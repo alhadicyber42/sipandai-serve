@@ -28,23 +28,11 @@ export const TemplatePreview = ({
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
-        // Sanitize content to prevent XSS
-        const sanitizedContent = processedContent
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
-        // Use safer method than document.write
-        printWindow.document.open();
         printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>Surat Keterangan Cuti</title>
-          <meta charset="UTF-8">
-          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'unsafe-inline';">
           <style>
             @media print {
               @page {
@@ -67,7 +55,7 @@ export const TemplatePreview = ({
           </style>
         </head>
         <body>
-          <pre>${sanitizedContent}</pre>
+          <pre>${processedContent}</pre>
         </body>
       </html>
     `);

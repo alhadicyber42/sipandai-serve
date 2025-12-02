@@ -34,57 +34,25 @@ export default function NewConsultation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Security: Sanitize and validate inputs
-    const sanitizedSubject = formData.subject.trim().substring(0, 500);
-    const sanitizedDescription = formData.description.trim().substring(0, 5000);
-
-    if (!sanitizedSubject || !sanitizedDescription) {
+    if (!formData.subject || !formData.description) {
       toast.error("Mohon lengkapi semua field yang wajib diisi");
-      return;
-    }
-
-    // Security: Validate subject length
-    if (sanitizedSubject.length < 5) {
-      toast.error("Subjek konsultasi minimal 5 karakter");
-      return;
-    }
-
-    // Security: Validate description length
-    if (sanitizedDescription.length < 10) {
-      toast.error("Deskripsi konsultasi minimal 10 karakter");
       return;
     }
 
     setIsLoading(true);
     try {
-      // Security: Validate recipient value
-      const validRecipients = ['admin_unit', 'admin_pusat'];
-      const recipient = validRecipients.includes(formData.recipient) 
-        ? formData.recipient 
-        : 'admin_unit';
-
       // Determine if consultation should be escalated to admin_pusat
-      const isEscalated = recipient === "admin_pusat";
-
-      // Security: Validate priority and category
-      const validPriorities = ['low', 'medium', 'high'];
-      const validCategories = ['kepegawaian', 'administrasi', 'lainnya'];
-      const priority = validPriorities.includes(formData.priority) 
-        ? formData.priority 
-        : 'medium';
-      const category = validCategories.includes(formData.category) 
-        ? formData.category 
-        : 'kepegawaian';
+      const isEscalated = formData.recipient === "admin_pusat";
 
       const { data, error } = await supabase
         .from("consultations")
         .insert({
           user_id: user?.id,
           work_unit_id: user?.work_unit_id,
-          subject: sanitizedSubject,
-          description: sanitizedDescription,
-          priority: priority as any,
-          category: category as any,
+          subject: formData.subject,
+          description: formData.description,
+          priority: formData.priority as any,
+          category: formData.category as any,
           status: isEscalated ? "escalated" : "submitted" as any,
           is_escalated: isEscalated,
         })
@@ -93,7 +61,7 @@ export default function NewConsultation() {
 
       if (error) throw error;
 
-      const recipientText = recipient === "admin_unit"
+      const recipientText = formData.recipient === "admin_unit"
         ? "Admin Unit (Pimpinan Unit Kerja)"
         : "Admin Pusat (Bagian SDM Aparatur Setditjen Binalavotas)";
 
@@ -101,8 +69,7 @@ export default function NewConsultation() {
       navigate(`/konsultasi/${data.id}`);
     } catch (error: any) {
       console.error("Error creating consultation:", error);
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      toast.error(isDevelopment ? error.message : "Gagal membuat konsultasi. Silakan coba lagi.");
+      toast.error("Gagal membuat konsultasi");
     } finally {
       setIsLoading(false);
     }
