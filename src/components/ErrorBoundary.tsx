@@ -110,19 +110,21 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   onClick={this.handleReset}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 min-h-[44px]"
                   size="lg"
+                  aria-label="Coba lagi untuk memuat ulang komponen"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
                   Coba Lagi
                 </Button>
                 <Button 
                   onClick={this.handleGoHome}
                   variant="outline"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 min-h-[44px]"
                   size="lg"
+                  aria-label="Kembali ke halaman beranda"
                 >
-                  <Home className="h-4 w-4" />
+                  <Home className="h-4 w-4" aria-hidden="true" />
                   Kembali ke Beranda
                 </Button>
               </div>

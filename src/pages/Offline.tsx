@@ -45,10 +45,11 @@ export function OfflinePage() {
                         {/* Action Button */}
                         <Button
                             onClick={handleRefresh}
-                            className="w-full gap-2"
+                            className="w-full gap-2 min-h-[44px]"
                             size="lg"
+                            aria-label="Coba lagi untuk memuat ulang halaman"
                         >
-                            <RefreshCw className="h-4 w-4" />
+                            <RefreshCw className="h-4 w-4" aria-hidden="true" />
                             Coba Lagi
                         </Button>
 

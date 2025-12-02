@@ -32,20 +32,23 @@ export function NetworkStatus() {
     return (
         <div
             className={cn(
-                "fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg transition-all duration-300",
+                "fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 min-h-[44px]",
                 isOnline
                     ? "bg-green-500 text-white"
                     : "bg-red-500 text-white"
             )}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
         >
             {isOnline ? (
                 <>
-                    <Wifi className="h-4 w-4" />
+                    <Wifi className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Kembali Online</span>
                 </>
             ) : (
                 <>
-                    <WifiOff className="h-4 w-4" />
+                    <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Tidak Ada Koneksi</span>
                 </>
             )}
