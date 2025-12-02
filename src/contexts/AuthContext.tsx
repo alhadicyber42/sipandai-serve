@@ -36,6 +36,7 @@ export interface User extends Profile {
   riwayat_mutasi?: MutationHistory[];
   documents?: Record<string, string | string[] | DocumentItem | DocumentItem[]>;
   avatar_url?: string;
+  kriteria_asn?: string;
 }
 
 interface AuthContextType {
@@ -101,9 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to profile.role if user_roles query fails or returns nothing
       const userRole = roleError ? profile.role : (roleData?.role || profile.role || "user_unit");
 
-      // Get metadata from auth user
-      const metadata = authUser.user_metadata || {};
-
       setUser({
         id: authUser.id,
         email: authUser.email!,
@@ -112,15 +110,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         work_unit_id: profile.work_unit_id,
         nip: profile.nip,
         phone: profile.phone,
-        // Load additional fields from metadata
-        jabatan: metadata.jabatan,
-        pangkat_golongan: metadata.pangkat_golongan,
-        tmt_pns: metadata.tmt_pns,
-        tmt_pensiun: metadata.tmt_pensiun,
-        riwayat_jabatan: metadata.riwayat_jabatan,
-        riwayat_mutasi: metadata.riwayat_mutasi,
-        documents: metadata.documents,
-        avatar_url: metadata.avatar_url,
+        // Load additional fields from profiles table with type casting
+        jabatan: profile.jabatan,
+        pangkat_golongan: profile.pangkat_golongan,
+        tmt_pns: profile.tmt_pns,
+        tmt_pensiun: profile.tmt_pensiun,
+        riwayat_jabatan: profile.riwayat_jabatan as unknown as EmploymentHistory[] | undefined,
+        riwayat_mutasi: profile.riwayat_mutasi as unknown as MutationHistory[] | undefined,
+        documents: profile.documents as unknown as Record<string, string | string[] | DocumentItem | DocumentItem[]> | undefined,
+        avatar_url: profile.avatar_url,
+        kriteria_asn: profile.kriteria_asn,
       });
     }
   };
@@ -158,13 +157,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             work_unit_id: userData.work_unit_id,
             nip: userData.nip,
             phone: userData.phone,
-            // Store additional fields in metadata
+            // Store basic info in metadata for trigger
             jabatan: userData.jabatan,
             pangkat_golongan: userData.pangkat_golongan,
             tmt_pns: userData.tmt_pns,
             tmt_pensiun: userData.tmt_pensiun,
             riwayat_jabatan: userData.riwayat_jabatan,
             riwayat_mutasi: userData.riwayat_mutasi,
+            kriteria_asn: userData.kriteria_asn,
             documents: {},
           },
           emailRedirectTo: `${window.location.origin}/`,
@@ -189,28 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user) throw new Error("No user logged in");
 
-      // 1. Update Supabase Auth Metadata (for new fields)
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          jabatan: data.jabatan,
-          pangkat_golongan: data.pangkat_golongan,
-          tmt_pns: data.tmt_pns,
-          tmt_pensiun: data.tmt_pensiun,
-          riwayat_jabatan: data.riwayat_jabatan,
-          riwayat_mutasi: data.riwayat_mutasi,
-          documents: data.documents,
-          // Also sync basic info to metadata as backup
-          name: data.name,
-          nip: data.nip,
-          phone: data.phone,
-          work_unit_id: data.work_unit_id,
-        }
-      });
-
-      if (authError) throw authError;
-
-      // 2. Update profiles table (for basic info)
-      // We attempt this, but if it fails due to RLS, we still have metadata
+      // Update profiles table directly
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -218,14 +197,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: data.phone,
           nip: data.nip,
           work_unit_id: data.work_unit_id,
+          jabatan: data.jabatan,
+          pangkat_golongan: data.pangkat_golongan,
+          tmt_pns: data.tmt_pns,
+          tmt_pensiun: data.tmt_pensiun,
+          riwayat_jabatan: data.riwayat_jabatan as any,
+          riwayat_mutasi: data.riwayat_mutasi as any,
+          documents: data.documents as any,
+          avatar_url: data.avatar_url,
+          kriteria_asn: data.kriteria_asn,
         })
         .eq('id', user.id);
 
-      if (profileError) {
-        console.warn("Profile table update failed, falling back to metadata:", profileError);
-      }
+      if (profileError) throw profileError;
 
-      // 3. Update local state
+      // Update local state
       setUser((prev) => prev ? ({ ...prev, ...data }) : null);
 
       return { success: true };

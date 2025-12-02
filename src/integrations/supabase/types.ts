@@ -337,6 +337,7 @@ export type Database = {
           id: string
           jabatan: string | null
           jenis_kelamin: string | null
+          kriteria_asn: string | null
           masa_kerja_bulan: number | null
           masa_kerja_tahun: number | null
           name: string
@@ -371,6 +372,7 @@ export type Database = {
           id: string
           jabatan?: string | null
           jenis_kelamin?: string | null
+          kriteria_asn?: string | null
           masa_kerja_bulan?: number | null
           masa_kerja_tahun?: number | null
           name: string
@@ -405,6 +407,7 @@ export type Database = {
           id?: string
           jabatan?: string | null
           jenis_kelamin?: string | null
+          kriteria_asn?: string | null
           masa_kerja_bulan?: number | null
           masa_kerja_tahun?: number | null
           name?: string

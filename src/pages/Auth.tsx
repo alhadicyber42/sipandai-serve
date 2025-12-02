@@ -41,6 +41,7 @@ const registerSchema = z.object({
   pangkat_golongan: z.string().min(1, "Pangkat/Golongan diperlukan"),
   tmt_pns: z.string().min(1, "TMT PNS diperlukan"),
   tmt_pensiun: z.string().min(1, "TMT Pensiun diperlukan"),
+  kriteria_asn: z.string().min(1, "Kriteria ASN diperlukan"),
   riwayat_jabatan: z.array(employmentHistorySchema).optional(),
   riwayat_mutasi: z.array(mutationHistorySchema).optional(),
   password: z.string().min(6, "Password minimal 6 karakter"),
@@ -124,6 +125,7 @@ export default function Auth() {
       pangkat_golongan: "",
       tmt_pns: "",
       tmt_pensiun: "",
+      kriteria_asn: "",
       riwayat_jabatan: [],
       riwayat_mutasi: [],
       password: "",
@@ -179,7 +181,7 @@ export default function Auth() {
         fieldsToValidate = ["name", "email", "nip", "phone", "work_unit"];
         break;
       case 2:
-        fieldsToValidate = ["jabatan", "pangkat_golongan", "tmt_pns", "tmt_pensiun"];
+        fieldsToValidate = ["jabatan", "pangkat_golongan", "tmt_pns", "tmt_pensiun", "kriteria_asn"];
         break;
       case 3:
         // Riwayat is optional, always valid
@@ -228,6 +230,7 @@ export default function Auth() {
       pangkat_golongan: data.pangkat_golongan,
       tmt_pns: data.tmt_pns,
       tmt_pensiun: data.tmt_pensiun,
+      kriteria_asn: data.kriteria_asn,
       riwayat_jabatan: data.riwayat_jabatan,
       riwayat_mutasi: data.riwayat_mutasi,
     };
@@ -540,6 +543,26 @@ export default function Auth() {
                     />
                   </div>
                   {registerForm.formState.errors.tmt_pensiun && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.tmt_pensiun.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-kriteria-asn" className="text-xs md:text-sm font-semibold">Kriteria ASN</Label>
+                  <Controller
+                    control={registerForm.control}
+                    name="kriteria_asn"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="border-2 focus:border-blue-600 transition-all h-9 md:h-10 text-sm">
+                          <SelectValue placeholder="Pilih Kriteria ASN" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ASN" className="text-sm">ASN</SelectItem>
+                          <SelectItem value="Non ASN" className="text-sm">Non ASN</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {registerForm.formState.errors.kriteria_asn && <p className="text-xs md:text-sm text-destructive font-medium">{registerForm.formState.errors.kriteria_asn.message}</p>}
                 </div>
               </div>
             </div>
