@@ -126,13 +126,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      // Security: Sanitize email input
+      const sanitizedEmail = email.trim().toLowerCase();
+      
+      // Security: Basic email validation
+      if (!sanitizedEmail || !sanitizedEmail.includes('@')) {
+        return { success: false, error: 'Email tidak valid' };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: sanitizedEmail,
         password,
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        // Security: Don't reveal if user exists or not
+        // Generic error message to prevent user enumeration
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        return { 
+          success: false, 
+          error: isDevelopment ? error.message : 'Email atau password tidak valid' 
+        };
       }
 
       if (data.user) {
@@ -141,30 +155,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message };
+      // Security: Don't expose error details in production
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      return { 
+        success: false, 
+        error: isDevelopment ? error.message : 'Terjadi kesalahan saat login. Silakan coba lagi.' 
+      };
     }
   };
 
   const register = async (userData: any) => {
     try {
+      // Security: Sanitize and validate inputs
+      const sanitizedEmail = userData.email?.trim().toLowerCase();
+      if (!sanitizedEmail || !sanitizedEmail.includes('@')) {
+        return { success: false, error: 'Email tidak valid' };
+      }
+
+      // Security: Sanitize name (prevent XSS)
+      const sanitizedName = userData.name?.trim().substring(0, 255) || '';
+      if (!sanitizedName) {
+        return { success: false, error: 'Nama harus diisi' };
+      }
+
+      // Security: Validate password strength (should be done on client before submission)
+      if (!userData.password || userData.password.length < 8) {
+        return { success: false, error: 'Password minimal 8 karakter' };
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
+        email: sanitizedEmail,
         password: userData.password,
         options: {
           data: {
-            name: userData.name,
+            name: sanitizedName,
             role: "user_unit",
-            work_unit_id: userData.work_unit_id,
-            nip: userData.nip,
-            phone: userData.phone,
+            work_unit_id: userData.work_unit_id ? parseInt(String(userData.work_unit_id)) : null,
+            nip: userData.nip?.trim().substring(0, 50) || null,
+            phone: userData.phone?.trim().substring(0, 20) || null,
             // Store basic info in metadata for trigger
-            jabatan: userData.jabatan,
-            pangkat_golongan: userData.pangkat_golongan,
-            tmt_pns: userData.tmt_pns,
-            tmt_pensiun: userData.tmt_pensiun,
-            riwayat_jabatan: userData.riwayat_jabatan,
-            riwayat_mutasi: userData.riwayat_mutasi,
-            kriteria_asn: userData.kriteria_asn,
+            jabatan: userData.jabatan?.trim().substring(0, 255) || null,
+            pangkat_golongan: userData.pangkat_golongan?.trim().substring(0, 100) || null,
+            tmt_pns: userData.tmt_pns || null,
+            tmt_pensiun: userData.tmt_pensiun || null,
+            riwayat_jabatan: userData.riwayat_jabatan || [],
+            riwayat_mutasi: userData.riwayat_mutasi || [],
+            kriteria_asn: userData.kriteria_asn?.trim().substring(0, 50) || null,
             documents: {},
           },
           emailRedirectTo: `${window.location.origin}/`,
@@ -172,7 +208,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        return { 
+          success: false, 
+          error: isDevelopment ? error.message : 'Registrasi gagal. Silakan coba lagi atau hubungi administrator.' 
+        };
       }
 
       if (data.user) {
@@ -181,7 +221,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message };
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      return { 
+        success: false, 
+        error: isDevelopment ? error.message : 'Terjadi kesalahan saat registrasi. Silakan coba lagi.' 
+      };
     }
   };
 

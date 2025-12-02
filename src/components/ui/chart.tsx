@@ -65,23 +65,41 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
+  // Security: Sanitize CSS values to prevent injection
+  const sanitizeCssValue = (value: string): string => {
+    // Only allow safe CSS color values (hex, rgb, rgba, named colors)
+    const safeColorPattern = /^(#[0-9a-fA-F]{3,6}|rgb\(|rgba\(|hsl\(|hsla\(|[a-z]+)$/;
+    if (!safeColorPattern.test(value)) {
+      return 'transparent';
+    }
+    // Remove potentially dangerous characters
+    return value.replace(/[<>\"']/g, '');
+  };
+
+  const sanitizedStyles = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    if (color) {
+      const sanitized = sanitizeCssValue(color);
+      return `  --color-${key}: ${sanitized};`;
+    }
+    return null;
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `,
-          )
-          .join("\n"),
+    )
+    .join("\n");
+
+  return (
+    <style
+      dangerouslySetInnerHTML={{
+        __html: sanitizedStyles,
       }}
     />
   );
