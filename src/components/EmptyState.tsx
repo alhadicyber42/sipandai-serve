@@ -70,18 +70,34 @@ SearchState.displayName = "SearchState";
 export const ErrorState = memo(({
     message = "Terjadi kesalahan saat memuat data",
     onRetry,
+    retryCount,
+    maxRetries = 3,
     className
 }: {
     message?: string;
     onRetry?: () => void;
+    retryCount?: number;
+    maxRetries?: number;
     className?: string;
 }) => {
+    const canRetry = retryCount !== undefined && retryCount < maxRetries;
+    const retryMessage = retryCount !== undefined 
+        ? `Percobaan ${retryCount + 1} dari ${maxRetries + 1}`
+        : undefined;
+
     return (
         <EmptyState
             icon={<AlertCircle className="h-12 w-12 sm:h-16 sm:w-16 text-destructive opacity-80" />}
             title="Terjadi Kesalahan"
-            description={message}
-            action={onRetry ? {
+            description={
+                <div className="space-y-2">
+                    <p>{message}</p>
+                    {retryMessage && (
+                        <p className="text-sm text-muted-foreground">{retryMessage}</p>
+                    )}
+                </div>
+            }
+            action={onRetry && canRetry ? {
                 label: "Coba Lagi",
                 onClick: onRetry
             } : undefined}
