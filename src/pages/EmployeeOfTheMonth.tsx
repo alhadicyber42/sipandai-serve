@@ -287,22 +287,22 @@ export default function EmployeeOfTheMonth() {
                             <div className="absolute top-0 right-0 p-4 opacity-5">
                                 <Trophy className="h-96 w-96 text-yellow-500" />
                             </div>
-                            <CardContent className="p-8 md:p-12 h-full flex flex-col justify-center">
-                                <div className="flex flex-col items-center text-center space-y-6 relative z-10">
+                            <CardContent className="p-4 sm:p-6 md:p-12 h-full flex flex-col justify-center">
+                                <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 relative z-10">
                                     {/* Crown Icon */}
                                     <div className="relative">
-                                        <Crown className="h-16 w-16 text-yellow-500 drop-shadow-lg animate-pulse" />
+                                        <Crown className="h-12 w-12 sm:h-16 sm:w-16 text-yellow-500 drop-shadow-lg animate-pulse" />
                                     </div>
 
                                     {/* Avatar */}
                                     <div className="relative">
                                         <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                                        <Avatar className="h-40 w-40 md:h-48 md:w-48 border-8 border-yellow-400 shadow-2xl relative z-10 ring-4 ring-yellow-200 dark:ring-yellow-800">
+                                        <Avatar className="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48 border-4 sm:border-8 border-yellow-400 shadow-2xl relative z-10 ring-2 sm:ring-4 ring-yellow-200 dark:ring-yellow-800">
                                             <AvatarImage
                                                 src={topEmployee.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topEmployee.employee.name}`}
                                                 alt={topEmployee.employee.name}
                                             />
-                                            <AvatarFallback className="text-4xl md:text-5xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
+                                            <AvatarFallback className="text-2xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
                                                 {getInitials(topEmployee.employee.name)}
                                             </AvatarFallback>
                                         </Avatar>
@@ -315,27 +315,27 @@ export default function EmployeeOfTheMonth() {
 
                                     {/* Employee Info */}
                                     <div className="space-y-3">
-                                        <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent">
+                                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent break-words">
                                             {topEmployee.employee.name}
                                         </h2>
-                                        <p className="text-xl text-muted-foreground font-medium">
+                                        <p className="text-base sm:text-lg md:text-xl text-muted-foreground font-medium">
                                             NIP: {topEmployee.employee.nip}
                                         </p>
 
                                         {/* Jabatan dan Unit Kerja */}
                                         <div className="flex flex-col gap-2 mt-3">
                                             {topEmployee.employee.jabatan && (
-                                                <div className="flex items-center justify-center gap-2 text-base">
-                                                    <Briefcase className="h-5 w-5 text-muted-foreground" />
-                                                    <span className="font-semibold">{topEmployee.employee.jabatan}</span>
+                                                <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
+                                                    <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                                                    <span className="font-semibold text-center">{topEmployee.employee.jabatan}</span>
                                                 </div>
                                             )}
                                             {topEmployee.employee.work_unit_id && (() => {
                                                 const workUnit = WORK_UNITS.find(u => u.id === topEmployee.employee.work_unit_id);
                                                 return workUnit ? (
-                                                    <div className="flex items-center justify-center gap-2 text-base">
-                                                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                                                        <span className="font-semibold">{workUnit.name}</span>
+                                                    <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
+                                                        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                                                        <span className="font-semibold text-center">{workUnit.name}</span>
                                                     </div>
                                                 ) : null;
                                             })()}
@@ -343,21 +343,21 @@ export default function EmployeeOfTheMonth() {
                                     </div>
 
                                     {/* Points Display */}
-                                    <div className="flex flex-col md:flex-row items-center gap-6 mt-6">
-                                        <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 dark:from-yellow-500/10 dark:to-yellow-600/10 px-8 py-4 rounded-2xl border-2 border-yellow-400 dark:border-yellow-600">
-                                            <Star className="h-10 w-10 fill-yellow-500 text-yellow-500" />
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 mt-4 sm:mt-6 w-full sm:w-auto">
+                                        <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 dark:from-yellow-500/10 dark:to-yellow-600/10 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-yellow-400 dark:border-yellow-600 w-full sm:w-auto justify-center">
+                                            <Star className="h-8 w-8 sm:h-10 sm:w-10 fill-yellow-500 text-yellow-500" />
                                             <div className="text-left">
-                                                <p className="text-sm text-muted-foreground font-medium">Total Poin</p>
-                                                <p className="text-4xl font-black text-yellow-600 dark:text-yellow-400">
+                                                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Poin</p>
+                                                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-yellow-600 dark:text-yellow-400">
                                                     {topEmployee.totalPoints}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3 bg-muted/50 px-6 py-4 rounded-2xl">
-                                            <Award className="h-8 w-8 text-muted-foreground" />
+                                        <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl w-full sm:w-auto justify-center">
+                                            <Award className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                                             <div className="text-left">
-                                                <p className="text-sm text-muted-foreground font-medium">Penilaian</p>
-                                                <p className="text-2xl font-bold">
+                                                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Penilaian</p>
+                                                <p className="text-xl sm:text-2xl font-bold">
                                                     {topEmployee.ratingCount}x
                                                 </p>
                                             </div>
@@ -399,27 +399,30 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 h-12 bg-muted/50">
+                    <TabsList className="grid w-full grid-cols-3 h-auto sm:h-12 bg-muted/50">
                         <TabsTrigger
                             value="employees"
-                            className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+                            className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
                         >
-                            <User className="h-4 w-4 mr-2" />
-                            Daftar Pegawai
+                            <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">Daftar Pegawai</span>
+                            <span className="sm:hidden">Pegawai</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="leaderboard"
-                            className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white"
+                            className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white py-2 sm:py-3"
                         >
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            Leaderboard Bulanan
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">Leaderboard Bulanan</span>
+                            <span className="sm:hidden">Bulanan</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="yearly"
-                            className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white"
+                            className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white py-2 sm:py-3"
                         >
-                            <Crown className="h-4 w-4 mr-2" />
-                            Employee of The Year
+                            <Crown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden md:inline">Employee of The Year</span>
+                            <span className="md:hidden">Tahunan</span>
                         </TabsTrigger>
                     </TabsList>
 
