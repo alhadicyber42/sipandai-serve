@@ -125,22 +125,26 @@ export function ServiceHistory({ serviceId, serviceType }: ServiceHistoryProps) 
                   </div>
                 </div>
                 <div className="flex-1 space-y-1 pb-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium text-sm">{item.action}</p>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-[10px] md:text-xs">
                       {getRoleLabel(item.actor_role)}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <User className="h-3 w-3" />
-                    <span>{item.actor_name}</span>
-                    <span>•</span>
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {format(new Date(item.timestamp), "d MMM yyyy HH:mm", {
-                        locale: localeId,
-                      })}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span className="truncate max-w-[150px]">{item.actor_name}</span>
+                    </div>
+                    <span className="hidden sm:inline">•</span>
+                    <div className="flex items-center gap-1 w-full sm:w-auto">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {format(new Date(item.timestamp), "d MMM yyyy HH:mm", {
+                          locale: localeId,
+                        })}
+                      </span>
+                    </div>
                   </div>
                   {item.notes && (
                     <p className="text-sm text-muted-foreground mt-2 p-2 bg-muted rounded-md">

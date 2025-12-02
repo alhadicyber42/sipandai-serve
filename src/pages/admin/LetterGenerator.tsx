@@ -424,12 +424,12 @@ export default function LetterGenerator() {
                                                                     className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/20"
                                                                     onClick={() => handleEmployeeSelect(emp)}
                                                                 >
-                                                                    <CardContent className="p-3 flex justify-between items-center">
+                                                                    <CardContent className="p-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                                                                         <div>
                                                                             <div className="font-semibold">{emp.name}</div>
                                                                             <div className="text-sm text-muted-foreground">NIP: {emp.nip}</div>
                                                                         </div>
-                                                                        <Button size="sm" variant="secondary">Pilih</Button>
+                                                                        <Button size="sm" variant="secondary" className="w-full sm:w-auto">Pilih</Button>
                                                                     </CardContent>
                                                                 </Card>
                                                             ))}
@@ -494,7 +494,7 @@ export default function LetterGenerator() {
                                                                         className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/20"
                                                                         onClick={() => handleSubmissionSelect(sub)}
                                                                     >
-                                                                        <CardContent className="p-4 flex justify-between items-center">
+                                                                        <CardContent className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                                                                             <div className="flex-1">
                                                                                 <div className="font-semibold text-primary">
                                                                                     {formatSubmissionLabel(sub, category as string)}
@@ -503,7 +503,7 @@ export default function LetterGenerator() {
                                                                                     Diajukan: {new Date(sub.created_at).toLocaleDateString('id-ID')}
                                                                                 </div>
                                                                             </div>
-                                                                            <Button size="sm" variant="secondary">Pilih</Button>
+                                                                            <Button size="sm" variant="secondary" className="w-full sm:w-auto">Pilih</Button>
                                                                         </CardContent>
                                                                     </Card>
                                                                 ))}

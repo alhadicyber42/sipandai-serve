@@ -44,6 +44,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentVerification, type VerifiedDocument } from "@/components/DocumentVerification";
+import { ResponsiveTableWrapper } from "@/components/ui/responsive-table";
 import { TableSkeleton } from "@/components/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoDataState, SearchState } from "@/components/EmptyState";
@@ -506,14 +507,14 @@ export function ServiceList({
               <SearchState message="Tidak ada usulan yang sesuai dengan filter pencarian" />
             )
           ) : (
-            <div className="rounded-md border">
+            <ResponsiveTableWrapper>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Judul</TableHead>
-                    <TableHead>Pemohon</TableHead>
-                    <TableHead>Unit Kerja</TableHead>
-                    <TableHead>Tanggal</TableHead>
+                    <TableHead className="hidden md:table-cell">Pemohon</TableHead>
+                    <TableHead className="hidden lg:table-cell">Unit Kerja</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tanggal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -521,12 +522,19 @@ export function ServiceList({
                 <TableBody>
                   {filteredServices.map((service) => (
                     <TableRow key={service.id}>
-                      <TableCell className="font-medium max-w-xs truncate">
-                        {service.title}
+                      <TableCell className="font-medium max-w-xs">
+                        <div className="flex flex-col">
+                          <span className="truncate">{service.title}</span>
+                          <span className="md:hidden text-xs text-muted-foreground mt-0.5">{service.profiles?.name || "-"}</span>
+                          <span className="lg:hidden text-[10px] text-muted-foreground">{service.work_units?.name || "-"}</span>
+                          <span className="sm:hidden text-[10px] text-muted-foreground">
+                            {format(new Date(service.created_at), "dd MMM yyyy")}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>{service.profiles?.name || "-"}</TableCell>
-                      <TableCell>{service.work_units?.name || "-"}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">{service.profiles?.name || "-"}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{service.work_units?.name || "-"}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {format(new Date(service.created_at), "dd MMM yyyy")}
                       </TableCell>
                       <TableCell>

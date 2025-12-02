@@ -93,21 +93,21 @@ export function DocumentVerification({ documents, onUpdate, readOnly = false }: 
           <CardTitle className="text-sm">Ringkasan Verifikasi</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-2 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
-              <div className="text-muted-foreground">Total</div>
+              <div className="text-muted-foreground text-xs sm:text-sm">Total</div>
               <div className="font-bold text-lg">{summary.total}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Sesuai</div>
+              <div className="text-muted-foreground text-xs sm:text-sm">Sesuai</div>
               <div className="font-bold text-lg text-green-600">{summary.sesuai}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Perlu Perbaikan</div>
+              <div className="text-muted-foreground text-xs sm:text-sm">Perlu Perbaikan</div>
               <div className="font-bold text-lg text-red-600">{summary.perluPerbaikan}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Menunggu</div>
+              <div className="text-muted-foreground text-xs sm:text-sm">Menunggu</div>
               <div className="font-bold text-lg text-yellow-600">{summary.menunggu}</div>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function DocumentVerification({ documents, onUpdate, readOnly = false }: 
         {localDocuments.map((doc, index) => (
           <Card key={index} className="border-l-4 border-l-primary">
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                 <div className="flex-1">
                   <CardTitle className="text-sm font-medium">{doc.name}</CardTitle>
                   {doc.note && (
@@ -128,7 +128,9 @@ export function DocumentVerification({ documents, onUpdate, readOnly = false }: 
                     </p>
                   )}
                 </div>
-                {getStatusBadge(doc.verification_status || "menunggu_review")}
+                <div className="flex-shrink-0">
+                  {getStatusBadge(doc.verification_status || "menunggu_review")}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">

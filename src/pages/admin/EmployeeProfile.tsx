@@ -611,7 +611,7 @@ export default function EmployeeProfile() {
                     REQUIRED_DOCUMENTS.map((doc: any) => {
                       const hasDocument = employee.documents?.[doc.id];
                       return (
-                        <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                        <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-muted/30 gap-3">
                           <div className="flex items-start gap-3 flex-1">
                             <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                             <div>
@@ -621,9 +621,11 @@ export default function EmployeeProfile() {
                               )}
                             </div>
                           </div>
-                          <Badge variant={hasDocument ? "default" : "secondary"}>
-                            {hasDocument ? "Tersedia" : "Belum Upload"}
-                          </Badge>
+                          <div className="pl-8 sm:pl-0">
+                            <Badge variant={hasDocument ? "default" : "secondary"} className="w-fit">
+                              {hasDocument ? "Tersedia" : "Belum Upload"}
+                            </Badge>
+                          </div>
                         </div>
                       );
                     })
