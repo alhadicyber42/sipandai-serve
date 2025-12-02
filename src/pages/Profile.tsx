@@ -263,6 +263,24 @@ export default function Profile() {
                         <Label>TMT Pensiun</Label>
                         <Input type="date" {...form.register("tmt_pensiun")} />
                       </div>
+                      <div className="space-y-2">
+                        <Label>Kriteria ASN</Label>
+                        <Controller
+                          control={form.control}
+                          name="kriteria_asn"
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih Kriteria ASN" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ASN">ASN</SelectItem>
+                                <SelectItem value="Non ASN">Non ASN</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     {/* Riwayat Jabatan */}
@@ -359,9 +377,10 @@ export default function Profile() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <InfoItem label="Unit Kerja" value={workUnit?.name || "-"} icon={<Building2 className="h-4 w-4" />} />
+                       <InfoItem label="Unit Kerja" value={workUnit?.name || "-"} icon={<Building2 className="h-4 w-4" />} />
                       <InfoItem label="Jabatan Saat Ini" value={user.jabatan || "-"} icon={<Briefcase className="h-4 w-4" />} />
                       <InfoItem label="Pangkat/Golongan" value={user.pangkat_golongan || "-"} icon={<Shield className="h-4 w-4" />} />
+                      <InfoItem label="Kriteria ASN" value={user.kriteria_asn || "-"} icon={<IdCard className="h-4 w-4" />} />
                       <div className="grid grid-cols-2 gap-4">
                         <InfoItem label="TMT PNS" value={user.tmt_pns ? format(new Date(user.tmt_pns), "dd MMMM yyyy") : "-"} icon={<Calendar className="h-4 w-4" />} />
                         <InfoItem label="TMT Pensiun" value={user.tmt_pensiun ? format(new Date(user.tmt_pensiun), "dd MMMM yyyy") : "-"} icon={<Calendar className="h-4 w-4" />} />
