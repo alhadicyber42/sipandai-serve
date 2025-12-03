@@ -149,20 +149,20 @@ export default function EmployeeOfTheMonth() {
                 const raterIds = winnerRatings.map((r: any) => r.rater_id);
                 const { data: raterProfiles } = await supabase
                     .from("profiles")
-                    .select("id, name")
+                    .select("id, name, avatar_url")
                     .in("id", raterIds);
 
                 const raterMap = (raterProfiles || []).reduce((acc: any, p: any) => {
-                    acc[p.id] = p.name;
+                    acc[p.id] = { name: p.name, avatar_url: p.avatar_url };
                     return acc;
                 }, {});
 
                 const testimonialData: Testimonial[] = winnerRatings.map((r: any, index: number) => ({
                     id: index,
-                    name: raterMap[r.rater_id] || "Rekan Kerja",
+                    name: raterMap[r.rater_id]?.name || "Rekan Kerja",
                     role: "Pegawai",
                     company: "Kemnaker",
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${raterMap[r.rater_id] || "User"}`,
+                    avatar: raterMap[r.rater_id]?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${raterMap[r.rater_id]?.name || "User"}`,
                     rating: 5,
                     text: r.reason,
                     results: r.criteria_totals ? Object.entries(r.criteria_totals).map(([key, value]: [string, any]) => `${key.replace('_', ' ')}: ${value}/25`).slice(0, 3) : undefined

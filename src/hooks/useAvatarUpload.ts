@@ -68,17 +68,20 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
             setProgress(80);
 
-            // Get public URL
+            // Get public URL with cache busting
             const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
+            
+            // Add timestamp for cache busting
+            const publicUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
             setProgress(90);
 
             // Update avatar_url in profiles table
             const { error: updateError } = await supabase
                 .from('profiles')
-                .update({ avatar_url: publicUrl })
+                .update({ avatar_url: publicUrlWithCacheBust })
                 .eq('id', userId);
 
             if (updateError) {
@@ -98,7 +101,7 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
                 `Foto berhasil diupload! (${originalSize}KB → ${compressedSize}KB, hemat ${savings}%)`
             );
 
-            return publicUrl;
+            return publicUrlWithCacheBust;
         } catch (error) {
             console.error('Avatar upload error:', error);
             toast.error('Terjadi kesalahan saat mengupload foto');

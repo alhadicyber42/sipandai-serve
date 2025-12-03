@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const DashboardLayout = ({
   children
@@ -255,9 +256,12 @@ export const DashboardLayout = ({
         {/* User Info */}
         <div className="p-3 md:p-4 border-b border-white/10 bg-black/20 backdrop-blur-sm">
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center border-2 border-white/10 shadow-md flex-shrink-0">
-              <User className="h-4 w-4 md:h-5 md:w-5 text-white" />
-            </div>
+            <Avatar className="w-9 h-9 md:w-10 md:h-10 border-2 border-white/20 shadow-md flex-shrink-0">
+              <AvatarImage src={user?.avatar_url || undefined} alt={user?.name} />
+              <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-blue-500 text-white text-xs md:text-sm font-bold">
+                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className="h-4 w-4 md:h-5 md:w-5" />}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-xs md:text-sm truncate text-white">{user?.name}</p>
               <p className="text-[10px] md:text-xs text-white/60 truncate">
