@@ -24,7 +24,8 @@ export default function EmployeeOfTheMonth() {
     const [searchTerm, setSearchTerm] = useState("");
     const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     const [activeTab, setActiveTab] = useState("employees");
-    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [testimonialsASN, setTestimonialsASN] = useState<Testimonial[]>([]);
+    const [testimonialsNonASN, setTestimonialsNonASN] = useState<Testimonial[]>([]);
     const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
 
     useEffect(() => {
@@ -84,6 +85,7 @@ export default function EmployeeOfTheMonth() {
 
     const loadEmployees = async () => {
         setIsLoading(true);
+        // Load all user_unit profiles - both ASN and Non ASN can be rated
         const { data, error } = await supabase
             .from("profiles")
             .select("*")
@@ -136,12 +138,14 @@ export default function EmployeeOfTheMonth() {
 
             setLeaderboard(leaderboardData);
 
-            // Get testimonials for the winner (top employee)
-            if (leaderboardData.length > 0) {
-                const winnerId = leaderboardData[0].employeeId;
-                const winnerRatings = (ratings || []).filter((r: any) => r.rated_employee_id === winnerId && r.reason);
+            // Load testimonials for both ASN and Non ASN winners
+            const loadTestimonialsForWinner = async (winnerId: string, ratings: any[], setTestimonials: (data: Testimonial[]) => void) => {
+                const winnerRatings = ratings.filter((r: any) => r.rated_employee_id === winnerId && r.reason);
+                if (winnerRatings.length === 0) {
+                    setTestimonials([]);
+                    return;
+                }
 
-                // Get rater profiles for testimonials
                 const raterIds = winnerRatings.map((r: any) => r.rater_id);
                 const { data: raterProfiles } = await supabase
                     .from("profiles")
@@ -165,6 +169,28 @@ export default function EmployeeOfTheMonth() {
                 }));
 
                 setTestimonials(testimonialData);
+            };
+
+            // Get employee profiles to determine ASN status
+            const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, kriteria_asn")
+                .in("id", leaderboardData.map(e => e.employeeId));
+
+            const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+                acc[p.id] = p.kriteria_asn;
+                return acc;
+            }, {});
+
+            // Find top ASN and Non ASN employees
+            const asnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId] === "ASN" || !profileMap[e.employeeId]);
+            const nonAsnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId] === "Non ASN");
+
+            if (asnLeaderboard.length > 0) {
+                await loadTestimonialsForWinner(asnLeaderboard[0].employeeId, ratings || [], setTestimonialsASN);
+            }
+            if (nonAsnLeaderboard.length > 0) {
+                await loadTestimonialsForWinner(nonAsnLeaderboard[0].employeeId, ratings || [], setTestimonialsNonASN);
             }
         } catch (error) {
             console.error('Error loading leaderboard:', error);
@@ -246,7 +272,9 @@ export default function EmployeeOfTheMonth() {
         };
     }).filter(entry => entry.employee);
 
-    const topEmployee = leaderboardWithDetails[0];
+    // Get top ASN and Non ASN employees
+    const topASNEmployee = leaderboardWithDetails.find(e => e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn);
+    const topNonASNEmployee = leaderboardWithDetails.find(e => e.employee.kriteria_asn === "Non ASN");
 
     return (
         <DashboardLayout>
@@ -279,121 +307,88 @@ export default function EmployeeOfTheMonth() {
                     </div>
                 </div>
 
-                {/* Winner Section with Testimonials */}
-                {topEmployee && activeTab !== "yearly" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-                        {/* Winner Card */}
-                        <Card className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 dark:from-yellow-950/30 dark:via-background dark:to-yellow-950/20 border-yellow-200 dark:border-yellow-800 shadow-xl overflow-hidden relative h-full">
-                            <div className="absolute top-0 right-0 p-4 opacity-5">
-                                <Trophy className="h-64 w-64 sm:h-96 sm:w-96 text-yellow-500" />
-                            </div>
-                            <CardContent className="p-4 sm:p-6 md:p-12 h-full flex flex-col justify-center">
-                                <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 relative z-10">
-                                    {/* Crown Icon */}
-                                    <div className="relative">
-                                        <Crown className="h-10 w-10 sm:h-16 sm:w-16 text-yellow-500 drop-shadow-lg animate-pulse" />
-                                    </div>
-
-                                    {/* Avatar */}
-                                    <div className="relative">
-                                        <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                                        <Avatar className="h-28 w-28 sm:h-40 sm:w-40 md:h-48 md:w-48 border-4 sm:border-8 border-yellow-400 shadow-2xl relative z-10 ring-2 sm:ring-4 ring-yellow-200 dark:ring-yellow-800">
-                                            <AvatarImage
-                                                src={topEmployee.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topEmployee.employee.name}`}
-                                                alt={topEmployee.employee.name}
-                                            />
-                                            <AvatarFallback className="text-2xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
-                                                {getInitials(topEmployee.employee.name)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                                            <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white border-none px-3 sm:px-4 py-0.5 sm:py-1 text-xs sm:text-sm font-bold shadow-lg whitespace-nowrap">
-                                                🏆 WINNER
-                                            </Badge>
+                {/* Winner Section with Testimonials - ASN & Non ASN side by side */}
+                {(topASNEmployee || topNonASNEmployee) && activeTab !== "yearly" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* ASN Winner */}
+                        {topASNEmployee && (
+                            <Card className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 dark:from-yellow-950/30 dark:via-background dark:to-yellow-950/20 border-yellow-200 dark:border-yellow-800 shadow-lg overflow-hidden relative">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative shrink-0">
+                                            <Avatar className="h-16 w-16 border-4 border-yellow-400 shadow-lg">
+                                                <AvatarImage
+                                                    src={topASNEmployee.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topASNEmployee.employee.name}`}
+                                                    alt={topASNEmployee.employee.name}
+                                                />
+                                                <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
+                                                    {getInitials(topASNEmployee.employee.name)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <Crown className="h-5 w-5 text-yellow-500 absolute -top-2 left-1/2 -translate-x-1/2" />
                                         </div>
-                                    </div>
-
-                                    {/* Employee Info */}
-                                    <div className="space-y-2 sm:space-y-3 w-full">
-                                        <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent break-words px-2">
-                                            {topEmployee.employee.name}
-                                        </h2>
-                                        <p className="text-sm sm:text-lg md:text-xl text-muted-foreground font-medium">
-                                            NIP: {topEmployee.employee.nip}
-                                        </p>
-
-                                        {/* Jabatan dan Unit Kerja */}
-                                        <div className="flex flex-col gap-1 sm:gap-2 mt-2 sm:mt-3">
-                                            {topEmployee.employee.jabatan && (
-                                                <div className="flex items-center justify-center gap-2 text-xs sm:text-base px-2">
-                                                    <Briefcase className="h-3 w-3 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                                                    <span className="font-semibold text-center line-clamp-2">{topEmployee.employee.jabatan}</span>
-                                                </div>
-                                            )}
-                                            {topEmployee.employee.work_unit_id && (() => {
-                                                const workUnit = WORK_UNITS.find(u => u.id === topEmployee.employee.work_unit_id);
-                                                return workUnit ? (
-                                                    <div className="flex items-center justify-center gap-2 text-xs sm:text-base px-2">
-                                                        <Building2 className="h-3 w-3 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                                                        <span className="font-semibold text-center line-clamp-2">{workUnit.name}</span>
-                                                    </div>
-                                                ) : null;
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    {/* Points Display */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 mt-4 sm:mt-6 w-full sm:w-auto px-2 sm:px-0">
-                                        <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 dark:from-yellow-500/10 dark:to-yellow-600/10 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-yellow-400 dark:border-yellow-600 w-full sm:w-auto justify-center">
-                                            <Star className="h-6 w-6 sm:h-10 sm:w-10 fill-yellow-500 text-yellow-500 shrink-0" />
-                                            <div className="text-left">
-                                                <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Poin</p>
-                                                <p className="text-xl sm:text-3xl md:text-4xl font-black text-yellow-600 dark:text-yellow-400">
-                                                    {topEmployee.totalPoints}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl w-full sm:w-auto justify-center">
-                                            <Award className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground shrink-0" />
-                                            <div className="text-left">
-                                                <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">Penilaian</p>
-                                                <p className="text-lg sm:text-2xl font-bold">
-                                                    {topEmployee.ratingCount}x
-                                                </p>
+                                        <div className="flex-1 min-w-0">
+                                            <Badge className="bg-yellow-500 text-white text-[10px] mb-1">🏆 WINNER ASN</Badge>
+                                            <h3 className="font-bold text-sm line-clamp-1">{topASNEmployee.employee.name}</h3>
+                                            <p className="text-xs text-muted-foreground">{topASNEmployee.employee.nip}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                                <span className="text-lg font-black text-yellow-600">{topASNEmployee.totalPoints}</span>
+                                                <span className="text-xs text-muted-foreground">({topASNEmployee.ratingCount}x)</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    {testimonialsASN.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t">
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                                                <Quote className="h-3 w-3" /> Kata Rekan Kerja
+                                            </p>
+                                            <p className="text-xs italic line-clamp-2">"{testimonialsASN[0]?.text}"</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
 
-                        {/* Testimonials Card */}
-                        <div className="flex flex-col justify-center">
-                            {testimonials.length > 0 ? (
-                                <div className="space-y-4">
-                                    <div className="text-center lg:text-left mb-6">
-                                        <h3 className="text-2xl font-bold flex items-center justify-center lg:justify-start gap-2">
-                                            <Quote className="h-6 w-6 text-yellow-500" />
-                                            Kata Rekan Kerja
-                                        </h3>
-                                        <p className="text-muted-foreground">
-                                            Apa kata mereka tentang {topEmployee.employee.name.split(' ')[0]}?
-                                        </p>
+                        {/* Non ASN Winner */}
+                        {topNonASNEmployee && (
+                            <Card className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 dark:from-emerald-950/30 dark:via-background dark:to-emerald-950/20 border-emerald-200 dark:border-emerald-800 shadow-lg overflow-hidden relative">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative shrink-0">
+                                            <Avatar className="h-16 w-16 border-4 border-emerald-400 shadow-lg">
+                                                <AvatarImage
+                                                    src={topNonASNEmployee.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topNonASNEmployee.employee.name}`}
+                                                    alt={topNonASNEmployee.employee.name}
+                                                />
+                                                <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
+                                                    {getInitials(topNonASNEmployee.employee.name)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <Crown className="h-5 w-5 text-emerald-500 absolute -top-2 left-1/2 -translate-x-1/2" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <Badge className="bg-emerald-500 text-white text-[10px] mb-1">🏆 WINNER NON ASN</Badge>
+                                            <h3 className="font-bold text-sm line-clamp-1">{topNonASNEmployee.employee.name}</h3>
+                                            <p className="text-xs text-muted-foreground">{topNonASNEmployee.employee.nip}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+                                                <span className="text-lg font-black text-emerald-600">{topNonASNEmployee.totalPoints}</span>
+                                                <span className="text-xs text-muted-foreground">({topNonASNEmployee.ratingCount}x)</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <TestimonialCarousel testimonials={testimonials} />
-                                </div>
-                            ) : (
-                                <Card className="h-full flex items-center justify-center p-8 bg-muted/30 border-dashed">
-                                    <div className="text-center space-y-4 text-muted-foreground">
-                                        <Quote className="h-12 w-12 mx-auto opacity-20" />
-                                        <p className="text-lg font-medium">Belum ada ulasan tertulis</p>
-                                        <p className="text-sm">
-                                            Jadilah yang pertama memberikan penilaian dan ulasan untuk {topEmployee.employee.name}!
-                                        </p>
-                                    </div>
-                                </Card>
-                            )}
-                        </div>
+                                    {testimonialsNonASN.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t">
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                                                <Quote className="h-3 w-3" /> Kata Rekan Kerja
+                                            </p>
+                                            <p className="text-xs italic line-clamp-2">"{testimonialsNonASN[0]?.text}"</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 )}
 
