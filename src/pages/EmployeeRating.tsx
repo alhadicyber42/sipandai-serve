@@ -259,7 +259,7 @@ export default function EmployeeRating() {
                     <CardHeader>
                         <div className="flex flex-col md:flex-row items-center gap-6">
                             <Avatar className="h-24 w-24 border-4 border-background shadow-md">
-                                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.name}`} />
+                                <AvatarImage src={employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.name}`} />
                                 <AvatarFallback className="text-xl">{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="text-center md:text-left space-y-1">
