@@ -392,12 +392,7 @@ export default function Dashboard() {
     try {
       let query = supabase
         .from("announcements")
-        .select(`
-          *,
-          profiles!announcements_author_id_fkey (
-            name
-          )
-        `)
+        .select(`*`)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 

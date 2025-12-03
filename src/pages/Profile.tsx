@@ -54,7 +54,9 @@ export default function Profile() {
   const handleAvatarChange = async (url: string | null) => {
     // Avatar is already updated in Supabase by useAvatarUpload
     // Refresh user context with new avatar
+    console.log('Avatar changed, refreshing profile with new URL:', url);
     await refreshProfile();
+    console.log('Profile refreshed');
   };
 
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);
