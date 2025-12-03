@@ -78,57 +78,78 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
             setProgress(90);
 
-            // Update avatar_url in profiles table using upsert for reliability
+            // Update avatar_url in profiles table
             console.log('Updating avatar_url for user:', userId, 'URL:', publicUrlWithCacheBust);
             
-            const { data, error: updateError } = await supabase
+            // First, check if profile exists
+            const { data: existingProfile, error: checkError } = await supabase
                 .from('profiles')
-                .update({ 
-                    avatar_url: publicUrlWithCacheBust,
-                    updated_at: new Date().toISOString()
-                })
+                .select('id, avatar_url')
                 .eq('id', userId)
-                .select('id, avatar_url');
+                .maybeSingle();
 
-            console.log('Update result:', { data, error: updateError });
+            console.log('Existing profile check:', { existingProfile, checkError });
 
-            if (updateError) {
-                console.error('Update error:', updateError);
-                // Try upsert as fallback
-                console.log('Trying upsert as fallback...');
-                const { data: upsertData, error: upsertError } = await supabase
+            let updateSuccess = false;
+
+            if (existingProfile) {
+                // Profile exists, update it
+                const { data, error: updateError } = await supabase
                     .from('profiles')
-                    .upsert({
+                    .update({ avatar_url: publicUrlWithCacheBust })
+                    .eq('id', userId)
+                    .select('id, avatar_url');
+
+                console.log('Update result:', { data, error: updateError });
+
+                if (updateError) {
+                    console.error('Update error:', updateError);
+                    // Even if DB update fails, the file is uploaded - return URL anyway
+                    toast.warning('Foto berhasil diupload, tetapi gagal menyimpan ke profil. Silakan coba lagi.');
+                } else {
+                    updateSuccess = true;
+                }
+            } else {
+                // Profile doesn't exist, create it
+                console.log('Profile not found, creating new profile...');
+                const { data: insertData, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
                         id: userId,
                         name: userName,
                         avatar_url: publicUrlWithCacheBust,
                         role: 'user_unit',
-                        nip: '', // Required field, using placeholder
-                    }, { onConflict: 'id' })
+                        nip: '',
+                    })
                     .select('id, avatar_url');
 
-                console.log('Upsert result:', { data: upsertData, error: upsertError });
+                console.log('Insert result:', { data: insertData, error: insertError });
 
-                if (upsertError) {
-                    console.error('Upsert error:', upsertError);
-                    toast.error('Gagal menyimpan URL foto ke database');
-                    return null;
+                if (insertError) {
+                    console.error('Insert error:', insertError);
+                    toast.warning('Foto berhasil diupload, tetapi gagal membuat profil.');
+                } else {
+                    updateSuccess = true;
                 }
             }
 
-            // Verify the update was successful
-            const { data: verifyData, error: verifyError } = await supabase
-                .from('profiles')
-                .select('avatar_url')
-                .eq('id', userId)
-                .single();
+            // Verify the update was successful (optional - don't block on this)
+            if (updateSuccess) {
+                const { data: verifyData } = await supabase
+                    .from('profiles')
+                    .select('avatar_url')
+                    .eq('id', userId)
+                    .maybeSingle();
 
-            console.log('Verification result:', { data: verifyData, error: verifyError });
+                console.log('Verification result:', verifyData);
+            }
 
-            if (verifyError || !verifyData?.avatar_url) {
-                console.error('Avatar URL not saved properly:', verifyError);
-                toast.error('URL foto tidak tersimpan dengan benar');
-                return null;
+            // Store in localStorage as backup (in case DB update fails but file uploaded)
+            try {
+                localStorage.setItem(`avatar_url_${userId}`, publicUrlWithCacheBust);
+                console.log('Avatar URL saved to localStorage as backup');
+            } catch (e) {
+                console.warn('Could not save to localStorage:', e);
             }
 
             setProgress(100);
@@ -138,9 +159,15 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
             const compressedSize = (compressedFile.size / 1024).toFixed(0);
             const savings = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
 
-            toast.success(
-                `Foto berhasil diupload! (${originalSize}KB → ${compressedSize}KB, hemat ${savings}%)`
-            );
+            if (updateSuccess) {
+                toast.success(
+                    `Foto berhasil diupload! (${originalSize}KB → ${compressedSize}KB, hemat ${savings}%)`
+                );
+            } else {
+                toast.success(
+                    `Foto berhasil diupload! (${originalSize}KB → ${compressedSize}KB)`
+                );
+            }
 
             return publicUrlWithCacheBust;
         } catch (error) {

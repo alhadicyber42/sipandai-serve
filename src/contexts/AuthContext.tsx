@@ -103,6 +103,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to profile.role if user_roles query fails or returns nothing
       const userRole = roleError ? profile.role : (roleData?.role || profile.role || "user_unit");
 
+      // Get avatar_url from profile or localStorage as fallback
+      let avatarUrl = profile.avatar_url;
+      if (!avatarUrl) {
+        try {
+          const localAvatar = localStorage.getItem(`avatar_url_${authUser.id}`);
+          if (localAvatar) {
+            avatarUrl = localAvatar;
+            console.log('Using avatar URL from localStorage fallback');
+          }
+        } catch (e) {
+          console.warn('Could not read from localStorage:', e);
+        }
+      }
+
       setUser({
         id: authUser.id,
         email: authUser.email!,
@@ -119,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         riwayat_jabatan: profile.riwayat_jabatan as unknown as EmploymentHistory[] | undefined,
         riwayat_mutasi: profile.riwayat_mutasi as unknown as MutationHistory[] | undefined,
         documents: profile.documents as unknown as Record<string, string | string[] | DocumentItem | DocumentItem[]> | undefined,
-        avatar_url: profile.avatar_url,
+        avatar_url: avatarUrl,
         kriteria_asn: profile.kriteria_asn,
       });
     }

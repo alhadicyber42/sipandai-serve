@@ -53,6 +53,21 @@ export default function Profile() {
 
   const handleAvatarChange = async (url: string | null) => {
     // Avatar is already updated in Supabase by useAvatarUpload
+    // Also save to localStorage as backup
+    if (url && user?.id) {
+      try {
+        localStorage.setItem(`avatar_url_${user.id}`, url);
+      } catch (e) {
+        console.warn('Could not save avatar to localStorage:', e);
+      }
+    } else if (!url && user?.id) {
+      try {
+        localStorage.removeItem(`avatar_url_${user.id}`);
+      } catch (e) {
+        console.warn('Could not remove avatar from localStorage:', e);
+      }
+    }
+    
     // Refresh user context with new avatar
     console.log('Avatar changed, refreshing profile with new URL:', url);
     await refreshProfile();
