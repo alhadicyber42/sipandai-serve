@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 interface UseAvatarUploadReturn {
     uploading: boolean;
     progress: number;
-    uploadAvatar: (file: File, userId: string) => Promise<string | null>;
+    uploadAvatar: (file: File, userId: string, userName: string) => Promise<string | null>;
     deleteAvatar: (userId: string) => Promise<boolean>;
 }
 
@@ -14,7 +14,7 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    const uploadAvatar = async (file: File, userId: string): Promise<string | null> => {
+    const uploadAvatar = async (file: File, userId: string, userName: string): Promise<string | null> => {
         try {
             setUploading(true);
             setProgress(0);
@@ -72,22 +72,43 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
             const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
-            
+
             // Add timestamp for cache busting
             const publicUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
             setProgress(90);
 
             // Update avatar_url in profiles table
-            const { error: updateError } = await supabase
+            const { data, error: updateError } = await supabase
                 .from('profiles')
                 .update({ avatar_url: publicUrlWithCacheBust })
-                .eq('id', userId);
+                .eq('id', userId)
+                .select();
 
             if (updateError) {
                 console.error('Update error:', updateError);
                 toast.error('Gagal menyimpan URL foto');
                 return null;
+            }
+
+            // If no rows updated, try to insert (profile missing)
+            if (!data || data.length === 0) {
+                console.log('Profile missing, attempting to insert...');
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: userId,
+                        name: userName,
+                        avatar_url: publicUrlWithCacheBust,
+                        role: 'user_unit',
+                        nip: '', // Required field, using placeholder
+                    });
+
+                if (insertError) {
+                    console.error('Insert error:', insertError);
+                    toast.error('Gagal membuat profil baru');
+                    return null;
+                }
             }
 
             setProgress(100);

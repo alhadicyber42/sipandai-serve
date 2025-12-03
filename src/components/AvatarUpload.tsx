@@ -53,7 +53,7 @@ export function AvatarUpload({
         reader.readAsDataURL(file);
 
         // Upload
-        const url = await uploadAvatar(file, userId);
+        const url = await uploadAvatar(file, userId, userName);
         if (url && onAvatarChange) {
             onAvatarChange(url);
         }
