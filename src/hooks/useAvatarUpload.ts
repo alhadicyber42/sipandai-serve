@@ -75,10 +75,11 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
             setProgress(90);
 
-            // Update user metadata
-            const { error: updateError } = await supabase.auth.updateUser({
-                data: { avatar_url: publicUrl }
-            });
+            // Update avatar_url in profiles table
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', userId);
 
             if (updateError) {
                 console.error('Update error:', updateError);
@@ -125,10 +126,11 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
                 return false;
             }
 
-            // Update user metadata
-            const { error: updateError } = await supabase.auth.updateUser({
-                data: { avatar_url: null }
-            });
+            // Update avatar_url in profiles table
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ avatar_url: null })
+                .eq('id', userId);
 
             if (updateError) {
                 console.error('Update error:', updateError);
