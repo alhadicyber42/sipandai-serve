@@ -36,7 +36,7 @@ const PANGKAT_GOLONGAN_OPTIONS = [
 ];
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -53,8 +53,8 @@ export default function Profile() {
 
   const handleAvatarChange = async (url: string | null) => {
     // Avatar is already updated in Supabase by useAvatarUpload
-    // Reload page to refresh user context with new avatar
-    window.location.reload();
+    // Refresh user context with new avatar
+    await refreshProfile();
   };
 
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);
