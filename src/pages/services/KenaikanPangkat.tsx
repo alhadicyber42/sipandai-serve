@@ -410,7 +410,7 @@ export default function KenaikanPangkat() {
                       </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                      <ScrollArea className="flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+                      <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
                         <div className="space-y-4 sm:space-y-6 pb-4 pt-2">
                           {/* Category Selection */}
                           <div className="space-y-2">
