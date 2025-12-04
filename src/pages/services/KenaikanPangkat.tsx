@@ -637,7 +637,157 @@ export default function KenaikanPangkat() {
           onEditService={user?.role === "user_unit" ? handleEditService : undefined}
         />
 
-        {/* Edit Dialog - Will be added in next iteration if needed */}
+        {/* Edit Dialog for Returned Submissions */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden p-4 sm:p-6">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle className="text-lg md:text-2xl">Perbaiki Usulan Kenaikan Pangkat</DialogTitle>
+            </DialogHeader>
+            {editingService && (
+              <form onSubmit={handleUpdateService} className="flex flex-col flex-1 overflow-hidden">
+                <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                  <div className="space-y-4 sm:space-y-6 pb-4 pt-2">
+                    {/* Display current category info */}
+                    <div className="space-y-2">
+                      <Label className="text-sm sm:text-base font-semibold">Kategori</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {PROMOTION_CATEGORIES.find(c => c.id === selectedCategory)?.name || "Tidak diketahui"}
+                      </p>
+                    </div>
+
+                    {/* Display submission title */}
+                    <div className="space-y-2">
+                      <Label className="text-sm sm:text-base font-semibold">Judul Usulan</Label>
+                      <p className="text-sm text-muted-foreground">{editingService.title}</p>
+                    </div>
+
+                    {/* Documents that need revision */}
+                    <div className="space-y-4">
+                      <Label className="text-sm sm:text-base font-semibold">Dokumen yang Perlu Diperbaiki</Label>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Perbaiki dokumen yang ditandai "Perlu Perbaikan", lalu klik "Simpan" pada setiap dokumen sebelum mengajukan ulang.
+                        </AlertDescription>
+                      </Alert>
+
+                      {editingService.documents?.map((doc: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className={`p-3 sm:p-4 border rounded-lg space-y-2 ${
+                            doc.verification_status === "perlu_perbaikan" 
+                              ? "border-red-300 bg-red-50 dark:bg-red-950/20" 
+                              : doc.verification_status === "sudah_sesuai"
+                              ? "border-green-300 bg-green-50 dark:bg-green-950/20"
+                              : "border-muted"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium">{doc.name}</span>
+                            <Badge variant={
+                              doc.verification_status === "perlu_perbaikan" ? "destructive" :
+                              doc.verification_status === "sudah_sesuai" ? "default" : "secondary"
+                            }>
+                              {doc.verification_status === "perlu_perbaikan" ? "Perlu Perbaikan" :
+                               doc.verification_status === "sudah_sesuai" ? "Sudah Sesuai" : "Menunggu Review"}
+                            </Badge>
+                          </div>
+
+                          {doc.verification_note && (
+                            <p className="text-xs text-muted-foreground italic">
+                              Catatan: {doc.verification_note}
+                            </p>
+                          )}
+
+                          {doc.verification_status === "perlu_perbaikan" && (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Input
+                                placeholder="Link dokumen perbaikan..."
+                                value={editingDocuments[doc.name] || ""}
+                                onChange={(e) => setEditingDocuments(prev => ({
+                                  ...prev,
+                                  [doc.name]: e.target.value
+                                }))}
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleSaveDocument(doc.name)}
+                                disabled={savingDocuments.has(doc.name) || !editingDocuments[doc.name]?.trim()}
+                                className="w-full sm:w-auto"
+                              >
+                                {savingDocuments.has(doc.name) ? "Menyimpan..." : "Simpan"}
+                              </Button>
+                            </div>
+                          )}
+
+                          {doc.verification_status !== "perlu_perbaikan" && doc.url && (
+                            <a 
+                              href={doc.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline break-all"
+                            >
+                              {doc.url}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Additional notes */}
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-description" className="text-sm sm:text-base font-semibold">
+                        Catatan Tambahan (Opsional)
+                      </Label>
+                      <Textarea
+                        id="edit-description"
+                        name="description"
+                        placeholder="Tambahkan catatan jika diperlukan..."
+                        className="min-h-[80px]"
+                        defaultValue={editingService.description || ""}
+                      />
+                    </div>
+                  </div>
+                </ScrollArea>
+
+                {/* Form Actions */}
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4 pt-4 border-t mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                      setEditingService(null);
+                      setEditingDocuments({});
+                    }}
+                    className="w-full sm:w-auto"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || editingService.documents?.some((doc: any) => doc.verification_status === "perlu_perbaikan")}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Mengirim...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        Ajukan Ulang
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

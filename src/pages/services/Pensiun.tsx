@@ -25,6 +25,12 @@ export default function Pensiun() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [documentLinks, setDocumentLinks] = useState<Record<string, string>>({});
+    
+    // Edit service states
+    const [editingService, setEditingService] = useState<any | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingDocuments, setEditingDocuments] = useState<Record<string, string>>({});
+    const [savingDocuments, setSavingDocuments] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadServices();
@@ -187,6 +193,126 @@ export default function Pensiun() {
             setSelectedCategory("");
             setDocumentLinks({});
         }
+    };
+
+    const handleEditService = (service: any) => {
+        setEditingService(service);
+        
+        // Extract category from description
+        const categoryMatch = service.description?.match(/Kategori: (.+)/);
+        const categoryName = categoryMatch ? categoryMatch[1] : "";
+        const category = RETIREMENT_CATEGORIES.find(c => c.name === categoryName);
+        
+        setSelectedCategory(category?.id || "");
+        
+        // Set existing document links
+        const existingDocs: Record<string, string> = {};
+        (service.documents || []).forEach((doc: any) => {
+            existingDocs[doc.name] = doc.url;
+        });
+        setEditingDocuments(existingDocs);
+        
+        setIsEditDialogOpen(true);
+    };
+
+    const handleSaveDocument = async (docName: string) => {
+        if (!editingService || !editingDocuments[docName]?.trim()) {
+            toast.error("Masukkan link dokumen terlebih dahulu");
+            return;
+        }
+
+        setSavingDocuments(prev => new Set(prev).add(docName));
+
+        try {
+            const updatedDocuments = editingService.documents.map((doc: any) => {
+                if (doc.name === docName) {
+                    return {
+                        ...doc,
+                        url: editingDocuments[docName],
+                        verification_status: "menunggu_review",
+                        verification_note: "",
+                    };
+                }
+                return doc;
+            });
+
+            const { error } = await supabase
+                .from("services")
+                .update({ documents: updatedDocuments })
+                .eq("id", editingService.id);
+
+            if (error) throw error;
+
+            toast.success("Dokumen berhasil disimpan");
+            setEditingService({ ...editingService, documents: updatedDocuments });
+        } catch (error) {
+            console.error(error);
+            toast.error("Gagal menyimpan dokumen");
+        } finally {
+            setSavingDocuments(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(docName);
+                return newSet;
+            });
+        }
+    };
+
+    const handleUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!editingService) {
+            toast.error("Data usulan tidak ditemukan");
+            return;
+        }
+
+        const docsNeedingFix = editingService.documents?.filter((doc: any) =>
+            doc.verification_status === "perlu_perbaikan"
+        ) || [];
+
+        if (docsNeedingFix.length > 0) {
+            toast.error("Masih ada dokumen yang perlu diperbaiki. Simpan semua dokumen terlebih dahulu.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const newNote = {
+                actor: user!.name,
+                role: user!.role,
+                note: "Usulan telah diperbaiki dan diajukan kembali",
+                timestamp: new Date().toISOString(),
+            };
+
+            const existingNotes = Array.isArray(editingService.notes) ? editingService.notes : [];
+
+            const { error } = await supabase
+                .from("services")
+                .update({
+                    status: "submitted",
+                    notes: [...existingNotes, newNote],
+                })
+                .eq("id", editingService.id);
+
+            if (error) {
+                console.error("Error details:", error);
+                toast.error(`Gagal mengajukan ulang usulan: ${error.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            toast.success("Usulan berhasil diajukan kembali");
+            setIsEditDialogOpen(false);
+            setEditingService(null);
+            setSelectedCategory("");
+            setEditingDocuments({});
+            loadServices();
+        } catch (error: any) {
+            console.error("Unexpected error:", error);
+            toast.error(`Terjadi kesalahan: ${error.message || "Unknown error"}`);
+        }
+
+        setIsSubmitting(false);
     };
 
     const selectedCategoryData = RETIREMENT_CATEGORIES.find(c => c.id === selectedCategory);
@@ -375,7 +501,147 @@ export default function Pensiun() {
                     onReload={loadServices}
                     showFilters={isAdmin}
                     allowActions={isAdmin}
+                    onEditService={user?.role === "user_unit" ? handleEditService : undefined}
                 />
+
+                {/* Edit Dialog for Returned Submissions */}
+                {user?.role === "user_unit" && (
+                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6">
+                            <DialogHeader className="pb-2">
+                                <DialogTitle className="text-lg md:text-2xl">Perbaiki Usulan Pensiun</DialogTitle>
+                            </DialogHeader>
+
+                            {editingService && editingService.notes && editingService.notes.length > 0 && (
+                                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 rounded-lg p-3">
+                                    <div className="flex gap-2">
+                                        <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-orange-900 dark:text-orange-100 mb-2 text-sm">Catatan dari Admin:</p>
+                                            <div className="space-y-2">
+                                                {editingService.notes.slice(-2).reverse().map((note: any, idx: number) => (
+                                                    <div key={idx} className="text-sm text-orange-800 dark:text-orange-200">
+                                                        <span className="font-medium">{note.actor}: </span>{note.note}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {editingService && (
+                                <form onSubmit={handleUpdateService} className="flex flex-col flex-1 overflow-hidden">
+                                    <ScrollArea className="h-[60vh] sm:h-[65vh] pr-4">
+                                        <div className="space-y-4 pb-4 pt-2">
+                                            <div className="space-y-2">
+                                                <Label className="text-sm sm:text-base font-semibold">Kategori</Label>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {RETIREMENT_CATEGORIES.find(c => c.id === selectedCategory)?.name || "Tidak diketahui"}
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <Label className="text-sm sm:text-base font-semibold">Dokumen yang Perlu Diperbaiki</Label>
+                                                
+                                                {editingService.documents?.map((doc: any, index: number) => {
+                                                    const needsRevision = doc.verification_status === "perlu_perbaikan";
+                                                    const isApproved = doc.verification_status === "sudah_sesuai";
+                                                    
+                                                    return (
+                                                        <div 
+                                                            key={index} 
+                                                            className={`p-3 sm:p-4 border rounded-lg space-y-2 ${
+                                                                needsRevision 
+                                                                    ? "border-red-300 bg-red-50 dark:bg-red-950/20" 
+                                                                    : isApproved
+                                                                    ? "border-green-300 bg-green-50 dark:bg-green-950/20"
+                                                                    : "border-muted"
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="text-sm font-medium">{doc.name}</span>
+                                                                <span className={`text-xs px-2 py-1 rounded ${
+                                                                    needsRevision ? "bg-red-500 text-white" :
+                                                                    isApproved ? "bg-green-500 text-white" : "bg-muted"
+                                                                }`}>
+                                                                    {needsRevision ? "Perlu Perbaikan" :
+                                                                     isApproved ? "Sudah Sesuai" : "Menunggu Review"}
+                                                                </span>
+                                                            </div>
+
+                                                            {doc.verification_note && (
+                                                                <p className="text-xs text-muted-foreground italic">
+                                                                    Catatan: {doc.verification_note}
+                                                                </p>
+                                                            )}
+
+                                                            {needsRevision && (
+                                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                                    <Input
+                                                                        placeholder="Link dokumen perbaikan..."
+                                                                        value={editingDocuments[doc.name] || ""}
+                                                                        onChange={(e) => setEditingDocuments(prev => ({
+                                                                            ...prev,
+                                                                            [doc.name]: e.target.value
+                                                                        }))}
+                                                                        className="flex-1"
+                                                                    />
+                                                                    <Button
+                                                                        type="button"
+                                                                        size="sm"
+                                                                        onClick={() => handleSaveDocument(doc.name)}
+                                                                        disabled={savingDocuments.has(doc.name) || !editingDocuments[doc.name]?.trim()}
+                                                                        className="w-full sm:w-auto"
+                                                                    >
+                                                                        {savingDocuments.has(doc.name) ? "Menyimpan..." : "Simpan"}
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+
+                                                            {!needsRevision && doc.url && (
+                                                                <a 
+                                                                    href={doc.url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-xs text-primary hover:underline break-all"
+                                                                >
+                                                                    {doc.url}
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </ScrollArea>
+
+                                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4 pt-4 border-t mt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setIsEditDialogOpen(false);
+                                                setEditingService(null);
+                                                setEditingDocuments({});
+                                            }}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            Batal
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={isSubmitting || editingService.documents?.some((doc: any) => doc.verification_status === "perlu_perbaikan")}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            {isSubmitting ? "Mengajukan..." : "Ajukan Ulang"}
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
         </DashboardLayout>
     );
