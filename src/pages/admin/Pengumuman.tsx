@@ -66,33 +66,48 @@ export default function Pengumuman() {
 
     setIsLoading(true);
     try {
-      let query = supabase
+      // First fetch announcements
+      const { data: announcementsData, error: announcementsError } = await supabase
         .from("announcements")
-        .select(`
-          *,
-          profiles!announcements_author_id_fkey (
-            name
-          )
-        `)
+        .select("*")
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
-      // Admin unit can only see their own announcements or global ones
-      // We rely on RLS to filter this correctly
-      // if (user.role === "admin_unit") {
-      //   query = query.eq("work_unit_id", user.work_unit_id);
-      // }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error loading announcements:", error);
+      if (announcementsError) {
+        console.error("Error loading announcements:", announcementsError);
         toast.error("Gagal memuat pengumuman");
-      } else {
-        setAnnouncements((data || []) as any);
+        return;
       }
+
+      // Get unique author IDs
+      const authorIds = [...new Set(announcementsData?.map(a => a.author_id) || [])];
+      
+      // Fetch author profiles
+      let authorProfiles: Record<string, string> = {};
+      if (authorIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", authorIds);
+        
+        if (profilesData) {
+          authorProfiles = profilesData.reduce((acc, p) => {
+            acc[p.id] = p.name;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // Merge author names into announcements
+      const announcementsWithAuthors = (announcementsData || []).map(a => ({
+        ...a,
+        profiles: { name: authorProfiles[a.author_id] || "Admin" }
+      }));
+
+      setAnnouncements(announcementsWithAuthors as any);
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Gagal memuat pengumuman");
     } finally {
       setIsLoading(false);
     }
