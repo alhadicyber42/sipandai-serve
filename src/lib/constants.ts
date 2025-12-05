@@ -48,6 +48,7 @@ export const SERVICE_LABELS = {
 export const SERVICE_STATUS = {
   DRAFT: "draft",
   SUBMITTED: "submitted",
+  RESUBMITTED: "resubmitted",
   UNDER_REVIEW_UNIT: "under_review_unit",
   RETURNED_TO_USER: "returned_to_user",
   APPROVED_BY_UNIT: "approved_by_unit",
@@ -97,6 +98,7 @@ export const LEAVE_LABELS = {
 export const STATUS_COLORS = {
   draft: "bg-muted text-muted-foreground",
   submitted: "bg-primary/10 text-primary",
+  resubmitted: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   under_review_unit: "bg-warning/10 text-warning",
   returned_to_user: "bg-destructive/10 text-destructive",
   approved_by_unit: "bg-success/10 text-success",
@@ -116,6 +118,7 @@ export const STATUS_COLORS = {
 export const STATUS_LABELS = {
   draft: "Draft",
   submitted: "Diajukan",
+  resubmitted: "Sudah Diperbaiki",
   under_review_unit: "Ditinjau Unit",
   returned_to_user: "Dikembalikan",
   approved_by_unit: "Disetujui Unit",

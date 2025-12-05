@@ -350,7 +350,7 @@ export default function Mutasi() {
         const { error } = await supabase
             .from("services")
             .update({
-                status: "submitted",
+                status: "resubmitted",
                 notes: [
                     ...(editingService.notes || []),
                     {
@@ -567,7 +567,7 @@ export default function Mutasi() {
                                 <Card>
                                     <CardContent className="pt-6">
                                         <div className="text-2xl font-bold text-yellow-600">
-                                            {services.filter((s) => s.status === "submitted").length}
+                                            {services.filter((s) => s.status === "submitted" || s.status === "resubmitted").length}
                                         </div>
                                         <p className="text-sm text-muted-foreground">Menunggu Review</p>
                                     </CardContent>

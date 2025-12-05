@@ -324,7 +324,7 @@ export default function KenaikanPangkat() {
       const { error } = await supabase
         .from("services")
         .update({
-          status: "submitted",
+          status: "resubmitted",
           description: description || editingService.description,
           notes: updatedNotes,
         })
@@ -360,7 +360,7 @@ export default function KenaikanPangkat() {
   // Calculate statistics
   const stats = {
     total: services.length,
-    pending: services.filter(s => s.status === "submitted" || s.status === "approved_by_unit").length,
+    pending: services.filter(s => s.status === "submitted" || s.status === "resubmitted" || s.status === "approved_by_unit").length,
     approved: services.filter(s => s.status === "approved_final").length,
     returned: services.filter(s => s.status === "returned_to_user" || s.status === "returned_to_unit" || s.status === "rejected").length,
   };
