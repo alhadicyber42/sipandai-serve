@@ -606,7 +606,7 @@ export default function Mutasi() {
                     onReload={loadServices}
                     showFilters={isAdmin}
                     allowActions={isAdmin}
-                    onEditService={user?.role === "user_unit" ? handleEditService : undefined}
+                    onEditService={handleEditService}
                 />
 
                 {/* Edit Dialog */}
