@@ -419,12 +419,28 @@ export function ServiceList({
   const canTakeAction = (service: Service) => {
     if (!allowActions) return false;
     if (user?.role === "admin_unit") {
-      return (service.status === "submitted" || service.status === "resubmitted") && service.work_unit_id === user.work_unit_id;
+      // admin_unit can take action on submitted, resubmitted, and returned_to_unit (returned from admin_pusat)
+      return (service.status === "submitted" || service.status === "resubmitted" || service.status === "returned_to_unit") && service.work_unit_id === user.work_unit_id;
     }
     if (user?.role === "admin_pusat") {
       return service.status === "submitted" || service.status === "resubmitted" || service.status === "approved_by_unit";
     }
     return false;
+  };
+
+  // Check if admin_unit can approve (not for returned_to_unit status - they can only return to user)
+  const canApprove = (service: Service) => {
+    if (!canTakeAction(service)) return false;
+    // admin_unit cannot approve returned_to_unit - they must return to user first
+    if (user?.role === "admin_unit" && service.status === "returned_to_unit") {
+      return false;
+    }
+    return true;
+  };
+
+  // Check if can return to user/unit
+  const canReturn = (service: Service) => {
+    return canTakeAction(service);
   };
 
   const canEditService = (service: Service) => {
@@ -618,20 +634,26 @@ export function ServiceList({
                             {canTakeAction(service) && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => openActionDialog(service, "approve")}
-                                  className="min-h-[44px] cursor-pointer"
-                                >
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Setujui
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => openActionDialog(service, "return")}
-                                  className="text-destructive focus:text-destructive min-h-[44px] cursor-pointer"
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Kembalikan
-                                </DropdownMenuItem>
+                                {canApprove(service) && (
+                                  <DropdownMenuItem 
+                                    onClick={() => openActionDialog(service, "approve")}
+                                    className="min-h-[44px] cursor-pointer"
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Setujui
+                                  </DropdownMenuItem>
+                                )}
+                                {canReturn(service) && (
+                                  <DropdownMenuItem
+                                    onClick={() => openActionDialog(service, "return")}
+                                    className="text-destructive focus:text-destructive min-h-[44px] cursor-pointer"
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    {user?.role === "admin_unit" && service.status === "returned_to_unit" 
+                                      ? "Kembalikan ke User" 
+                                      : "Kembalikan"}
+                                  </DropdownMenuItem>
+                                )}
                               </>
                             )}
                           </DropdownMenuContent>
@@ -748,21 +770,27 @@ export function ServiceList({
 
                 {canTakeAction(selectedService) && (
                   <div className="flex gap-2 pt-4 border-t">
-                    <Button
-                      className="flex-1"
-                      onClick={() => openActionDialog(selectedService, "approve")}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Setujui
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => openActionDialog(selectedService, "return")}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Kembalikan
-                    </Button>
+                    {canApprove(selectedService) && (
+                      <Button
+                        className="flex-1"
+                        onClick={() => openActionDialog(selectedService, "approve")}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Setujui
+                      </Button>
+                    )}
+                    {canReturn(selectedService) && (
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => openActionDialog(selectedService, "return")}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        {user?.role === "admin_unit" && selectedService.status === "returned_to_unit" 
+                          ? "Kembalikan ke User" 
+                          : "Kembalikan"}
+                      </Button>
+                    )}
                   </div>
                 )}
               </TabsContent>
@@ -786,17 +814,20 @@ export function ServiceList({
                         >
                           {isSavingVerification ? "Menyimpan..." : "Simpan Verifikasi"}
                         </Button>
-                        {verifiedDocuments.some(doc => doc.verification_status === "perlu_perbaikan") && (
+                        {(verifiedDocuments.some(doc => doc.verification_status === "perlu_perbaikan") || 
+                          (user?.role === "admin_unit" && selectedService.status === "returned_to_unit")) && (
                           <Button
                             variant="destructive"
                             className="flex-1"
                             onClick={() => openActionDialog(selectedService, "return")}
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Kembalikan Usulan
+                            {user?.role === "admin_unit" && selectedService.status === "returned_to_unit" 
+                              ? "Kembalikan ke User" 
+                              : "Kembalikan Usulan"}
                           </Button>
                         )}
-                        {verifiedDocuments.every(doc => doc.verification_status === "sudah_sesuai") && (
+                        {canApprove(selectedService) && verifiedDocuments.every(doc => doc.verification_status === "sudah_sesuai") && (
                           <Button
                             className="flex-1"
                             onClick={() => openActionDialog(selectedService, "approve")}
