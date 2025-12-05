@@ -374,7 +374,7 @@ export default function Dashboard() {
   const userConsultations = getUserConsultations();
 
   // Pagination constants
-  const ANNOUNCEMENTS_PER_PAGE = 3;
+  const ANNOUNCEMENTS_PER_PAGE = 1;
 
   // State for announcements
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -385,6 +385,20 @@ export default function Dashboard() {
       loadAnnouncements();
     }
   }, [user]);
+
+  // Auto-slide announcements every 20 seconds
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setAnnouncementsPage((prev) => {
+        const totalPages = Math.ceil(announcements.length / ANNOUNCEMENTS_PER_PAGE);
+        return prev >= totalPages ? 1 : prev + 1;
+      });
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, [announcements.length]);
 
   const loadAnnouncements = async () => {
     if (!user) return;
@@ -524,6 +538,120 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
+
+        {/* Pengumuman Section - Full Width - Moved to top */}
+        {announcements.length > 0 && (
+          <Card className="shadow-lg border-primary/10 overflow-hidden">
+            <CardHeader className="border-b bg-gradient-to-r from-orange-500/10 to-red-500/10 py-3 md:py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <Megaphone className="h-5 w-5 text-orange-600" />
+                  Pengumuman
+                  {announcements.length > 1 && (
+                    <Badge variant="secondary" className="text-xs ml-2">
+                      {announcementsPage}/{totalAnnouncementsPages}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {announcements.length > 1 && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setAnnouncementsPage(p => p <= 1 ? totalAnnouncementsPages : p - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setAnnouncementsPage(p => p >= totalAnnouncementsPages ? 1 : p + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {user?.role !== "user_unit" && (
+                    <Button
+                      onClick={() => navigate("/pengumuman")}
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      Kelola
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              {paginatedAnnouncements.map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className={`group p-4 rounded-lg border transition-all duration-300 ${announcement.is_pinned
+                    ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800'
+                    : 'bg-muted/20 border-muted-foreground/20'
+                    }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {announcement.is_pinned && (
+                      <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-1" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-semibold text-base flex items-center gap-2">
+                          {announcement.title}
+                          {announcement.is_pinned && (
+                            <Badge variant="secondary" className="text-xs">
+                              Disematkan
+                            </Badge>
+                          )}
+                        </h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {announcement.content}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium">{announcement.profiles?.name || 'Admin'}</span>
+                        <span>•</span>
+                        <span>{getWorkUnitName(announcement.work_unit_id)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(announcement.created_at).toLocaleDateString("id-ID", {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Pagination Dots */}
+              {announcements.length > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  {Array.from({ length: totalAnnouncementsPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setAnnouncementsPage(i + 1)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        announcementsPage === i + 1
+                          ? 'bg-orange-600 w-6'
+                          : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Statistics Cards - Responsive Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
@@ -974,103 +1102,6 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-
-        {/* Pengumuman Section - Full Width */}
-        <Card className="shadow-lg border-primary/10">
-          <CardHeader className="border-b bg-gradient-to-r from-orange-500/10 to-red-500/10">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                <Megaphone className="h-5 w-5 text-orange-600" />
-                Pengumuman
-              </CardTitle>
-              {user?.role !== "user_unit" && (
-                <Button
-                  onClick={() => navigate("/pengumuman")}
-                  size="sm"
-                  variant="outline"
-                  className="gap-2"
-                >
-                  Kelola Pengumuman
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            {paginatedAnnouncements.map((announcement) => (
-              <div
-                key={announcement.id}
-                className={`group p-4 rounded-lg border transition-all duration-300 hover:shadow-md mb-3 ${announcement.is_pinned
-                  ? 'bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800'
-                  : 'bg-muted/20 border-muted-foreground/20 hover:border-primary/30'
-                  }`}
-              >
-                <div className="flex items-start gap-3">
-                  {announcement.is_pinned && (
-                    <Pin className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-1" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold text-base flex items-center gap-2">
-                        {announcement.title}
-                        {announcement.is_pinned && (
-                          <Badge variant="secondary" className="text-xs">
-                            Disematkan
-                          </Badge>
-                        )}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {announcement.content}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-medium">{announcement.profiles?.name || 'Admin'}</span>
-                      <span>•</span>
-                      <span>{getWorkUnitName(announcement.work_unit_id)}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(announcement.created_at).toLocaleDateString("id-ID", {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Pagination Controls for Announcements */}
-            {announcements.length > ANNOUNCEMENTS_PER_PAGE && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAnnouncementsPage(p => Math.max(1, p - 1))}
-                  disabled={announcementsPage === 1}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Sebelumnya
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  Halaman {announcementsPage} dari {totalAnnouncementsPages}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAnnouncementsPage(p => Math.min(totalAnnouncementsPages, p + 1))}
-                  disabled={announcementsPage === totalAnnouncementsPages}
-                  className="gap-2"
-                >
-                  Berikutnya
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
       </div>
     </DashboardLayout>
