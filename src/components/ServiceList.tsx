@@ -428,7 +428,11 @@ export function ServiceList({
   };
 
   const canEditService = (service: Service) => {
-    return onEditService && user?.role === "user_unit" && service.status === "returned_to_user";
+    // user_unit can edit returned submissions
+    if (user?.role === "user_unit" && service.status === "returned_to_user" && service.user_id === user.id && onEditService) {
+      return true;
+    }
+    return false;
   };
 
   return (
@@ -575,9 +579,13 @@ export function ServiceList({
                               <Eye className="mr-2 h-4 w-4" />
                               Detail
                             </DropdownMenuItem>
-                            {canEditService(service) && (
+                            {canEditService(service) && onEditService && (
                               <DropdownMenuItem 
-                                onClick={() => onEditService!(service)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onEditService(service);
+                                }}
                                 className="min-h-[44px] cursor-pointer"
                               >
                                 <FileText className="mr-2 h-4 w-4" />

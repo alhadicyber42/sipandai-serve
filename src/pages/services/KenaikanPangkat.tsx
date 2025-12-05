@@ -634,7 +634,7 @@ export default function KenaikanPangkat() {
           onReload={loadServices}
           showFilters={isAdmin}
           allowActions={isAdmin}
-          onEditService={user?.role === "user_unit" ? handleEditService : undefined}
+          onEditService={handleEditService}
         />
 
         {/* Edit Dialog for Returned Submissions */}

@@ -926,7 +926,7 @@ export default function Cuti() {
             onReload={loadServices}
             showFilters={isAdmin}
             allowActions={isAdmin}
-            onEditService={user?.role === "user_unit" ? handleEditService : undefined}
+            onEditService={handleEditService}
             onGenerateCertificate={handleGenerateCertificate}
           />
         </div>
