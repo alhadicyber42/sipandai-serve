@@ -428,7 +428,7 @@ export default function Cuti() {
     const { error } = await supabase
       .from("services")
       .update({
-        status: "submitted",
+        status: "resubmitted",
         notes: [
           ...(editingService.notes || []),
           {
@@ -888,7 +888,7 @@ export default function Cuti() {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-warning">
-                      {services.filter((s) => s.status === "submitted" || s.status === "approved_by_unit").length}
+                      {services.filter((s) => s.status === "submitted" || s.status === "resubmitted" || s.status === "approved_by_unit").length}
                     </div>
                     <p className="text-sm text-muted-foreground">Diproses</p>
                   </CardContent>

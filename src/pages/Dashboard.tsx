@@ -438,10 +438,11 @@ export default function Dashboard() {
     total: userServices.length,
     pending: userServices.filter((s) =>
       s.status === "submitted" ||
+      s.status === "resubmitted" ||
       s.status === "approved_by_unit"
     ).length,
     pendingForMe: user?.role === "admin_unit"
-      ? userServices.filter((s) => s.status === "submitted").length
+      ? userServices.filter((s) => s.status === "submitted" || s.status === "resubmitted").length
       : user?.role === "admin_pusat"
         ? userServices.filter((s) => s.status === "approved_by_unit").length
         : 0,

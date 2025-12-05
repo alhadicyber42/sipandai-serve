@@ -676,6 +676,7 @@ export type Database = {
         | "returned_to_unit"
         | "approved_final"
         | "rejected"
+        | "resubmitted"
       service_type: "kenaikan_pangkat" | "mutasi" | "pensiun" | "cuti"
       user_role: "user_unit" | "admin_unit" | "admin_pusat"
     }
@@ -842,6 +843,7 @@ export const Constants = {
         "returned_to_unit",
         "approved_final",
         "rejected",
+        "resubmitted",
       ],
       service_type: ["kenaikan_pangkat", "mutasi", "pensiun", "cuti"],
       user_role: ["user_unit", "admin_unit", "admin_pusat"],

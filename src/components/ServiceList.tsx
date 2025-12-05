@@ -419,10 +419,10 @@ export function ServiceList({
   const canTakeAction = (service: Service) => {
     if (!allowActions) return false;
     if (user?.role === "admin_unit") {
-      return service.status === "submitted" && service.work_unit_id === user.work_unit_id;
+      return (service.status === "submitted" || service.status === "resubmitted") && service.work_unit_id === user.work_unit_id;
     }
     if (user?.role === "admin_pusat") {
-      return service.status === "submitted" || service.status === "approved_by_unit";
+      return service.status === "submitted" || service.status === "resubmitted" || service.status === "approved_by_unit";
     }
     return false;
   };
