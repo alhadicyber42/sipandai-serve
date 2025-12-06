@@ -456,11 +456,25 @@ export default function Mutasi() {
                                                                         <SelectValue placeholder={targetUnitId ? "Pilih Jabatan" : "Pilih Unit Dulu"} />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {jobFormations.map((formation) => (
-                                                                            <SelectItem key={formation.id} value={formation.id} className="text-xs sm:text-sm">
-                                                                                {formation.position_name} (Sisa: {formation.quota})
-                                                                            </SelectItem>
-                                                                        ))}
+                                                                        {jobFormations.length === 0 ? (
+                                                                            <div className="p-2 text-xs text-muted-foreground text-center">
+                                                                                Belum ada formasi jabatan tersedia
+                                                                            </div>
+                                                                        ) : (
+                                                                            jobFormations.map((formation) => {
+                                                                                const available = formation.quota - (formation.filled || 0);
+                                                                                return (
+                                                                                    <SelectItem 
+                                                                                        key={formation.id} 
+                                                                                        value={formation.id} 
+                                                                                        className="text-xs sm:text-sm"
+                                                                                        disabled={available <= 0}
+                                                                                    >
+                                                                                        {formation.position_name} (Tersedia: {available}/{formation.quota})
+                                                                                    </SelectItem>
+                                                                                );
+                                                                            })
+                                                                        )}
                                                                     </SelectContent>
                                                                 </Select>
                                                             </div>
