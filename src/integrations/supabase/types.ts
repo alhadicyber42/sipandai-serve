@@ -526,6 +526,8 @@ export type Database = {
           rejected_at: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["service_status"]
+          target_job_formation_id: string | null
+          target_work_unit_id: number | null
           title: string
           updated_at: string
           user_id: string
@@ -542,6 +544,8 @@ export type Database = {
           rejected_at?: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["service_status"]
+          target_job_formation_id?: string | null
+          target_work_unit_id?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -558,12 +562,28 @@ export type Database = {
           rejected_at?: string | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["service_status"]
+          target_job_formation_id?: string | null
+          target_work_unit_id?: number | null
           title?: string
           updated_at?: string
           user_id?: string
           work_unit_id?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "services_target_job_formation_id_fkey"
+            columns: ["target_job_formation_id"]
+            isOneToOne: false
+            referencedRelation: "job_formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_target_work_unit_id_fkey"
+            columns: ["target_work_unit_id"]
+            isOneToOne: false
+            referencedRelation: "work_units"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "services_work_unit_id_fkey"
             columns: ["work_unit_id"]

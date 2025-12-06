@@ -41,16 +41,14 @@ export default function JobFormationManagement() {
     const [quota, setQuota] = useState("1");
 
     const isAdminPusat = user?.role === "admin_pusat";
+    const isAdminUnit = user?.role === "admin_unit";
 
     useEffect(() => {
+        // Load work units for both roles - admin_pusat needs list, admin_unit needs name
         loadWorkUnits();
     }, []);
 
-    useEffect(() => {
-        if (user?.role === "admin_unit" && user.work_unit_id) {
-            setSelectedUnitId(user.work_unit_id.toString());
-        }
-    }, [user]);
+    // This is now handled in loadWorkUnits callback
 
     useEffect(() => {
         if (selectedUnitId) {
@@ -71,6 +69,11 @@ export default function JobFormationManagement() {
             console.error(error);
         } else {
             setWorkUnits(data || []);
+            
+            // For admin_unit, auto-set their unit
+            if (user?.role === "admin_unit" && user.work_unit_id) {
+                setSelectedUnitId(user.work_unit_id.toString());
+            }
         }
     };
 
@@ -264,6 +267,22 @@ export default function JobFormationManagement() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {isAdminUnit && user?.work_unit_id && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                Unit Kerja Anda
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">
+                                {workUnits.find(u => u.id === user.work_unit_id)?.name || `Unit Kerja ID: ${user.work_unit_id}`}
+                            </p>
                         </CardContent>
                     </Card>
                 )}
