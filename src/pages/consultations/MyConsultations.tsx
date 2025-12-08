@@ -41,7 +41,7 @@ export default function MyConsultations() {
         .from("consultations")
         .select("*")
         .eq("user_id", user?.id)
-        .in("status", ["resolved", "closed"])
+        // Show all consultations, not just resolved/closed
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -94,6 +94,7 @@ export default function MyConsultations() {
 
   const stats = {
     total: consultations.length,
+    active: consultations.filter(c => !["resolved", "closed"].includes(c.status)).length,
     resolved: consultations.filter(c => c.status === "resolved").length,
     closed: consultations.filter(c => c.status === "closed").length,
   };
@@ -116,7 +117,7 @@ export default function MyConsultations() {
                   <div>
                     <h1 className="text-2xl md:text-4xl font-bold">Riwayat Konsultasi</h1>
                     <p className="text-sm md:text-base text-white/80 mt-1">
-                      Lihat riwayat konsultasi yang telah selesai
+                      Lihat semua riwayat konsultasi Anda
                     </p>
                   </div>
                 </div>
@@ -146,11 +147,24 @@ export default function MyConsultations() {
                 </div>
                 <div className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</div>
               </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Riwayat</p>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground">Total Konsultasi</p>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/30 border-blue-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="p-4 md:p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.active}</div>
+              </div>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground">Aktif</p>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/30 border-green-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300 col-span-2 md:col-span-1">
             <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
             <CardContent className="p-4 md:p-6 relative z-10">
               <div className="flex items-center gap-3 mb-2">
@@ -160,19 +174,6 @@ export default function MyConsultations() {
                 <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</div>
               </div>
               <p className="text-xs md:text-sm font-medium text-muted-foreground">Selesai</p>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-primary/20 hover:shadow-lg hover:scale-105 transition-all duration-300 col-span-2 md:col-span-1">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <XCircle className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-primary">{stats.closed}</div>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-muted-foreground">Ditutup</p>
             </CardContent>
           </Card>
         </div>
