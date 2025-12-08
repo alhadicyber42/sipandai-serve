@@ -75,20 +75,40 @@ export default function AllConsultations() {
 
   const loadConsultations = async () => {
     try {
-      // Load consultations directed to admin_pusat (is_escalated = true)
-      let query = supabase
+      // Load all consultations for admin_pusat
+      const { data: consultationsData, error } = await supabase
         .from("consultations")
-        .select(`
-          *,
-          profiles!consultations_user_id_fkey (name),
-          work_units (name)
-        `)
-        .eq("is_escalated", true); // Only show consultations directed to admin_pusat
-
-      const { data, error } = await query.order("created_at", { ascending: false });
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setConsultations(data as any || []);
+
+      // If we have consultations, fetch user names and work units separately
+      if (consultationsData && consultationsData.length > 0) {
+        const userIds = [...new Set(consultationsData.map(c => c.user_id))];
+        const workUnitIds = [...new Set(consultationsData.map(c => c.work_unit_id))];
+
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+
+        const { data: workUnitsData } = await supabase
+          .from("work_units")
+          .select("id, name")
+          .in("id", workUnitIds);
+
+        // Map profiles and work_units to consultations
+        const consultationsWithRelations = consultationsData.map(consultation => ({
+          ...consultation,
+          profiles: profilesData?.find(p => p.id === consultation.user_id) || { name: "Unknown User" },
+          work_units: workUnitsData?.find(w => w.id === consultation.work_unit_id) || { name: "Unknown Unit" }
+        }));
+
+        setConsultations(consultationsWithRelations as any);
+      } else {
+        setConsultations([]);
+      }
     } catch (error: any) {
       console.error("Error loading consultations:", error);
       toast.error("Gagal memuat data konsultasi");
@@ -147,7 +167,7 @@ export default function AllConsultations() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Statistics for consultations directed to admin_pusat
+  // Statistics for all consultations
   const stats = {
     total: consultations.length,
     pending: consultations.filter((c) => c.status === "submitted").length,
@@ -155,7 +175,7 @@ export default function AllConsultations() {
     resolved: consultations.filter((c) => c.status === "resolved" || c.status === "closed").length,
   };
 
-  // Only admin_pusat can access this page (direct consultations to admin_pusat)
+  // Only admin_pusat can access this page (all consultations)
   if (user?.role !== "admin_pusat") {
     return (
       <DashboardLayout>
@@ -186,7 +206,7 @@ export default function AllConsultations() {
               <div>
                 <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Masuk</h1>
                 <p className="text-sm md:text-base text-white/80 mt-1">
-                  Kelola konsultasi yang ditujukan langsung ke Admin Pusat
+                  Kelola semua konsultasi dari seluruh unit kerja
                 </p>
               </div>
             </div>
