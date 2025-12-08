@@ -173,15 +173,16 @@ export default function Auth() {
     setIsLoading(false);
   };
 
-  const validateStep = async (step: number): Promise<boolean> => {
+const validateStep = async (step: number): Promise<boolean> => {
     let fieldsToValidate: (keyof RegisterFormValues)[] = [];
 
     switch (step) {
       case 1:
+        // Only email is required in step 1
         fieldsToValidate = ["email"];
         break;
       case 2:
-        // All fields in step 2 are now optional
+        // All fields in step 2 are optional (for non-PNS users)
         return true;
       case 3:
         // Riwayat is optional, always valid
