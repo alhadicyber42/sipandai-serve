@@ -41,8 +41,8 @@ export default function NewConsultation() {
 
     setIsLoading(true);
     try {
-      // Determine if consultation should be escalated to admin_pusat
-      const isEscalated = formData.recipient === "admin_pusat";
+      // Determine target recipient - directly to admin_unit or admin_pusat
+      const isToAdminPusat = formData.recipient === "admin_pusat";
 
       const { data, error } = await supabase
         .from("consultations")
@@ -53,8 +53,8 @@ export default function NewConsultation() {
           description: formData.description,
           priority: formData.priority as any,
           category: formData.category as any,
-          status: isEscalated ? "escalated" : "submitted" as any,
-          is_escalated: isEscalated,
+          status: "submitted" as any,
+          is_escalated: isToAdminPusat, // Use is_escalated to mark direct consultation to admin_pusat
         })
         .select()
         .single();

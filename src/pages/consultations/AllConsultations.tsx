@@ -75,22 +75,15 @@ export default function AllConsultations() {
 
   const loadConsultations = async () => {
     try {
-      // Load escalated consultations
+      // Load consultations directed to admin_pusat (is_escalated = true)
       let query = supabase
         .from("consultations")
         .select(`
           *,
           profiles!consultations_user_id_fkey (name),
           work_units (name)
-        `);
-
-      // If admin_unit, only show escalated consultations from their unit
-      if (user?.role === "admin_unit") {
-        query = query.eq("is_escalated", true);
-        if (user?.work_unit_id) {
-          query = query.eq("work_unit_id", user.work_unit_id);
-        }
-      }
+        `)
+        .eq("is_escalated", true); // Only show consultations directed to admin_pusat
 
       const { data, error } = await query.order("created_at", { ascending: false });
 
@@ -154,16 +147,16 @@ export default function AllConsultations() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Statistics (all are escalated since we filter by is_escalated=true)
+  // Statistics for consultations directed to admin_pusat
   const stats = {
     total: consultations.length,
-    pending: consultations.filter((c) => c.status === "escalated" || c.status === "submitted").length,
-    in_progress: consultations.filter((c) => c.status === "under_review" || c.status === "escalated_responded").length,
+    pending: consultations.filter((c) => c.status === "submitted").length,
+    in_progress: consultations.filter((c) => c.status === "in_progress" || c.status === "under_review").length,
     resolved: consultations.filter((c) => c.status === "resolved" || c.status === "closed").length,
   };
 
-  // Allow both admin_pusat and admin_unit to access this page
-  if (user?.role !== "admin_pusat" && user?.role !== "admin_unit") {
+  // Only admin_pusat can access this page (direct consultations to admin_pusat)
+  if (user?.role !== "admin_pusat") {
     return (
       <DashboardLayout>
         <Card>
@@ -191,13 +184,9 @@ export default function AllConsultations() {
                 <MessageSquare className="h-6 w-6 md:h-8 md:w-8" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-4xl font-bold">
-                  {user?.role === "admin_pusat" ? "Konsultasi Masuk" : "Konsultasi Tereskalasi"}
-                </h1>
+                <h1 className="text-2xl md:text-4xl font-bold">Konsultasi Masuk</h1>
                 <p className="text-sm md:text-base text-white/80 mt-1">
-                  {user?.role === "admin_pusat"
-                    ? "Kelola semua konsultasi yang masuk dari unit kerja"
-                    : "Konsultasi dari unit Anda yang diteruskan ke Admin Pusat"}
+                  Kelola konsultasi yang ditujukan langsung ke Admin Pusat
                 </p>
               </div>
             </div>
