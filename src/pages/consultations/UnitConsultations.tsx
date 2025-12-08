@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MessageSquare, Search, Clock, AlertCircle, CheckCircle2, ArrowRight, Sparkles, User, TrendingUp } from "lucide-react";
+import { MessageSquare, Search, Clock, AlertCircle, CheckCircle2, ArrowRight, Sparkles, User } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { CardSkeleton, StatCardSkeleton } from "@/components/skeletons";
@@ -42,7 +42,6 @@ export default function UnitConsultations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [escalationFilter, setEscalationFilter] = useState<string>("all"); // all, escalated, not_escalated
 
   useEffect(() => {
     if (user?.work_unit_id) {
@@ -73,11 +72,12 @@ export default function UnitConsultations() {
 
   const loadConsultations = async () => {
     try {
-      // First, get consultations without join
+      // Only load consultations directed to admin_unit (is_escalated = false)
       const { data: consultationsData, error } = await supabase
         .from("consultations")
         .select("*")
         .eq("work_unit_id", user?.work_unit_id)
+        .eq("is_escalated", false) // Only show consultations for admin_unit
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -117,12 +117,8 @@ export default function UnitConsultations() {
       statusFilter === "all" || consultation.status === statusFilter;
     const matchesPriority =
       priorityFilter === "all" || consultation.priority === priorityFilter;
-    const matchesEscalation =
-      escalationFilter === "all" ||
-      (escalationFilter === "escalated" && consultation.is_escalated) ||
-      (escalationFilter === "not_escalated" && !consultation.is_escalated);
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesEscalation;
+    return matchesSearch && matchesStatus && matchesPriority;
   });
 
   const stats = {
@@ -130,7 +126,6 @@ export default function UnitConsultations() {
     submitted: consultations.filter((c) => c.status === "submitted").length,
     inProgress: consultations.filter((c) => c.status === "in_progress").length,
     resolved: consultations.filter((c) => c.status === "resolved").length,
-    escalated: consultations.filter((c) => c.is_escalated).length,
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -218,7 +213,7 @@ export default function UnitConsultations() {
         </div>
 
         {/* Statistics Cards - Responsive Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card className="relative overflow-hidden border-blue-500/20 hover:shadow-lg hover:scale-105 transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full blur-2xl"></div>
             <CardContent className="p-4 md:p-6 relative z-10">
@@ -270,19 +265,6 @@ export default function UnitConsultations() {
               <p className="text-xs md:text-sm text-muted-foreground font-medium">Selesai</p>
             </CardContent>
           </Card>
-
-          <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="p-4 md:p-6 relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-red-500/10 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{stats.escalated}</div>
-              </div>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium">Tereskalasi</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Filters and List */}
@@ -295,7 +277,7 @@ export default function UnitConsultations() {
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             {/* Filters - Responsive Grid */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -305,17 +287,6 @@ export default function UnitConsultations() {
                   className="pl-10 h-12"
                 />
               </div>
-
-              <Select value={escalationFilter} onValueChange={setEscalationFilter}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Filter Eskalasi" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Konsultasi</SelectItem>
-                  <SelectItem value="not_escalated">Konsultasi Biasa</SelectItem>
-                  <SelectItem value="escalated">Diteruskan ke Pusat</SelectItem>
-                </SelectContent>
-              </Select>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-12">
@@ -346,7 +317,7 @@ export default function UnitConsultations() {
             {/* Consultations List */}
             {filteredConsultations.length === 0 ? (
               <div className="py-12">
-                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" || escalationFilter !== "all" ? (
+                {searchQuery || statusFilter !== "all" || priorityFilter !== "all" ? (
                   <SearchState message="Tidak ada konsultasi yang sesuai dengan filter pencarian" />
                 ) : (
                   <NoDataState message="Belum ada konsultasi masuk" />
