@@ -129,47 +129,62 @@ export default function EmployeeOfTheMonth() {
                 .select("*")
                 .eq("rating_period", currentPeriod);
 
-            // Aggregate points by employee
-            const pointsByEmployee: Record<string, { totalPoints: number, count: number, finalPoints?: number, hasUnitEval: boolean, hasFinalEval: boolean }> = {};
+            // Build a map of employees who have ratings
+            const employeesWithRatings = new Set<string>();
+            const ratingCountByEmployee: Record<string, number> = {};
 
             (ratings || []).forEach((rating: any) => {
                 const employeeId = rating.rated_employee_id;
-                if (!pointsByEmployee[employeeId]) {
-                    pointsByEmployee[employeeId] = { totalPoints: 0, count: 0, hasUnitEval: false, hasFinalEval: false };
-                }
-                pointsByEmployee[employeeId].totalPoints += rating.total_points || 0;
-                pointsByEmployee[employeeId].count += 1;
+                employeesWithRatings.add(employeeId);
+                ratingCountByEmployee[employeeId] = (ratingCountByEmployee[employeeId] || 0) + 1;
             });
 
-            // Apply admin unit evaluation adjustments
-            (unitEvaluations || []).forEach((unitEval: any) => {
-                const employeeId = unitEval.rated_employee_id;
-                if (pointsByEmployee[employeeId]) {
-                    pointsByEmployee[employeeId].hasUnitEval = true;
-                    // Use unit evaluation final points if no final (pusat) evaluation exists
-                    if (!pointsByEmployee[employeeId].hasFinalEval) {
-                        pointsByEmployee[employeeId].finalPoints = unitEval.final_total_points;
-                    }
-                }
+            // Create leaderboard entries - prioritize admin evaluations
+            const leaderboardData: Array<{ employeeId: string, totalPoints: number, ratingCount: number, hasEvaluation: boolean }> = [];
+
+            // Create maps for quick lookup
+            const unitEvalMap = new Map<string, any>();
+            const finalEvalMap = new Map<string, any>();
+
+            (unitEvaluations || []).forEach((eval_: any) => {
+                unitEvalMap.set(eval_.rated_employee_id, eval_);
             });
 
-            // Apply admin pusat (final) evaluation adjustments - this takes priority
-            (finalEvaluations || []).forEach((finalEval: any) => {
-                const employeeId = finalEval.rated_employee_id;
-                if (pointsByEmployee[employeeId]) {
-                    pointsByEmployee[employeeId].hasFinalEval = true;
-                    pointsByEmployee[employeeId].finalPoints = finalEval.final_total_points;
-                }
+            (finalEvaluations || []).forEach((eval_: any) => {
+                finalEvalMap.set(eval_.rated_employee_id, eval_);
             });
 
-            // Convert to array and sort by final points (or total points if no evaluation)
-            const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => ({
-                employeeId,
-                totalPoints: data.finalPoints ?? data.totalPoints, // Use final points if available
-                rawPoints: data.totalPoints, // Keep raw points for reference
-                ratingCount: data.count,
-                hasEvaluation: data.hasUnitEval || data.hasFinalEval
-            })).sort((a, b) => b.totalPoints - a.totalPoints);
+            // For each employee with ratings, determine their final points
+            employeesWithRatings.forEach((employeeId) => {
+                let finalPoints: number;
+                let hasEvaluation = false;
+
+                // Priority: admin_pusat > admin_unit > raw peer average
+                if (finalEvalMap.has(employeeId)) {
+                    // Use admin pusat final points
+                    finalPoints = finalEvalMap.get(employeeId).final_total_points;
+                    hasEvaluation = true;
+                } else if (unitEvalMap.has(employeeId)) {
+                    // Use admin unit final points
+                    finalPoints = unitEvalMap.get(employeeId).final_total_points;
+                    hasEvaluation = true;
+                } else {
+                    // Calculate average of peer ratings (not sum)
+                    const employeeRatings = (ratings || []).filter((r: any) => r.rated_employee_id === employeeId);
+                    const totalPeerPoints = employeeRatings.reduce((sum: number, r: any) => sum + (r.total_points || 0), 0);
+                    finalPoints = employeeRatings.length > 0 ? Math.round(totalPeerPoints / employeeRatings.length) : 0;
+                }
+
+                leaderboardData.push({
+                    employeeId,
+                    totalPoints: finalPoints,
+                    ratingCount: ratingCountByEmployee[employeeId] || 0,
+                    hasEvaluation
+                });
+            });
+
+            // Sort by points descending
+            leaderboardData.sort((a, b) => b.totalPoints - a.totalPoints);
 
             setLeaderboard(leaderboardData);
 
@@ -274,70 +289,49 @@ export default function EmployeeOfTheMonth() {
                 finalEvalMap[key] = finalEval.final_total_points;
             });
 
-            // Aggregate points by employee, using final evaluation if available
-            const pointsByEmployee: Record<string, { totalPoints: number, count: number }> = {};
-
+            // Group ratings by employee and period
+            const ratingsByEmployeePeriod: Record<string, any[]> = {};
             (ratings || []).forEach((rating: any) => {
-                const employeeId = rating.rated_employee_id;
-                const period = rating.rating_period;
-                const evalKey = `${employeeId}-${period}`;
-                
-                if (!pointsByEmployee[employeeId]) {
-                    pointsByEmployee[employeeId] = { totalPoints: 0, count: 0 };
+                const key = `${rating.rated_employee_id}-${rating.rating_period}`;
+                if (!ratingsByEmployeePeriod[key]) {
+                    ratingsByEmployeePeriod[key] = [];
                 }
-                
-                // Priority: final eval > unit eval > raw rating points
-                // For yearly, we need to calculate based on period-level adjustments
-                const ratingPoints = rating.total_points || 0;
-                pointsByEmployee[employeeId].totalPoints += ratingPoints;
-                pointsByEmployee[employeeId].count += 1;
+                ratingsByEmployeePeriod[key].push(rating);
             });
 
-            // Apply evaluation adjustments per period
-            // Get unique employee-period combinations
-            const employeePeriods = new Set<string>();
-            (ratings || []).forEach((r: any) => {
-                employeePeriods.add(`${r.rated_employee_id}-${r.rating_period}`);
-            });
+            // Calculate final points per employee, summing across all periods
+            const pointsByEmployee: Record<string, { totalPoints: number, periodCount: number }> = {};
 
-            // Calculate adjustments
-            const adjustments: Record<string, number> = {};
-            employeePeriods.forEach((key) => {
-                const [employeeId, period] = key.split('-').length > 2 
-                    ? [key.substring(0, key.lastIndexOf('-')), key.substring(key.lastIndexOf('-') + 1)]
-                    : key.split('-');
-                const evalKey = `${employeeId}-${period}`;
-                
-                // Get raw points for this employee-period
-                const periodRatings = (ratings || []).filter((r: any) => 
-                    r.rated_employee_id === employeeId && r.rating_period === period
-                );
-                const rawPoints = periodRatings.reduce((sum: number, r: any) => sum + (r.total_points || 0), 0);
-                
-                // Get final points from evaluations
-                let finalPoints = rawPoints;
-                if (finalEvalMap[evalKey]) {
-                    finalPoints = finalEvalMap[evalKey];
-                } else if (unitEvalMap[evalKey]) {
-                    finalPoints = unitEvalMap[evalKey];
-                }
-                
-                // Calculate adjustment
-                adjustments[employeeId] = (adjustments[employeeId] || 0) + (finalPoints - rawPoints);
-            });
+            Object.entries(ratingsByEmployeePeriod).forEach(([key, periodRatings]) => {
+                const [employeeId] = key.split('-');
+                const actualEmployeeId = key.substring(0, 36); // UUID is 36 characters
+                const period = key.substring(37); // rest is period
 
-            // Apply adjustments to totals
-            Object.entries(adjustments).forEach(([employeeId, adjustment]) => {
-                if (pointsByEmployee[employeeId]) {
-                    pointsByEmployee[employeeId].totalPoints += adjustment;
+                let periodPoints: number;
+
+                // Priority: admin_pusat > admin_unit > average of peer ratings
+                if (finalEvalMap[key]) {
+                    periodPoints = finalEvalMap[key];
+                } else if (unitEvalMap[key]) {
+                    periodPoints = unitEvalMap[key];
+                } else {
+                    // Calculate average of peer ratings for this period
+                    const totalPeerPoints = periodRatings.reduce((sum: number, r: any) => sum + (r.total_points || 0), 0);
+                    periodPoints = periodRatings.length > 0 ? Math.round(totalPeerPoints / periodRatings.length) : 0;
                 }
+
+                if (!pointsByEmployee[actualEmployeeId]) {
+                    pointsByEmployee[actualEmployeeId] = { totalPoints: 0, periodCount: 0 };
+                }
+                pointsByEmployee[actualEmployeeId].totalPoints += periodPoints;
+                pointsByEmployee[actualEmployeeId].periodCount += 1;
             });
 
             // Convert to array and sort by total points
             const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => ({
                 employeeId,
                 totalPoints: data.totalPoints,
-                ratingCount: data.count
+                ratingCount: data.periodCount
             })).sort((a, b) => b.totalPoints - a.totalPoints);
 
             setYearlyLeaderboard(leaderboardData);
