@@ -477,13 +477,19 @@ export default function EmployeeOfTheMonth() {
                                             </div>
                                         </div>
                                     </div>
-                                    {slideshowTestimonialsASN.length > 0 && (
+                                    {slideshowTestimonialsASN.length > 0 ? (
                                         <TestimonialSlideshow 
                                             testimonials={slideshowTestimonialsASN}
                                             variant="yellow"
                                             autoPlay={true}
                                             interval={5000}
                                         />
+                                    ) : (
+                                        <div className="mt-3 pt-3 border-t">
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Quote className="h-3 w-3" /> Belum ada testimoni
+                                            </p>
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>
@@ -517,13 +523,19 @@ export default function EmployeeOfTheMonth() {
                                             </div>
                                         </div>
                                     </div>
-                                    {slideshowTestimonialsNonASN.length > 0 && (
+                                    {slideshowTestimonialsNonASN.length > 0 ? (
                                         <TestimonialSlideshow 
                                             testimonials={slideshowTestimonialsNonASN}
                                             variant="emerald"
                                             autoPlay={true}
                                             interval={5000}
                                         />
+                                    ) : (
+                                        <div className="mt-3 pt-3 border-t">
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Quote className="h-3 w-3" /> Belum ada testimoni
+                                            </p>
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>
