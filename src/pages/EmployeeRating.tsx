@@ -28,9 +28,7 @@ const ratingCriteria: RatingCriteria[] = [
         items: [
             "Mematuhi jam kerja (tidak datang terlambat dan tidak pulang cepat)",
             "Menggunakan seragam sesuai ketentuan (Senin-Rabu: putih Kemnaker, Kamis: batik, Jumat: bebas rapi)",
-            "Menggunakan ID card pegawai Kemnaker setiap hari",
-            "Mengikuti kegiatan Apel Pagi Kemnaker setiap awal bulan",
-            "Mengikuti kegiatan Senam Pagi di ballroom setiap hari Jumat"
+            "Mengikuti kegiatan Apel Pagi Kemnaker setiap awal bulan"
         ]
     },
     {
@@ -40,7 +38,6 @@ const ratingCriteria: RatingCriteria[] = [
         items: [
             "Mencapai predikat kinerja minimal Baik (Sesuai Ekspektasi) pada E-Kinerja",
             "Mampu menyusun prioritas kerja dengan baik",
-            "Memiliki dedikasi penuh terhadap pekerjaan",
             "Tidak menunda pekerjaan dan menyelesaikan pekerjaan tepat waktu",
             "Cepat, tanggap, dan solutif dalam menyelesaikan kendala"
         ]
@@ -53,7 +50,6 @@ const ratingCriteria: RatingCriteria[] = [
             "Selalu bersikap sopan, santun, dan peduli terhadap seluruh pegawai",
             "Tidak pernah mengeluarkan kata kasar",
             "Tidak mudah mengeluh dan selalu semangat dalam bekerja",
-            "Tidak bergaya hidup berlebihan",
             "Rela mengutamakan kepentingan instansi di atas kepentingan pribadi"
         ]
     },
@@ -65,8 +61,7 @@ const ratingCriteria: RatingCriteria[] = [
             "Menjalankan semua tugas yang diberikan pimpinan dengan penuh dedikasi",
             "Jujur, konsisten, dan berperilaku sesuai kode etik",
             "Menguasai peraturan, kebijakan, dan regulasi terkait bidang kerjanya",
-            "Mau terus belajar demi meningkatkan kompetensi",
-            "Menyelesaikan tugas dengan penuh tanggung jawab"
+            "Mau terus belajar demi meningkatkan kompetensi"
         ]
     },
     {
@@ -383,6 +378,13 @@ export default function EmployeeRating() {
                                             </div>
                                         ))}
                                     </RadioGroup>
+                                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                        <span>1 = Sangat Kurang</span>
+                                        <span>2 = Kurang</span>
+                                        <span>3 = Cukup</span>
+                                        <span>4 = Baik</span>
+                                        <span>5 = Sangat Baik</span>
+                                    </div>
                                 </div>
                             ))}
                         </CardContent>
