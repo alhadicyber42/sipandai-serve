@@ -209,8 +209,9 @@ export default function Profile() {
                       <Input {...form.register("email")} disabled className="bg-muted" />
                     </div>
                     <div className="space-y-2">
-                      <Label>NIP</Label>
-                      <Input {...form.register("nip")} />
+                      <Label>NIP / NIK</Label>
+                      <p className="text-xs text-muted-foreground -mt-1">ASN: NIP | Non-ASN: NIK</p>
+                      <Input {...form.register("nip")} placeholder="Masukkan NIP atau NIK" />
                     </div>
                     <div className="space-y-2">
                       <Label>No. Telepon</Label>
@@ -381,7 +382,7 @@ export default function Profile() {
                     <CardContent className="space-y-4">
                       <InfoItem label="Nama Lengkap" value={user.name} icon={<User className="h-4 w-4" />} />
                       <InfoItem label="Email" value={user.email} icon={<Mail className="h-4 w-4" />} />
-                      <InfoItem label="NIP" value={user.nip} icon={<IdCard className="h-4 w-4" />} />
+                      <InfoItem label="NIP / NIK" value={user.nip || "-"} icon={<IdCard className="h-4 w-4" />} />
                       <InfoItem label="No. Telepon" value={user.phone || "-"} icon={<Phone className="h-4 w-4" />} />
                     </CardContent>
                   </Card>
