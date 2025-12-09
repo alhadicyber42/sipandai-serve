@@ -15,6 +15,7 @@ import { WORK_UNITS } from "@/lib/constants";
 import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote } from "lucide-react";
 import confetti from "canvas-confetti";
 import { TestimonialCarousel, Testimonial } from "@/components/ui/testimonial-carousel";
+import { TestimonialSlideshow, TestimonialItem } from "@/components/TestimonialSlideshow";
 
 export default function EmployeeOfTheMonth() {
     const { user } = useAuth();
@@ -26,6 +27,8 @@ export default function EmployeeOfTheMonth() {
     const [activeTab, setActiveTab] = useState("employees");
     const [testimonialsASN, setTestimonialsASN] = useState<Testimonial[]>([]);
     const [testimonialsNonASN, setTestimonialsNonASN] = useState<Testimonial[]>([]);
+    const [slideshowTestimonialsASN, setSlideshowTestimonialsASN] = useState<TestimonialItem[]>([]);
+    const [slideshowTestimonialsNonASN, setSlideshowTestimonialsNonASN] = useState<TestimonialItem[]>([]);
     const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     const [ratedEmployeeIds, setRatedEmployeeIds] = useState<Set<string>>(new Set());
 
@@ -208,10 +211,16 @@ export default function EmployeeOfTheMonth() {
             setLeaderboard(leaderboardData);
 
             // Load testimonials for both ASN and Non ASN winners
-            const loadTestimonialsForWinner = async (winnerId: string, ratings: any[], setTestimonials: (data: Testimonial[]) => void) => {
+            const loadTestimonialsForWinner = async (
+                winnerId: string, 
+                ratings: any[], 
+                setTestimonials: (data: Testimonial[]) => void,
+                setSlideshowTestimonials: (data: TestimonialItem[]) => void
+            ) => {
                 const winnerRatings = ratings.filter((r: any) => r.rated_employee_id === winnerId && r.reason);
                 if (winnerRatings.length === 0) {
                     setTestimonials([]);
+                    setSlideshowTestimonials([]);
                     return;
                 }
 
@@ -237,7 +246,16 @@ export default function EmployeeOfTheMonth() {
                     results: r.criteria_totals ? Object.entries(r.criteria_totals).map(([key, value]: [string, any]) => `${key.replace('_', ' ')}: ${value}/25`).slice(0, 3) : undefined
                 }));
 
+                // Create slideshow testimonials with rater info
+                const slideshowData: TestimonialItem[] = winnerRatings.map((r: any, index: number) => ({
+                    id: index,
+                    raterName: raterMap[r.rater_id]?.name || "Rekan Kerja",
+                    raterAvatar: raterMap[r.rater_id]?.avatar_url,
+                    text: r.reason
+                }));
+
                 setTestimonials(testimonialData);
+                setSlideshowTestimonials(slideshowData);
             };
 
             // Get employee profiles to determine ASN status
@@ -256,10 +274,10 @@ export default function EmployeeOfTheMonth() {
             const nonAsnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId] === "Non ASN");
 
             if (asnLeaderboard.length > 0) {
-                await loadTestimonialsForWinner(asnLeaderboard[0].employeeId, ratings || [], setTestimonialsASN);
+                await loadTestimonialsForWinner(asnLeaderboard[0].employeeId, ratings || [], setTestimonialsASN, setSlideshowTestimonialsASN);
             }
             if (nonAsnLeaderboard.length > 0) {
-                await loadTestimonialsForWinner(nonAsnLeaderboard[0].employeeId, ratings || [], setTestimonialsNonASN);
+                await loadTestimonialsForWinner(nonAsnLeaderboard[0].employeeId, ratings || [], setTestimonialsNonASN, setSlideshowTestimonialsNonASN);
             }
         } catch (error) {
             console.error('Error loading leaderboard:', error);
@@ -459,13 +477,13 @@ export default function EmployeeOfTheMonth() {
                                             </div>
                                         </div>
                                     </div>
-                                    {testimonialsASN.length > 0 && (
-                                        <div className="mt-3 pt-3 border-t">
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                                                <Quote className="h-3 w-3" /> Kata Rekan Kerja
-                                            </p>
-                                            <p className="text-xs italic line-clamp-2">"{testimonialsASN[0]?.text}"</p>
-                                        </div>
+                                    {slideshowTestimonialsASN.length > 0 && (
+                                        <TestimonialSlideshow 
+                                            testimonials={slideshowTestimonialsASN}
+                                            variant="yellow"
+                                            autoPlay={true}
+                                            interval={5000}
+                                        />
                                     )}
                                 </CardContent>
                             </Card>
@@ -499,13 +517,13 @@ export default function EmployeeOfTheMonth() {
                                             </div>
                                         </div>
                                     </div>
-                                    {testimonialsNonASN.length > 0 && (
-                                        <div className="mt-3 pt-3 border-t">
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                                                <Quote className="h-3 w-3" /> Kata Rekan Kerja
-                                            </p>
-                                            <p className="text-xs italic line-clamp-2">"{testimonialsNonASN[0]?.text}"</p>
-                                        </div>
+                                    {slideshowTestimonialsNonASN.length > 0 && (
+                                        <TestimonialSlideshow 
+                                            testimonials={slideshowTestimonialsNonASN}
+                                            variant="emerald"
+                                            autoPlay={true}
+                                            interval={5000}
+                                        />
                                     )}
                                 </CardContent>
                             </Card>
