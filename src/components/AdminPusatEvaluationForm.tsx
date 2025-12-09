@@ -8,8 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
+import {
     Award, TrendingDown, TrendingUp, CheckCircle2, Star, Calculator, 
     Gavel, Clock, BarChart3, HandHeart, Crown, Building2, ArrowRight,
     AlertTriangle, Sparkles
@@ -197,8 +196,8 @@ export function AdminPusatEvaluationForm({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6">
-                <DialogHeader className="flex-shrink-0">
+            <DialogContent className="w-[95vw] max-w-3xl h-[90vh] sm:h-[85vh] flex flex-col p-0">
+                <DialogHeader className="flex-shrink-0 p-4 sm:p-6 pb-2 sm:pb-4">
                     <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                         <Crown className="h-5 w-5 text-purple-600" />
                         Penilaian Final Admin Pusat
@@ -210,8 +209,8 @@ export function AdminPusatEvaluationForm({
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 h-[60vh] sm:h-[65vh] -mx-4 sm:-mx-6 px-4 sm:px-6">
-                    <div className="space-y-4 sm:space-y-5 py-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6">
+                    <div className="space-y-4 sm:space-y-5 py-2 pb-4">
                         {/* Points Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {/* Peer Points */}
@@ -519,9 +518,9 @@ export function AdminPusatEvaluationForm({
                             </CardContent>
                         </Card>
                     </div>
-                </ScrollArea>
+                </div>
 
-                <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2 flex-col sm:flex-row">
+                <DialogFooter className="flex-shrink-0 p-4 sm:p-6 pt-4 border-t gap-2 flex-col sm:flex-row">
                     <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto">
                         Batal
                     </Button>
