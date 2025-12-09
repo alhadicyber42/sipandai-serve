@@ -510,8 +510,11 @@ export type Database = {
           phone: string | null
           retirement_date: string | null
           retirement_reminder_sent_at: string | null
+          riwayat_diklat: Json | null
           riwayat_jabatan: Json | null
           riwayat_mutasi: Json | null
+          riwayat_pendidikan: Json | null
+          riwayat_uji_kompetensi: Json | null
           role: Database["public"]["Enums"]["user_role"]
           status_perkawinan: string | null
           tanggal_lahir: string | null
@@ -545,8 +548,11 @@ export type Database = {
           phone?: string | null
           retirement_date?: string | null
           retirement_reminder_sent_at?: string | null
+          riwayat_diklat?: Json | null
           riwayat_jabatan?: Json | null
           riwayat_mutasi?: Json | null
+          riwayat_pendidikan?: Json | null
+          riwayat_uji_kompetensi?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           status_perkawinan?: string | null
           tanggal_lahir?: string | null
@@ -580,8 +586,11 @@ export type Database = {
           phone?: string | null
           retirement_date?: string | null
           retirement_reminder_sent_at?: string | null
+          riwayat_diklat?: Json | null
           riwayat_jabatan?: Json | null
           riwayat_mutasi?: Json | null
+          riwayat_pendidikan?: Json | null
+          riwayat_uji_kompetensi?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           status_perkawinan?: string | null
           tanggal_lahir?: string | null
