@@ -25,6 +25,28 @@ export interface DocumentItem {
   url: string;
 }
 
+export interface EducationHistory {
+  jenjang: string;
+  institusi: string;
+  jurusan: string;
+  tahun_lulus: string;
+}
+
+export interface DiklatHistory {
+  nama_diklat: string;
+  penyelenggara: string;
+  tahun: string;
+  sertifikat_url?: string;
+}
+
+export interface KompetensiHistory {
+  nama_uji: string;
+  penyelenggara: string;
+  tahun: string;
+  hasil: string;
+  sertifikat_url?: string;
+}
+
 export interface User extends Profile {
   id: string;
   email: string;
@@ -37,6 +59,12 @@ export interface User extends Profile {
   documents?: Record<string, string | string[] | DocumentItem | DocumentItem[]>;
   avatar_url?: string;
   kriteria_asn?: string;
+  tempat_lahir?: string;
+  tanggal_lahir?: string;
+  alamat_lengkap?: string;
+  riwayat_pendidikan?: EducationHistory[];
+  riwayat_diklat?: DiklatHistory[];
+  riwayat_uji_kompetensi?: KompetensiHistory[];
 }
 
 interface AuthContextType {
@@ -135,6 +163,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         documents: profile.documents as unknown as Record<string, string | string[] | DocumentItem | DocumentItem[]> | undefined,
         avatar_url: avatarUrl,
         kriteria_asn: profile.kriteria_asn,
+        tempat_lahir: profile.tempat_lahir,
+        tanggal_lahir: profile.tanggal_lahir,
+        alamat_lengkap: profile.alamat_lengkap,
+        riwayat_pendidikan: profile.riwayat_pendidikan as unknown as EducationHistory[] | undefined,
+        riwayat_diklat: profile.riwayat_diklat as unknown as DiklatHistory[] | undefined,
+        riwayat_uji_kompetensi: profile.riwayat_uji_kompetensi as unknown as KompetensiHistory[] | undefined,
       });
     }
   };
@@ -221,6 +255,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           documents: data.documents as any,
           avatar_url: data.avatar_url,
           kriteria_asn: data.kriteria_asn,
+          tempat_lahir: data.tempat_lahir,
+          tanggal_lahir: data.tanggal_lahir,
+          alamat_lengkap: data.alamat_lengkap,
+          riwayat_pendidikan: data.riwayat_pendidikan as any,
+          riwayat_diklat: data.riwayat_diklat as any,
+          riwayat_uji_kompetensi: data.riwayat_uji_kompetensi as any,
         })
         .eq('id', user.id);
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth, User as AuthUser, EmploymentHistory, MutationHistory } from "@/contexts/AuthContext";
+import { useAuth, User as AuthUser, EmploymentHistory, MutationHistory, EducationHistory, DiklatHistory, KompetensiHistory } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { Textarea } from "@/components/ui/textarea";
 import { WORK_UNITS, REQUIRED_DOCUMENTS } from "@/lib/constants";
-import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText, Search } from "lucide-react";
+import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText, Search, MapPin, GraduationCap, Award, ClipboardCheck } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -88,6 +89,21 @@ export default function Profile() {
   const { fields: mutasiFields, append: appendMutasi, remove: removeMutasi } = useFieldArray({
     control: form.control,
     name: "riwayat_mutasi",
+  });
+
+  const { fields: pendidikanFields, append: appendPendidikan, remove: removePendidikan } = useFieldArray({
+    control: form.control,
+    name: "riwayat_pendidikan",
+  });
+
+  const { fields: diklatFields, append: appendDiklat, remove: removeDiklat } = useFieldArray({
+    control: form.control,
+    name: "riwayat_diklat",
+  });
+
+  const { fields: kompetensiFields, append: appendKompetensi, remove: removeKompetensi } = useFieldArray({
+    control: form.control,
+    name: "riwayat_uji_kompetensi",
   });
 
   const handleSaveDocument = async (id: string, value: any) => {
@@ -199,23 +215,101 @@ export default function Profile() {
                   <CardHeader>
                     <CardTitle>Edit Informasi Pribadi</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nama Lengkap</Label>
-                      <Input {...form.register("name")} />
+                  <CardContent className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nama Lengkap</Label>
+                        <Input {...form.register("name")} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input {...form.register("email")} disabled className="bg-muted" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>NIP / NIK</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">ASN: NIP | Non-ASN: NIK</p>
+                        <Input {...form.register("nip")} placeholder="Masukkan NIP atau NIK" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>No. Telepon</Label>
+                        <Input {...form.register("phone")} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tempat Lahir</Label>
+                        <Input {...form.register("tempat_lahir")} placeholder="Contoh: Jakarta" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tanggal Lahir</Label>
+                        <Input type="date" {...form.register("tanggal_lahir")} />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Alamat Lengkap</Label>
+                        <Textarea {...form.register("alamat_lengkap")} placeholder="Masukkan alamat lengkap..." rows={3} />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input {...form.register("email")} disabled className="bg-muted" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>NIP / NIK</Label>
-                      <p className="text-xs text-muted-foreground -mt-1">ASN: NIP | Non-ASN: NIK</p>
-                      <Input {...form.register("nip")} placeholder="Masukkan NIP atau NIK" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>No. Telepon</Label>
-                      <Input {...form.register("phone")} />
+
+                    {/* Riwayat Pendidikan */}
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4" />
+                          Riwayat Pendidikan
+                        </Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendPendidikan({ jenjang: "", institusi: "", jurusan: "", tahun_lulus: "" })}>
+                          <Plus className="h-4 w-4 mr-2" /> Tambah
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {pendidikanFields.map((field, index) => (
+                          <div key={field.id} className="p-3 bg-muted/30 rounded-lg border space-y-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Jenjang</Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`riwayat_pendidikan.${index}.jenjang`}
+                                  render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Pilih" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="SD">SD</SelectItem>
+                                        <SelectItem value="SMP">SMP</SelectItem>
+                                        <SelectItem value="SMA/SMK">SMA/SMK</SelectItem>
+                                        <SelectItem value="D1">D1</SelectItem>
+                                        <SelectItem value="D2">D2</SelectItem>
+                                        <SelectItem value="D3">D3</SelectItem>
+                                        <SelectItem value="D4/S1">D4/S1</SelectItem>
+                                        <SelectItem value="S2">S2</SelectItem>
+                                        <SelectItem value="S3">S3</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Institusi</Label>
+                                <Input {...form.register(`riwayat_pendidikan.${index}.institusi`)} placeholder="Nama Sekolah/Universitas" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Jurusan</Label>
+                                <Input {...form.register(`riwayat_pendidikan.${index}.jurusan`)} placeholder="Jurusan/Prodi" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Tahun Lulus</Label>
+                                <Input {...form.register(`riwayat_pendidikan.${index}.tahun_lulus`)} placeholder="2020" />
+                              </div>
+                            </div>
+                            <div className="flex justify-end">
+                              <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removePendidikan(index)}>
+                                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {pendidikanFields.length === 0 && <p className="text-sm text-muted-foreground text-center italic">Belum ada riwayat pendidikan.</p>}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -356,6 +450,111 @@ export default function Profile() {
                         {mutasiFields.length === 0 && <p className="text-sm text-muted-foreground text-center italic">Belum ada riwayat mutasi.</p>}
                       </div>
                     </div>
+
+                    {/* Riwayat Diklat */}
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <Award className="h-4 w-4" />
+                          Riwayat Diklat
+                        </Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendDiklat({ nama_diklat: "", penyelenggara: "", tahun: "", sertifikat_url: "" })}>
+                          <Plus className="h-4 w-4 mr-2" /> Tambah
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {diklatFields.map((field, index) => (
+                          <div key={field.id} className="p-3 bg-muted/30 rounded-lg border space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Nama Diklat</Label>
+                                <Input {...form.register(`riwayat_diklat.${index}.nama_diklat`)} placeholder="Nama Diklat/Pelatihan" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Penyelenggara</Label>
+                                <Input {...form.register(`riwayat_diklat.${index}.penyelenggara`)} placeholder="Lembaga Penyelenggara" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Tahun</Label>
+                                <Input {...form.register(`riwayat_diklat.${index}.tahun`)} placeholder="2023" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Link Sertifikat (Opsional)</Label>
+                              <Input {...form.register(`riwayat_diklat.${index}.sertifikat_url`)} placeholder="https://..." />
+                            </div>
+                            <div className="flex justify-end">
+                              <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeDiklat(index)}>
+                                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {diklatFields.length === 0 && <p className="text-sm text-muted-foreground text-center italic">Belum ada riwayat diklat.</p>}
+                      </div>
+                    </div>
+
+                    {/* Riwayat Uji Kompetensi */}
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <ClipboardCheck className="h-4 w-4" />
+                          Riwayat Uji Kompetensi
+                        </Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendKompetensi({ nama_uji: "", penyelenggara: "", tahun: "", hasil: "", sertifikat_url: "" })}>
+                          <Plus className="h-4 w-4 mr-2" /> Tambah
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {kompetensiFields.map((field, index) => (
+                          <div key={field.id} className="p-3 bg-muted/30 rounded-lg border space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Nama Uji Kompetensi</Label>
+                                <Input {...form.register(`riwayat_uji_kompetensi.${index}.nama_uji`)} placeholder="Nama Uji Kompetensi" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Penyelenggara</Label>
+                                <Input {...form.register(`riwayat_uji_kompetensi.${index}.penyelenggara`)} placeholder="Lembaga Penyelenggara" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Tahun</Label>
+                                <Input {...form.register(`riwayat_uji_kompetensi.${index}.tahun`)} placeholder="2023" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Hasil</Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`riwayat_uji_kompetensi.${index}.hasil`}
+                                  render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Pilih" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Lulus">Lulus</SelectItem>
+                                        <SelectItem value="Tidak Lulus">Tidak Lulus</SelectItem>
+                                        <SelectItem value="Dalam Proses">Dalam Proses</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Link Sertifikat (Opsional)</Label>
+                              <Input {...form.register(`riwayat_uji_kompetensi.${index}.sertifikat_url`)} placeholder="https://..." />
+                            </div>
+                            <div className="flex justify-end">
+                              <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeKompetensi(index)}>
+                                <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {kompetensiFields.length === 0 && <p className="text-sm text-muted-foreground text-center italic">Belum ada riwayat uji kompetensi.</p>}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -384,6 +583,16 @@ export default function Profile() {
                       <InfoItem label="Email" value={user.email} icon={<Mail className="h-4 w-4" />} />
                       <InfoItem label="NIP / NIK" value={user.nip || "-"} icon={<IdCard className="h-4 w-4" />} />
                       <InfoItem label="No. Telepon" value={user.phone || "-"} icon={<Phone className="h-4 w-4" />} />
+                      <InfoItem 
+                        label="Tempat, Tanggal Lahir" 
+                        value={
+                          user.tempat_lahir || user.tanggal_lahir 
+                            ? `${user.tempat_lahir || "-"}, ${user.tanggal_lahir ? format(new Date(user.tanggal_lahir), "dd MMMM yyyy") : "-"}`
+                            : "-"
+                        } 
+                        icon={<Calendar className="h-4 w-4" />} 
+                      />
+                      <InfoItem label="Alamat" value={user.alamat_lengkap || "-"} icon={<MapPin className="h-4 w-4" />} />
                     </CardContent>
                   </Card>
 
@@ -406,6 +615,33 @@ export default function Profile() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Riwayat Pendidikan */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      Riwayat Pendidikan
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {user.riwayat_pendidikan && user.riwayat_pendidikan.length > 0 ? (
+                      <div className="relative border-l-2 border-primary/20 ml-3 space-y-6 py-2">
+                        {user.riwayat_pendidikan.map((item, idx) => (
+                          <div key={idx} className="relative pl-8">
+                            <div className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-primary border-4 border-background"></div>
+                            <h4 className="font-semibold text-lg">{item.jenjang} - {item.institusi}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {item.jurusan && `${item.jurusan} • `}Lulus {item.tahun_lulus || "-"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">Belum ada riwayat pendidikan.</p>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card className="h-full">
@@ -460,6 +696,70 @@ export default function Profile() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Riwayat Diklat */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" />
+                      Riwayat Diklat
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {user.riwayat_diklat && user.riwayat_diklat.length > 0 ? (
+                      <div className="relative border-l-2 border-primary/20 ml-3 space-y-6 py-2">
+                        {user.riwayat_diklat.map((item, idx) => (
+                          <div key={idx} className="relative pl-8">
+                            <div className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-primary border-4 border-background"></div>
+                            <h4 className="font-semibold text-lg">{item.nama_diklat}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {item.penyelenggara} • {item.tahun}
+                            </p>
+                            {item.sertifikat_url && (
+                              <a href={item.sertifikat_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                Lihat Sertifikat
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">Belum ada riwayat diklat.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Riwayat Uji Kompetensi */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ClipboardCheck className="h-5 w-5 text-primary" />
+                      Riwayat Uji Kompetensi
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {user.riwayat_uji_kompetensi && user.riwayat_uji_kompetensi.length > 0 ? (
+                      <div className="relative border-l-2 border-primary/20 ml-3 space-y-6 py-2">
+                        {user.riwayat_uji_kompetensi.map((item, idx) => (
+                          <div key={idx} className="relative pl-8">
+                            <div className="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-primary border-4 border-background"></div>
+                            <h4 className="font-semibold text-lg">{item.nama_uji}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {item.penyelenggara} • {item.tahun} • <span className={item.hasil === "Lulus" ? "text-green-600" : item.hasil === "Tidak Lulus" ? "text-red-600" : "text-yellow-600"}>{item.hasil}</span>
+                            </p>
+                            {item.sertifikat_url && (
+                              <a href={item.sertifikat_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                Lihat Sertifikat
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">Belum ada riwayat uji kompetensi.</p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
           </TabsContent>
