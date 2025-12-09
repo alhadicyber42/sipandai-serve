@@ -434,7 +434,7 @@ export default function AdminEmployeeRatings() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {isAdminUnit && (
+                            {(isAdminUnit || isAdminPusat) && (
                                 <Select value={evaluationFilter} onValueChange={setEvaluationFilter}>
                                     <SelectTrigger className="w-full md:w-[200px]">
                                         <SelectValue placeholder="Status Evaluasi" />
@@ -540,6 +540,137 @@ export default function AdminEmployeeRatings() {
                                                             <ClipboardCheck className="h-4 w-4 md:mr-2" />
                                                             <span className="hidden md:inline">
                                                                 {item.hasUnitEvaluation ? "Edit Evaluasi" : "Evaluasi"}
+                                                            </span>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Admin Pusat: Final Evaluation Table */}
+                {isAdminPusat && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Crown className="h-5 w-5 text-purple-600" />
+                                Penilaian Final ({filteredAggregatedRatings.length})
+                            </CardTitle>
+                            <CardDescription>
+                                Berikan penilaian final untuk menentukan Employee of The Month
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="pl-4">Pegawai</TableHead>
+                                            <TableHead className="hidden lg:table-cell">Unit Kerja</TableHead>
+                                            <TableHead className="hidden md:table-cell">Periode</TableHead>
+                                            <TableHead className="text-center">Poin Rekan</TableHead>
+                                            <TableHead className="text-center hidden sm:table-cell">Poin Unit</TableHead>
+                                            <TableHead className="text-center hidden sm:table-cell">Poin Final</TableHead>
+                                            <TableHead className="text-center">Status</TableHead>
+                                            <TableHead className="text-right pr-4">Aksi</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredAggregatedRatings.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                                    Belum ada penilaian
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            filteredAggregatedRatings.map((item) => (
+                                                <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
+                                                    <TableCell className="pl-4">
+                                                        <div className="font-medium">{item.employeeName}</div>
+                                                        <div className="lg:hidden text-xs text-muted-foreground mt-1">
+                                                            {item.employeeWorkUnit || 'Unit tidak diketahui'}
+                                                        </div>
+                                                        <div className="md:hidden text-xs text-muted-foreground">
+                                                            {formatPeriod(item.ratingPeriod)}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden lg:table-cell">
+                                                        <Badge variant="outline" className="text-xs">
+                                                            <Building2 className="h-3 w-3 mr-1" />
+                                                            {item.employeeWorkUnit || '-'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <Badge variant="outline">
+                                                            <Calendar className="h-3 w-3 mr-1" />
+                                                            {formatPeriod(item.ratingPeriod)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                            <span className="font-bold text-yellow-600">
+                                                                {item.totalPoints}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center hidden sm:table-cell">
+                                                        {item.hasUnitEvaluation && item.unitEvaluation ? (
+                                                            <div className="flex items-center justify-center gap-1">
+                                                                <Star className="h-4 w-4 fill-blue-500 text-blue-500" />
+                                                                <span className="font-bold text-blue-600">
+                                                                    {item.unitEvaluation.final_total_points}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center hidden sm:table-cell">
+                                                        {item.hasFinalEvaluation && item.finalEvaluation ? (
+                                                            <div className="flex items-center justify-center gap-1">
+                                                                <Crown className="h-4 w-4 text-purple-500" />
+                                                                <span className={`font-bold ${item.finalEvaluation.final_total_points >= item.totalPoints ? 'text-purple-600' : 'text-orange-600'}`}>
+                                                                    {item.finalEvaluation.final_total_points}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {item.hasFinalEvaluation ? (
+                                                            <Badge variant="outline" className="border-purple-500 text-purple-600">
+                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                <span className="hidden sm:inline">Final</span>
+                                                            </Badge>
+                                                        ) : item.hasUnitEvaluation ? (
+                                                            <Badge variant="outline" className="border-blue-500 text-blue-600">
+                                                                <Building2 className="h-3 w-3 mr-1" />
+                                                                <span className="hidden sm:inline">Unit</span>
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="border-orange-500 text-orange-600">
+                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                                <span className="hidden sm:inline">Belum</span>
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right pr-4">
+                                                        <Button
+                                                            variant={item.hasFinalEvaluation ? "outline" : "default"}
+                                                            size="sm"
+                                                            onClick={() => handleOpenFinalEvaluationForm(item)}
+                                                            className={`h-8 px-3 ${!item.hasFinalEvaluation ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                                                        >
+                                                            <Crown className="h-4 w-4 md:mr-2" />
+                                                            <span className="hidden md:inline">
+                                                                {item.hasFinalEvaluation ? "Edit Final" : "Nilai Final"}
                                                             </span>
                                                         </Button>
                                                     </TableCell>
