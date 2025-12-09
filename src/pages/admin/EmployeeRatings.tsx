@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
+import { AdminPusatEvaluationForm } from "@/components/AdminPusatEvaluationForm";
+import { WORK_UNITS } from "@/lib/constants";
 
 interface Rating {
     id: string;
@@ -19,6 +21,7 @@ interface Rating {
     rater_name: string;
     rated_employee_id: string;
     rated_employee_name: string;
+    rated_employee_work_unit?: string;
     rating_period: string;
     reason: string;
     detailed_ratings: Record<string, Record<number, number>>;
@@ -31,11 +34,15 @@ interface Rating {
 interface AggregatedRating {
     employeeId: string;
     employeeName: string;
+    employeeWorkUnit?: string;
+    employeeWorkUnitId?: number;
     ratingPeriod: string;
     totalPoints: number;
     ratingCount: number;
-    hasEvaluation: boolean;
-    evaluation?: any;
+    hasUnitEvaluation: boolean;
+    unitEvaluation?: any;
+    hasFinalEvaluation: boolean;
+    finalEvaluation?: any;
 }
 
 export default function AdminEmployeeRatings() {
@@ -45,15 +52,20 @@ export default function AdminEmployeeRatings() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
     const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
-    const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, employeeName: string, totalPoints: number, ratingCount: number, finalPoints?: number, hasEvaluation?: boolean }>>([]);
+    const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, employeeName: string, totalPoints: number, ratingCount: number, finalPoints?: number, hasEvaluation?: boolean, hasFinalEvaluation?: boolean }>>([]);
     const [unitEmployeeIds, setUnitEmployeeIds] = useState<string[]>([]);
-    const [evaluations, setEvaluations] = useState<any[]>([]);
+    const [unitEvaluations, setUnitEvaluations] = useState<any[]>([]);
+    const [finalEvaluations, setFinalEvaluations] = useState<any[]>([]);
     const [aggregatedRatings, setAggregatedRatings] = useState<AggregatedRating[]>([]);
     const [evaluationFilter, setEvaluationFilter] = useState<string>("all");
     
-    // Evaluation form state
+    // Evaluation form state for admin_unit
     const [isEvaluationFormOpen, setIsEvaluationFormOpen] = useState(false);
     const [selectedEmployeeForEval, setSelectedEmployeeForEval] = useState<AggregatedRating | null>(null);
+    
+    // Evaluation form state for admin_pusat
+    const [isFinalEvaluationFormOpen, setIsFinalEvaluationFormOpen] = useState(false);
+    const [selectedEmployeeForFinalEval, setSelectedEmployeeForFinalEval] = useState<AggregatedRating | null>(null);
 
     useEffect(() => {
         loadData();
@@ -62,7 +74,7 @@ export default function AdminEmployeeRatings() {
     useEffect(() => {
         calculateLeaderboard();
         calculateAggregatedRatings();
-    }, [ratings, selectedPeriod, evaluations]);
+    }, [ratings, selectedPeriod, unitEvaluations, finalEvaluations]);
 
     const loadData = async () => {
         // Load employees from Supabase
@@ -103,13 +115,15 @@ export default function AdminEmployeeRatings() {
             return;
         }
 
-        // Enrich ratings with employee names
+        // Enrich ratings with employee names and work unit
         const enrichedRatings = (ratingsData || []).map((rating: any) => {
             const ratedEmployee = employeeData?.find(e => e.id === rating.rated_employee_id);
             const rater = employeeData?.find(e => e.id === rating.rater_id);
+            const workUnit = WORK_UNITS.find(u => u.id === ratedEmployee?.work_unit_id);
             return {
                 ...rating,
                 rated_employee_name: ratedEmployee?.name || "Unknown",
+                rated_employee_work_unit: workUnit?.name,
                 rater_name: rater?.name || "Unknown",
             };
         });
@@ -117,11 +131,18 @@ export default function AdminEmployeeRatings() {
         setRatings(enrichedRatings);
 
         // Load admin unit evaluations
-        const { data: evalData } = await supabase
+        const { data: unitEvalData } = await supabase
             .from("admin_unit_evaluations")
             .select("*");
         
-        setEvaluations(evalData || []);
+        setUnitEvaluations(unitEvalData || []);
+
+        // Load admin pusat final evaluations
+        const { data: finalEvalData } = await supabase
+            .from("admin_pusat_evaluations")
+            .select("*");
+        
+        setFinalEvaluations(finalEvalData || []);
     };
 
     const calculateAggregatedRatings = () => {
@@ -135,17 +156,27 @@ export default function AdminEmployeeRatings() {
         periodRatings.forEach((rating) => {
             const key = `${rating.rated_employee_id}-${rating.rating_period}`;
             if (!aggregated[key]) {
-                const evaluation = evaluations.find(
+                const unitEvaluation = unitEvaluations.find(
                     e => e.rated_employee_id === rating.rated_employee_id && e.rating_period === rating.rating_period
                 );
+                const finalEvaluation = finalEvaluations.find(
+                    e => e.rated_employee_id === rating.rated_employee_id && e.rating_period === rating.rating_period
+                );
+                const employee = employees.find(e => e.id === rating.rated_employee_id);
+                const workUnit = WORK_UNITS.find(u => u.id === employee?.work_unit_id);
+                
                 aggregated[key] = {
                     employeeId: rating.rated_employee_id,
                     employeeName: rating.rated_employee_name,
+                    employeeWorkUnit: workUnit?.name,
+                    employeeWorkUnitId: employee?.work_unit_id,
                     ratingPeriod: rating.rating_period,
                     totalPoints: 0,
                     ratingCount: 0,
-                    hasEvaluation: !!evaluation,
-                    evaluation
+                    hasUnitEvaluation: !!unitEvaluation,
+                    unitEvaluation,
+                    hasFinalEvaluation: !!finalEvaluation,
+                    finalEvaluation
                 };
             }
             aggregated[key].totalPoints += rating.total_points || 0;
@@ -176,20 +207,33 @@ export default function AdminEmployeeRatings() {
             pointsByEmployee[employeeId].count += 1;
         });
 
-        // Apply evaluation adjustments
+        // Apply evaluation adjustments - prioritize final evaluation, then unit evaluation
         const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => {
-            const evaluation = evaluations.find(
+            const unitEvaluation = unitEvaluations.find(
                 e => e.rated_employee_id === employeeId && 
                 (selectedPeriod === "all" || e.rating_period === selectedPeriod)
             );
+            const finalEvaluation = finalEvaluations.find(
+                e => e.rated_employee_id === employeeId && 
+                (selectedPeriod === "all" || e.rating_period === selectedPeriod)
+            );
+            
+            // Priority: final evaluation > unit evaluation > raw points
+            let finalPoints = data.totalPoints;
+            if (finalEvaluation) {
+                finalPoints = finalEvaluation.final_total_points;
+            } else if (unitEvaluation) {
+                finalPoints = unitEvaluation.final_total_points;
+            }
             
             return {
                 employeeId,
                 employeeName: data.name,
                 totalPoints: data.totalPoints,
                 ratingCount: data.count,
-                finalPoints: evaluation ? evaluation.final_total_points : data.totalPoints,
-                hasEvaluation: !!evaluation
+                finalPoints,
+                hasEvaluation: !!unitEvaluation,
+                hasFinalEvaluation: !!finalEvaluation
             };
         }).sort((a, b) => (b.finalPoints || b.totalPoints) - (a.finalPoints || a.totalPoints));
 
@@ -210,9 +254,13 @@ export default function AdminEmployeeRatings() {
 
     const filteredAggregatedRatings = aggregatedRatings.filter(item => {
         const matchesSearch = item.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+        const isAdminPusat = user?.role === "admin_pusat";
+        
+        // For admin_unit, filter by unit evaluation status
+        // For admin_pusat, filter by final evaluation status
         const matchesEvaluation = evaluationFilter === "all" ||
-            (evaluationFilter === "evaluated" && item.hasEvaluation) ||
-            (evaluationFilter === "not_evaluated" && !item.hasEvaluation);
+            (evaluationFilter === "evaluated" && (isAdminPusat ? item.hasFinalEvaluation : item.hasUnitEvaluation)) ||
+            (evaluationFilter === "not_evaluated" && (isAdminPusat ? !item.hasFinalEvaluation : !item.hasUnitEvaluation));
         return matchesSearch && matchesEvaluation;
     });
 
@@ -231,7 +279,13 @@ export default function AdminEmployeeRatings() {
         loadData();
     };
 
+    const handleOpenFinalEvaluationForm = (item: AggregatedRating) => {
+        setSelectedEmployeeForFinalEval(item);
+        setIsFinalEvaluationFormOpen(true);
+    };
+
     const isAdminUnit = user?.role === "admin_unit";
+    const isAdminPusat = user?.role === "admin_pusat";
 
     return (
         <DashboardLayout>
@@ -252,6 +306,8 @@ export default function AdminEmployeeRatings() {
                             <p className="text-white/90 mt-1 text-sm md:text-base">
                                 {isAdminUnit 
                                     ? "Lihat dan berikan evaluasi lanjutan untuk pegawai terbaik di unit Anda"
+                                    : isAdminPusat
+                                    ? "Berikan penilaian final untuk menentukan Employee of The Month"
                                     : "Lihat semua penilaian dan leaderboard pegawai terbaik"
                                 }
                             </p>
@@ -281,7 +337,27 @@ export default function AdminEmployeeRatings() {
                     </Card>
                 )}
 
-                {/* Leaderboard */}
+                {/* Info Badge for Admin Pusat */}
+                {isAdminPusat && (
+                    <Card className="bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800">
+                        <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                                    <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
+                                        Penilaian Final Admin Pusat
+                                    </h3>
+                                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                                        Sebagai Admin Pusat, Anda dapat memberikan <strong>penilaian final</strong> dengan mengadjust semua kriteria 
+                                        dan menambahkan penyesuaian khusus untuk menentukan pemenang Employee of The Month.
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
                 {leaderboard.length > 0 && (
                     <Card className="bg-gradient-to-br from-yellow-50 to-white dark:from-yellow-950/30 dark:to-background border-yellow-200 dark:border-yellow-800">
                         <CardHeader>
@@ -430,11 +506,11 @@ export default function AdminEmployeeRatings() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center hidden sm:table-cell">
-                                                        {item.hasEvaluation && item.evaluation ? (
+                                                        {item.hasUnitEvaluation && item.unitEvaluation ? (
                                                             <div className="flex items-center justify-center gap-1">
                                                                 <Star className="h-4 w-4 fill-green-500 text-green-500" />
-                                                                <span className={`font-bold ${item.evaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
-                                                                    {item.evaluation.final_total_points}
+                                                                <span className={`font-bold ${item.unitEvaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
+                                                                    {item.unitEvaluation.final_total_points}
                                                                 </span>
                                                             </div>
                                                         ) : (
@@ -442,7 +518,7 @@ export default function AdminEmployeeRatings() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-center">
-                                                        {item.hasEvaluation ? (
+                                                        {item.hasUnitEvaluation ? (
                                                             <Badge variant="outline" className="border-green-500 text-green-600">
                                                                 <CheckCircle2 className="h-3 w-3 mr-1" />
                                                                 <span className="hidden sm:inline">Sudah</span>
@@ -456,14 +532,14 @@ export default function AdminEmployeeRatings() {
                                                     </TableCell>
                                                     <TableCell className="text-right pr-4">
                                                         <Button
-                                                            variant={item.hasEvaluation ? "outline" : "default"}
+                                                            variant={item.hasUnitEvaluation ? "outline" : "default"}
                                                             size="sm"
                                                             onClick={() => handleOpenEvaluationForm(item)}
                                                             className="h-8 px-3"
                                                         >
                                                             <ClipboardCheck className="h-4 w-4 md:mr-2" />
                                                             <span className="hidden md:inline">
-                                                                {item.hasEvaluation ? "Edit Evaluasi" : "Evaluasi"}
+                                                                {item.hasUnitEvaluation ? "Edit Evaluasi" : "Evaluasi"}
                                                             </span>
                                                         </Button>
                                                     </TableCell>
@@ -632,7 +708,26 @@ export default function AdminEmployeeRatings() {
                     originalTotalPoints={selectedEmployeeForEval.totalPoints}
                     workUnitId={user.work_unit_id!}
                     evaluatorId={user.id}
-                    existingEvaluation={selectedEmployeeForEval.evaluation}
+                    existingEvaluation={selectedEmployeeForEval.unitEvaluation}
+                    onSuccess={handleEvaluationSuccess}
+                />
+            )}
+
+            {selectedEmployeeForFinalEval && user && (
+                <AdminPusatEvaluationForm
+                    isOpen={isFinalEvaluationFormOpen}
+                    onClose={() => {
+                        setIsFinalEvaluationFormOpen(false);
+                        setSelectedEmployeeForFinalEval(null);
+                    }}
+                    employeeId={selectedEmployeeForFinalEval.employeeId}
+                    employeeName={selectedEmployeeForFinalEval.employeeName}
+                    employeeWorkUnit={selectedEmployeeForFinalEval.employeeWorkUnit}
+                    ratingPeriod={selectedEmployeeForFinalEval.ratingPeriod}
+                    peerTotalPoints={selectedEmployeeForFinalEval.totalPoints}
+                    adminUnitEvaluation={selectedEmployeeForFinalEval.unitEvaluation}
+                    evaluatorId={user.id}
+                    existingEvaluation={selectedEmployeeForFinalEval.finalEvaluation}
                     onSuccess={handleEvaluationSuccess}
                 />
             )}
