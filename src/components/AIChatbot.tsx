@@ -1,50 +1,116 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, Send, X, Bot, User, Loader2, Minimize2, Maximize2 } from 'lucide-react';
+import { MessageCircle, Send, X, Bot, User, Loader2, Minimize2, Maximize2, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
+  timestamp: string;
   foundInDatabase?: boolean;
 }
+
+const STORAGE_KEY = 'sipandai_chat_history';
+const MAX_MESSAGES = 50; // Limit stored messages to prevent localStorage overflow
+
+// Helper functions for localStorage
+const loadChatHistory = (): Message[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Validate and return messages
+      if (Array.isArray(parsed)) {
+        return parsed.slice(-MAX_MESSAGES);
+      }
+    }
+  } catch (error) {
+    console.error('Error loading chat history:', error);
+  }
+  return [];
+};
+
+const saveChatHistory = (messages: Message[]) => {
+  try {
+    // Keep only last MAX_MESSAGES to prevent localStorage overflow
+    const messagesToSave = messages.slice(-MAX_MESSAGES);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messagesToSave));
+  } catch (error) {
+    console.error('Error saving chat history:', error);
+  }
+};
+
+const clearChatHistory = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('Error clearing chat history:', error);
+  }
+};
+
+const getWelcomeMessage = (): Message => ({
+  id: 'welcome',
+  role: 'assistant',
+  content: 'Halo! 👋 Saya adalah asisten AI SIPANDAI. Saya siap membantu Anda memahami cara menggunakan aplikasi, prosedur pengajuan layanan, dan menjawab pertanyaan seputar kepegawaian.\n\nApa yang bisa saya bantu hari ini?',
+  timestamp: new Date().toISOString(),
+});
 
 export const AIChatbot = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Halo! 👋 Saya adalah asisten AI SIPANDAI. Saya siap membantu Anda memahami cara menggunakan aplikasi, prosedur pengajuan layanan, dan menjawab pertanyaan seputar kepegawaian.\n\nApa yang bisa saya bantu hari ini?',
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Load chat history on mount
+  useEffect(() => {
+    const history = loadChatHistory();
+    if (history.length > 0) {
+      setMessages(history);
+    } else {
+      setMessages([getWelcomeMessage()]);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (isInitialized && messages.length > 0) {
+      saveChatHistory(messages);
+    }
+  }, [messages, isInitialized]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Focus input when chat opens
   useEffect(() => {
     if (isOpen && !isMinimized && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen, isMinimized]);
+
+  const handleClearHistory = useCallback(() => {
+    clearChatHistory();
+    setMessages([getWelcomeMessage()]);
+    toast.success('Riwayat chat berhasil dihapus');
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -53,7 +119,7 @@ export const AIChatbot = () => {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -61,7 +127,7 @@ export const AIChatbot = () => {
     setIsLoading(true);
 
     try {
-      // Prepare conversation history for context
+      // Prepare conversation history for context (last 10 messages for AI context)
       const conversationHistory = messages.slice(-10).map(msg => ({
         role: msg.role,
         content: msg.content
@@ -81,7 +147,7 @@ export const AIChatbot = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: data.response || 'Maaf, saya tidak dapat memproses pertanyaan Anda.',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         foundInDatabase: data.foundInDatabase,
       };
 
@@ -93,7 +159,7 @@ export const AIChatbot = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: 'Maaf, terjadi kesalahan saat memproses pertanyaan Anda. Silakan coba lagi dalam beberapa saat.',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, errorMessage]);
@@ -116,6 +182,14 @@ export const AIChatbot = () => {
         {index < content.split('\n').length - 1 && <br />}
       </span>
     ));
+  };
+
+  const formatTime = (timestamp: string) => {
+    try {
+      return new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
   };
 
   if (!isOpen) {
@@ -151,6 +225,17 @@ export const AIChatbot = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {!isMinimized && messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+              onClick={handleClearHistory}
+              title="Hapus riwayat chat"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -212,7 +297,7 @@ export const AIChatbot = () => {
                         "text-[10px] mt-1 opacity-60",
                         message.role === 'user' ? "text-right" : "text-left"
                       )}>
-                        {message.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        {formatTime(message.timestamp)}
                       </div>
                     </div>
                   </div>
