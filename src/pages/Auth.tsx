@@ -421,12 +421,17 @@ const validateStep = async (step: number): Promise<boolean> => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-nip" className="text-xs md:text-sm font-semibold">NIP</Label>
+                  <Label htmlFor="register-nip" className="text-xs md:text-sm font-semibold">
+                    NIP / NIK
+                  </Label>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    ASN: isi dengan NIP | Non-ASN: isi dengan NIK
+                  </p>
                   <div className="relative group">
                     <IdCard className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-nip"
-                      placeholder="Nomor Induk Pegawai"
+                      placeholder="Masukkan NIP atau NIK Anda"
                       className="pl-8 md:pl-9 h-9 md:h-10 text-sm border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("nip")}
                     />
