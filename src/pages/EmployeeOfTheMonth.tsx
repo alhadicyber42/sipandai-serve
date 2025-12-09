@@ -27,12 +27,14 @@ export default function EmployeeOfTheMonth() {
     const [testimonialsASN, setTestimonialsASN] = useState<Testimonial[]>([]);
     const [testimonialsNonASN, setTestimonialsNonASN] = useState<Testimonial[]>([]);
     const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
+    const [ratedEmployeeIds, setRatedEmployeeIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadEmployees();
         loadLeaderboard();
         loadYearlyLeaderboard();
-    }, []);
+        loadMyRatings();
+    }, [user]);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
@@ -98,6 +100,23 @@ export default function EmployeeOfTheMonth() {
             setEmployees(data || []);
         }
         setIsLoading(false);
+    };
+
+    const loadMyRatings = async () => {
+        if (!user) return;
+        
+        const now = new Date();
+        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        const { data: myRatings } = await supabase
+            .from("employee_ratings")
+            .select("rated_employee_id")
+            .eq("rater_id", user.id)
+            .eq("rating_period", currentPeriod);
+
+        if (myRatings) {
+            setRatedEmployeeIds(new Set(myRatings.map(r => r.rated_employee_id)));
+        }
     };
 
     const loadLeaderboard = async () => {
@@ -607,15 +626,25 @@ export default function EmployeeOfTheMonth() {
                                                                             </Badge>
                                                                         </TableCell>
                                                                         <TableCell className="text-right">
-                                                                            <Button
-                                                                                size="sm"
-                                                                                onClick={() => navigate(`/employee-of-the-month/rate/${employee.id}`)}
-                                                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-8 px-3"
-                                                                            >
-                                                                                <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                                                                                <span className="hidden sm:inline">Nilai Pegawai</span>
-                                                                                <span className="sm:hidden">Nilai</span>
-                                                                            </Button>
+                                                                            {ratedEmployeeIds.has(employee.id) ? (
+                                                                                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                                    ✓ Sudah Dinilai
+                                                                                </Badge>
+                                                                            ) : employee.id === user?.id ? (
+                                                                                <Badge variant="outline" className="text-muted-foreground">
+                                                                                    Anda sendiri
+                                                                                </Badge>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    onClick={() => navigate(`/employee-of-the-month/rate/${employee.id}`)}
+                                                                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-8 px-3"
+                                                                                >
+                                                                                    <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                                                                    <span className="hidden sm:inline">Nilai Pegawai</span>
+                                                                                    <span className="sm:hidden">Nilai</span>
+                                                                                </Button>
+                                                                            )}
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 ))
