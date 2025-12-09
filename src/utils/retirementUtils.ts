@@ -59,11 +59,11 @@ export const formatDateIndonesian = (date: Date): string => {
  * Generate WhatsApp message template for retirement reminder
  */
 export const formatRetirementWhatsAppMessage = (employee: Profile, workUnitName: string): string => {
-    if (!employee.retirement_date) {
+    if (!employee.tmt_pensiun) {
         return '';
     }
 
-    const retirementDate = new Date(employee.retirement_date);
+    const retirementDate = new Date(employee.tmt_pensiun);
     const formattedDate = formatDateIndonesian(retirementDate);
     const monthsUntil = getMonthsUntilRetirement(retirementDate);
 
@@ -88,11 +88,11 @@ ${workUnitName}`;
  * Generate email subject for retirement reminder
  */
 export const getRetirementEmailSubject = (employee: Profile): string => {
-    if (!employee.retirement_date) {
+    if (!employee.tmt_pensiun) {
         return 'Pengingat Masa Pensiun';
     }
 
-    const monthsUntil = getMonthsUntilRetirement(new Date(employee.retirement_date));
+    const monthsUntil = getMonthsUntilRetirement(new Date(employee.tmt_pensiun));
     return `Pengingat: Masa Pensiun Anda ${monthsUntil} Bulan Lagi`;
 };
 
@@ -100,11 +100,11 @@ export const getRetirementEmailSubject = (employee: Profile): string => {
  * Generate email body for retirement reminder
  */
 export const formatRetirementEmailBody = (employee: Profile, workUnitName: string): string => {
-    if (!employee.retirement_date) {
+    if (!employee.tmt_pensiun) {
         return '';
     }
 
-    const retirementDate = new Date(employee.retirement_date);
+    const retirementDate = new Date(employee.tmt_pensiun);
     const formattedDate = formatDateIndonesian(retirementDate);
     const monthsUntil = getMonthsUntilRetirement(retirementDate);
 

@@ -19,8 +19,7 @@ import {
     getDaysUntilRetirement,
     formatRetirementWhatsAppMessage,
     getRetirementStatusColor,
-    getRetirementStatusText,
-    isApproachingRetirement
+    getRetirementStatusText
 } from "@/utils/retirementUtils";
 
 type Profile = Tables<"profiles">;
@@ -79,9 +78,8 @@ const RetirementReminders = () => {
         *,
         work_units (*)
       `)
-            .eq("role", "user_unit")
-            .not("retirement_date", "is", null)
-            .order("retirement_date", { ascending: true });
+            .not("tmt_pensiun", "is", null)
+            .order("tmt_pensiun", { ascending: true });
 
         // Filter by work unit for admin_unit
         if (user.role === "admin_unit") {
@@ -95,10 +93,13 @@ const RetirementReminders = () => {
             return;
         }
 
-        // Filter employees approaching retirement (6-12 months)
+        // Filter employees approaching retirement (within 12 months)
         const approachingRetirement = (data || []).filter(emp => {
-            if (!emp.retirement_date) return false;
-            return isApproachingRetirement(new Date(emp.retirement_date));
+            if (!emp.tmt_pensiun) return false;
+            const retirementDate = new Date(emp.tmt_pensiun);
+            const monthsUntil = getMonthsUntilRetirement(retirementDate);
+            // Show employees retiring within 12 months from now
+            return monthsUntil >= 0 && monthsUntil <= 12;
         });
 
         setEmployees(approachingRetirement);
@@ -139,32 +140,35 @@ const RetirementReminders = () => {
             return;
         }
 
+        if (!employee.tmt_pensiun) {
+            toast.error("Tanggal pensiun pegawai tidak tersedia");
+            return;
+        }
+
         setSendingEmail(true);
         try {
-            // Log reminder in database
-            const { error: logError } = await supabase
-                .from("retirement_reminders")
-                .insert({
-                    user_id: employee.id,
-                    reminder_type: "email",
-                    sender_id: user!.id,
-                    status: "sent",
-                    message: `Email sent to ${employee.email}`
-                } as any);
+            const { data, error } = await supabase.functions.invoke("send-retirement-reminder", {
+                body: {
+                    employeeId: employee.id,
+                    employeeName: employee.name,
+                    employeeEmail: employee.email,
+                    retirementDate: employee.tmt_pensiun,
+                    workUnitName: employee.work_units?.name || "Unit Kerja",
+                    senderId: user!.id
+                }
+            });
 
-            if (logError) throw logError;
+            if (error) throw error;
 
-            // Update last reminder sent timestamp
-            await supabase
-                .from("profiles")
-                .update({ retirement_reminder_sent_at: new Date().toISOString() })
-                .eq("id", employee.id);
-
-            toast.success(`Email berhasil dikirim ke ${employee.name}`);
-            loadData();
-        } catch (error) {
+            if (data?.success) {
+                toast.success(`Email berhasil dikirim ke ${employee.name}`);
+                loadData();
+            } else {
+                throw new Error(data?.error || "Gagal mengirim email");
+            }
+        } catch (error: any) {
             console.error("Error sending email:", error);
-            toast.error("Gagal mengirim email");
+            toast.error(error.message || "Gagal mengirim email");
         } finally {
             setSendingEmail(false);
         }
@@ -325,7 +329,7 @@ const RetirementReminders = () => {
                                                 </TableRow>
                                             ) : (
                                                 filteredEmployees.map((employee) => {
-                                                    const retirementDate = employee.retirement_date ? new Date(employee.retirement_date) : null;
+                                                    const retirementDate = employee.tmt_pensiun ? new Date(employee.tmt_pensiun) : null;
                                                     const monthsUntil = retirementDate ? getMonthsUntilRetirement(retirementDate) : 0;
                                                     const daysUntil = retirementDate ? getDaysUntilRetirement(retirementDate) : 0;
 
