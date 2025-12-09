@@ -70,7 +70,8 @@ export const AIChatbot = () => {
       const { data, error } = await supabase.functions.invoke('ai-chatbot', {
         body: { 
           message: userMessage.content,
-          conversationHistory
+          conversationHistory,
+          userRole: user?.role || 'user_unit'
         }
       });
 
