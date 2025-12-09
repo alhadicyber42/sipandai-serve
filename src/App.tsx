@@ -43,6 +43,7 @@ const JobFormationManagement = lazy(() => import("./pages/admin/JobFormationMana
 const RetirementReminders = lazy(() => import("./pages/admin/RetirementReminders"));
 const TemplateManagement = lazy(() => import("./pages/admin/TemplateManagement"));
 const LetterGenerator = lazy(() => import("./pages/admin/LetterGenerator"));
+const FAQManagement = lazy(() => import("./pages/admin/FAQManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -132,6 +133,7 @@ const App = () => (
                   <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
                   <Route path="/admin/penangguhan-cuti" element={<ProtectedRoute><LeaveDeferralManagement /></ProtectedRoute>} />
                   <Route path="/admin/buat-surat" element={<ProtectedRoute><LetterGenerator /></ProtectedRoute>} />
+                  <Route path="/admin/faq" element={<ProtectedRoute><FAQManagement /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
