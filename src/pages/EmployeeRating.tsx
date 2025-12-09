@@ -19,6 +19,7 @@ interface RatingCriteria {
     items: string[];
 }
 
+// Rating criteria for ASN employees
 const ratingCriteria: RatingCriteria[] = [
     {
         id: "kedisiplinan",
@@ -82,6 +83,58 @@ const ratingCriteria: RatingCriteria[] = [
     }
 ];
 
+// Rating criteria for Non ASN employees
+const ratingCriteriaNonASN: RatingCriteria[] = [
+    {
+        id: "kedisiplinan",
+        title: "Nilai Kedisiplinan",
+        description: "Nilai kepatuhan terhadap jam kerja, penggunaan seragam dan ID card, aturan, serta tata tertib",
+        items: [
+            "Mematuhi jam kerja (tidak datang terlambat dan tidak pulang cepat)",
+            "Menggunakan seragam sesuai ketentuan",
+            "Kepatuhan terhadap peraturan (tidak tercatat melakukan pelanggaran tata tertib kantor)",
+            "Responsif dan proaktif (merespon instruksi dan tugas secara cepat)",
+            "Komitmen terhadap lingkungan kerja (menjaga kerapian dan kebersihan area kerja pribadi dan fasilitas umum kantor)"
+        ]
+    },
+    {
+        id: "kinerja_produktivitas",
+        title: "Nilai Kinerja & Produktivitas",
+        description: "Kemampuan menyelesaikan tugas rutin harian serta tugas yang diberikan oleh pimpinan dengan cepat, tepat, dan berkualitas",
+        items: [
+            "Target dan ketepatan waktu (mampu menyelesaikan seluruh tugas yang diberikan dalam periode waktu yang ditetapkan)",
+            "Mampu menyusun prioritas kerja dengan baik",
+            "Memiliki dedikasi penuh terhadap pekerjaan",
+            "Tidak menunda pekerjaan dan menyelesaikan pekerjaan tepat waktu",
+            "Cepat, tanggap, dan solutif dalam menyelesaikan kendala"
+        ]
+    },
+    {
+        id: "nilai_5s",
+        title: "Nilai 5S",
+        description: "Menerapkan budaya senyum, sapa, salam, sopan, dan santun di lingkungan kerja",
+        items: [
+            "Selalu bersikap sopan, santun, dan peduli terhadap seluruh pegawai",
+            "Keramahan dan ekspresi positif (menunjukkan ekspresi wajah yang ramah dan murah senyum)",
+            "Tidak mudah mengeluh dan selalu semangat dalam bekerja",
+            "Etika berbicara dan bahasa (tidak menggunakan bahasa yang kasar, menggerutu, atau meninggikan suara)",
+            "Perilaku dan tata krama (menunjukkan tata krama yang baik dalam sikap dan tindakan)"
+        ]
+    },
+    {
+        id: "nilai_pelayanan",
+        title: "Nilai Pelayanan",
+        description: "Mampu menjalankan tugas secara profesional dan memberikan pelayanan yang optimal",
+        items: [
+            "Pengelolaan emosi (kemampuan mempertahankan sikap tenang, profesional, dan tidak terpancing emosi)",
+            "Kualitas dan kejelasan informasi (kemampuan memberikan informasi yang akurat, lengkap, dan mudah dipahami oleh pengguna layanan)",
+            "Sikap empati dan solutif (sikap mendengarkan aktif dan menunjukkan keinginan kuat untuk membantu pengguna layanan menemukan solusi)",
+            "Kecepatan dan ketepatan memberikan pelayanan yang efisien (kemampuan merespons pertanyaan, permintaan, atau keluhan dengan cepat sesuai standar waktu yang ditetapkan)",
+            "Mematuhi prosedur (melaksanakan setiap tahapan layanan sesuai dengan Standar Operasional Prosedur (SOP))"
+        ]
+    }
+];
+
 export default function EmployeeRating() {
     const { employeeId } = useParams();
     const navigate = useNavigate();
@@ -89,10 +142,14 @@ export default function EmployeeRating() {
     const [employee, setEmployee] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isNonASN, setIsNonASN] = useState(false);
 
     // Form state - now each item in each criteria gets a rating
     const [ratings, setRatings] = useState<Record<string, Record<number, number>>>({});
     const [reason, setReason] = useState("");
+
+    // Get the appropriate criteria based on employee type
+    const activeCriteria = isNonASN ? ratingCriteriaNonASN : ratingCriteria;
 
     useEffect(() => {
         if (employeeId) {
@@ -114,6 +171,8 @@ export default function EmployeeRating() {
             navigate("/employee-of-the-month");
         } else {
             setEmployee(data);
+            // Check if employee is Non ASN
+            setIsNonASN(data.kriteria_asn === "Non ASN");
         }
         setIsLoading(false);
     };
@@ -137,7 +196,7 @@ export default function EmployeeRating() {
 
         // Check if all items in all criteria are rated
         const missingRatings: string[] = [];
-        ratingCriteria.forEach(criteria => {
+        activeCriteria.forEach(criteria => {
             const criteriaRatings = ratings[criteria.id] || {};
             criteria.items.forEach((item, index) => {
                 if (!criteriaRatings[index]) {
@@ -166,14 +225,14 @@ export default function EmployeeRating() {
             const criteriaTotals: Record<string, number> = {};
             let totalPoints = 0;
 
-            ratingCriteria.forEach(criteria => {
+            activeCriteria.forEach(criteria => {
                 const criteriaRatings = ratings[criteria.id] || {};
                 const sum = Object.values(criteriaRatings).reduce((acc, val) => acc + val, 0);
                 criteriaTotals[criteria.id] = sum;
                 totalPoints += sum;
             });
 
-            const maxPossiblePoints = ratingCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
+            const maxPossiblePoints = activeCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
 
             // Check for duplicate rating in database
             const { data: existingRating } = await supabase
@@ -255,7 +314,7 @@ export default function EmployeeRating() {
                 </div>
 
                 {/* Employee Info Card */}
-                <Card className="border-t-4 border-t-blue-600">
+                <Card className={`border-t-4 ${isNonASN ? 'border-t-emerald-600' : 'border-t-blue-600'}`}>
                     <CardHeader>
                         <div className="flex flex-col md:flex-row items-center gap-6">
                             <Avatar className="h-24 w-24 border-4 border-background shadow-md">
@@ -267,8 +326,13 @@ export default function EmployeeRating() {
                                 <CardDescription className="text-lg font-medium text-blue-600">
                                     {employee.nip}
                                 </CardDescription>
-                                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">
-                                    {employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' ')}
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">
+                                        {employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' ')}
+                                    </div>
+                                    <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${isNonASN ? 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300'}`}>
+                                        {isNonASN ? 'Non ASN' : 'ASN'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -276,11 +340,11 @@ export default function EmployeeRating() {
                 </Card>
 
                 {/* Rating Criteria */}
-                {ratingCriteria.map((criteria, criteriaIndex) => (
+                {activeCriteria.map((criteria, criteriaIndex) => (
                     <Card key={criteria.id} className="shadow-sm">
                         <CardHeader className="pb-4">
                             <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold flex-shrink-0">
+                                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold flex-shrink-0 ${isNonASN ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'}`}>
                                     {criteriaIndex + 1}
                                 </div>
                                 <div className="flex-1">
@@ -347,7 +411,7 @@ export default function EmployeeRating() {
                 <Card className="bg-muted/50">
                     <CardFooter className="flex justify-between items-center p-6">
                         <div className="text-sm text-muted-foreground">
-                            <span className="text-red-500">*</span> Semua indikator wajib dinilai (Total: {ratingCriteria.reduce((sum, c) => sum + c.items.length, 0)} indikator)
+                            <span className="text-red-500">*</span> Semua indikator wajib dinilai (Total: {activeCriteria.reduce((sum, c) => sum + c.items.length, 0)} indikator)
                         </div>
                         <div className="flex gap-3">
                             <Button variant="outline" onClick={() => navigate("/employee-of-the-month")}>
