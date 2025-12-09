@@ -27,7 +27,7 @@ const ratingCriteria: RatingCriteria[] = [
         description: "Nilai kepatuhan terhadap jam kerja, penggunaan seragam dan ID card, aturan, serta tata tertib ASN",
         items: [
             "Mematuhi jam kerja (tidak datang terlambat dan tidak pulang cepat)",
-            "Menggunakan seragam sesuai ketentuan (Senin-Rabu: putih Kemnaker, Kamis: batik, Jumat: bebas rapi)",
+            "Menggunakan ID Card dan Seragam sesuai ketentuan",
             "Mengikuti kegiatan Apel Pagi Kemnaker setiap awal bulan"
         ]
     },
@@ -58,7 +58,7 @@ const ratingCriteria: RatingCriteria[] = [
         title: "Profesionalisme dan Kompetensi",
         description: "Mampu menjalankan tugas secara profesional dengan dedikasi, tanggung jawab, serta kompetensi yang relevan dengan bidang pekerjaan",
         items: [
-            "Menjalankan semua tugas yang diberikan pimpinan dengan penuh dedikasi",
+            "Menjalankan semua tugas yang diberikan pimpinan dengan penuh dedikasi dan tanggung jawab",
             "Jujur, konsisten, dan berperilaku sesuai kode etik",
             "Menguasai peraturan, kebijakan, dan regulasi terkait bidang kerjanya",
             "Mau terus belajar demi meningkatkan kompetensi"
