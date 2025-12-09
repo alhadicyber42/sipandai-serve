@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_unit_evaluations: {
+        Row: {
+          attendance_note: string | null
+          attendance_penalty: number
+          contribution_bonus: number
+          contribution_description: string | null
+          created_at: string
+          disciplinary_action_note: string | null
+          disciplinary_penalty: number
+          evaluator_id: string
+          final_total_points: number
+          has_contribution: boolean
+          has_disciplinary_action: boolean
+          has_poor_attendance: boolean
+          has_poor_performance: boolean
+          id: string
+          original_total_points: number
+          performance_note: string | null
+          performance_penalty: number
+          rated_employee_id: string
+          rating_period: string
+          updated_at: string
+          work_unit_id: number
+        }
+        Insert: {
+          attendance_note?: string | null
+          attendance_penalty?: number
+          contribution_bonus?: number
+          contribution_description?: string | null
+          created_at?: string
+          disciplinary_action_note?: string | null
+          disciplinary_penalty?: number
+          evaluator_id: string
+          final_total_points?: number
+          has_contribution?: boolean
+          has_disciplinary_action?: boolean
+          has_poor_attendance?: boolean
+          has_poor_performance?: boolean
+          id?: string
+          original_total_points?: number
+          performance_note?: string | null
+          performance_penalty?: number
+          rated_employee_id: string
+          rating_period: string
+          updated_at?: string
+          work_unit_id: number
+        }
+        Update: {
+          attendance_note?: string | null
+          attendance_penalty?: number
+          contribution_bonus?: number
+          contribution_description?: string | null
+          created_at?: string
+          disciplinary_action_note?: string | null
+          disciplinary_penalty?: number
+          evaluator_id?: string
+          final_total_points?: number
+          has_contribution?: boolean
+          has_disciplinary_action?: boolean
+          has_poor_attendance?: boolean
+          has_poor_performance?: boolean
+          id?: string
+          original_total_points?: number
+          performance_note?: string | null
+          performance_penalty?: number
+          rated_employee_id?: string
+          rating_period?: string
+          updated_at?: string
+          work_unit_id?: number
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           author_id: string
