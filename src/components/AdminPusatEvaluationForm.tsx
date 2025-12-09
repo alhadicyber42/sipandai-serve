@@ -197,21 +197,21 @@ export function AdminPusatEvaluationForm({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-3xl max-h-[95vh] overflow-hidden flex flex-col">
+            <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6">
                 <DialogHeader className="flex-shrink-0">
-                    <DialogTitle className="flex items-center gap-2">
+                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                         <Crown className="h-5 w-5 text-purple-600" />
                         Penilaian Final Admin Pusat
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-xs sm:text-sm">
                         Evaluasi final untuk <strong>{employeeName}</strong> 
                         {employeeWorkUnit && <> dari <strong>{employeeWorkUnit}</strong></>}
                         {" "}periode <strong>{formatPeriod(ratingPeriod)}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 -mx-6 px-6">
-                    <div className="space-y-5 py-4">
+                <ScrollArea className="flex-1 h-[60vh] sm:h-[65vh] -mx-4 sm:-mx-6 px-4 sm:px-6">
+                    <div className="space-y-4 sm:space-y-5 py-4">
                         {/* Points Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {/* Peer Points */}
@@ -521,11 +521,11 @@ export function AdminPusatEvaluationForm({
                     </div>
                 </ScrollArea>
 
-                <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
-                    <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2 flex-col sm:flex-row">
+                    <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto">
                         Batal
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
                         {isSubmitting ? "Menyimpan..." : (
                             <>
                                 <Crown className="h-4 w-4 mr-2" />
