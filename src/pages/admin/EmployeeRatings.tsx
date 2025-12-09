@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Trophy, Star, Search, Eye, Calendar, Award, User } from "lucide-react";
+import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
 
 interface Rating {
     id: string;
@@ -27,6 +28,16 @@ interface Rating {
     created_at: string;
 }
 
+interface AggregatedRating {
+    employeeId: string;
+    employeeName: string;
+    ratingPeriod: string;
+    totalPoints: number;
+    ratingCount: number;
+    hasEvaluation: boolean;
+    evaluation?: any;
+}
+
 export default function AdminEmployeeRatings() {
     const { user } = useAuth();
     const [ratings, setRatings] = useState<Rating[]>([]);
@@ -34,8 +45,15 @@ export default function AdminEmployeeRatings() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
     const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
-    const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, employeeName: string, totalPoints: number, ratingCount: number }>>([]);
+    const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, employeeName: string, totalPoints: number, ratingCount: number, finalPoints?: number, hasEvaluation?: boolean }>>([]);
     const [unitEmployeeIds, setUnitEmployeeIds] = useState<string[]>([]);
+    const [evaluations, setEvaluations] = useState<any[]>([]);
+    const [aggregatedRatings, setAggregatedRatings] = useState<AggregatedRating[]>([]);
+    const [evaluationFilter, setEvaluationFilter] = useState<string>("all");
+    
+    // Evaluation form state
+    const [isEvaluationFormOpen, setIsEvaluationFormOpen] = useState(false);
+    const [selectedEmployeeForEval, setSelectedEmployeeForEval] = useState<AggregatedRating | null>(null);
 
     useEffect(() => {
         loadData();
@@ -43,7 +61,8 @@ export default function AdminEmployeeRatings() {
 
     useEffect(() => {
         calculateLeaderboard();
-    }, [ratings, selectedPeriod]);
+        calculateAggregatedRatings();
+    }, [ratings, selectedPeriod, evaluations]);
 
     const loadData = async () => {
         // Load employees from Supabase
@@ -96,6 +115,45 @@ export default function AdminEmployeeRatings() {
         });
         
         setRatings(enrichedRatings);
+
+        // Load admin unit evaluations
+        const { data: evalData } = await supabase
+            .from("admin_unit_evaluations")
+            .select("*");
+        
+        setEvaluations(evalData || []);
+    };
+
+    const calculateAggregatedRatings = () => {
+        const periodRatings = selectedPeriod === "all"
+            ? ratings
+            : ratings.filter(r => r.rating_period === selectedPeriod);
+
+        // Aggregate by employee and period
+        const aggregated: Record<string, AggregatedRating> = {};
+
+        periodRatings.forEach((rating) => {
+            const key = `${rating.rated_employee_id}-${rating.rating_period}`;
+            if (!aggregated[key]) {
+                const evaluation = evaluations.find(
+                    e => e.rated_employee_id === rating.rated_employee_id && e.rating_period === rating.rating_period
+                );
+                aggregated[key] = {
+                    employeeId: rating.rated_employee_id,
+                    employeeName: rating.rated_employee_name,
+                    ratingPeriod: rating.rating_period,
+                    totalPoints: 0,
+                    ratingCount: 0,
+                    hasEvaluation: !!evaluation,
+                    evaluation
+                };
+            }
+            aggregated[key].totalPoints += rating.total_points || 0;
+            aggregated[key].ratingCount += 1;
+        });
+
+        const result = Object.values(aggregated).sort((a, b) => b.totalPoints - a.totalPoints);
+        setAggregatedRatings(result);
     };
 
     const calculateLeaderboard = () => {
@@ -118,12 +176,22 @@ export default function AdminEmployeeRatings() {
             pointsByEmployee[employeeId].count += 1;
         });
 
-        const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => ({
-            employeeId,
-            employeeName: data.name,
-            totalPoints: data.totalPoints,
-            ratingCount: data.count
-        })).sort((a, b) => b.totalPoints - a.totalPoints);
+        // Apply evaluation adjustments
+        const leaderboardData = Object.entries(pointsByEmployee).map(([employeeId, data]) => {
+            const evaluation = evaluations.find(
+                e => e.rated_employee_id === employeeId && 
+                (selectedPeriod === "all" || e.rating_period === selectedPeriod)
+            );
+            
+            return {
+                employeeId,
+                employeeName: data.name,
+                totalPoints: data.totalPoints,
+                ratingCount: data.count,
+                finalPoints: evaluation ? evaluation.final_total_points : data.totalPoints,
+                hasEvaluation: !!evaluation
+            };
+        }).sort((a, b) => (b.finalPoints || b.totalPoints) - (a.finalPoints || a.totalPoints));
 
         setLeaderboard(leaderboardData);
     };
@@ -140,11 +208,30 @@ export default function AdminEmployeeRatings() {
         return matchesSearch && matchesPeriod;
     });
 
+    const filteredAggregatedRatings = aggregatedRatings.filter(item => {
+        const matchesSearch = item.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesEvaluation = evaluationFilter === "all" ||
+            (evaluationFilter === "evaluated" && item.hasEvaluation) ||
+            (evaluationFilter === "not_evaluated" && !item.hasEvaluation);
+        return matchesSearch && matchesEvaluation;
+    });
+
     const formatPeriod = (period: string) => {
         const [year, month] = period.split('-');
         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         return `${months[parseInt(month) - 1]} ${year}`;
     };
+
+    const handleOpenEvaluationForm = (item: AggregatedRating) => {
+        setSelectedEmployeeForEval(item);
+        setIsEvaluationFormOpen(true);
+    };
+
+    const handleEvaluationSuccess = () => {
+        loadData();
+    };
+
+    const isAdminUnit = user?.role === "admin_unit";
 
     return (
         <DashboardLayout>
@@ -163,8 +250,8 @@ export default function AdminEmployeeRatings() {
                                 Penilaian Employee of The Month
                             </h1>
                             <p className="text-white/90 mt-1 text-sm md:text-base">
-                                {user?.role === "admin_unit" 
-                                    ? "Lihat penilaian dan leaderboard pegawai terbaik di unit Anda"
+                                {isAdminUnit 
+                                    ? "Lihat dan berikan evaluasi lanjutan untuk pegawai terbaik di unit Anda"
                                     : "Lihat semua penilaian dan leaderboard pegawai terbaik"
                                 }
                             </p>
@@ -173,20 +260,20 @@ export default function AdminEmployeeRatings() {
                 </div>
 
                 {/* Info Badge for Admin Unit */}
-                {user?.role === "admin_unit" && (
+                {isAdminUnit && (
                     <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
                         <CardContent className="p-4">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                                    <Trophy className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    <ClipboardCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                                        Data Unit Kerja Anda
+                                        Penilaian Lanjutan Pimpinan Unit
                                     </h3>
                                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                                        Anda hanya dapat melihat penilaian dan leaderboard untuk pegawai di unit kerja Anda. 
-                                        Total <span className="font-semibold">{employees.length} pegawai</span> dan <span className="font-semibold">{ratings.length} penilaian</span> di unit Anda.
+                                        Sebagai pimpinan unit, Anda dapat memberikan evaluasi lanjutan berdasarkan kriteria: 
+                                        <strong> Hukuman Disiplin (-15%), Presensi Kehadiran (-5%), E-Kinerja (-5%), dan Kontribusi (+10%)</strong>.
                                     </p>
                                 </div>
                             </div>
@@ -201,10 +288,13 @@ export default function AdminEmployeeRatings() {
                             <CardTitle className="flex items-center gap-2">
                                 <Trophy className="h-6 w-6 text-yellow-600" />
                                 Leaderboard {selectedPeriod !== "all" ? formatPeriod(selectedPeriod) : "Semua Periode"}
-                                {user?.role === "admin_unit" && (
+                                {isAdminUnit && (
                                     <Badge variant="secondary" className="ml-2">Unit Anda</Badge>
                                 )}
                             </CardTitle>
+                            <CardDescription>
+                                {isAdminUnit ? "Nilai akhir setelah evaluasi pimpinan unit" : "Peringkat berdasarkan total poin"}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -219,9 +309,17 @@ export default function AdminEmployeeRatings() {
                                                     <p className="font-semibold">{leader.employeeName}</p>
                                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                        <span className="font-bold text-yellow-600">{leader.totalPoints} poin</span>
+                                                        <span className="font-bold text-yellow-600">
+                                                            {leader.finalPoints || leader.totalPoints} poin
+                                                        </span>
                                                         <span>({leader.ratingCount} penilaian)</span>
                                                     </div>
+                                                    {leader.hasEvaluation && (
+                                                        <Badge variant="outline" className="mt-1 text-xs border-green-500 text-green-600">
+                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                            Sudah dievaluasi
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -240,7 +338,7 @@ export default function AdminEmployeeRatings() {
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="Cari pegawai atau penilai..."
+                                        placeholder="Cari pegawai..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="pl-10"
@@ -260,19 +358,134 @@ export default function AdminEmployeeRatings() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {isAdminUnit && (
+                                <Select value={evaluationFilter} onValueChange={setEvaluationFilter}>
+                                    <SelectTrigger className="w-full md:w-[200px]">
+                                        <SelectValue placeholder="Status Evaluasi" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Status</SelectItem>
+                                        <SelectItem value="evaluated">Sudah Dievaluasi</SelectItem>
+                                        <SelectItem value="not_evaluated">Belum Dievaluasi</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Ratings Table */}
+                {/* Admin Unit: Aggregated Ratings for Evaluation */}
+                {isAdminUnit && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <ClipboardCheck className="h-5 w-5" />
+                                Penilaian Unit Anda ({filteredAggregatedRatings.length})
+                            </CardTitle>
+                            <CardDescription>
+                                Berikan evaluasi lanjutan untuk setiap pegawai berdasarkan kriteria pimpinan unit
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="pl-4">Pegawai</TableHead>
+                                            <TableHead className="hidden md:table-cell">Periode</TableHead>
+                                            <TableHead className="text-center">Poin Awal</TableHead>
+                                            <TableHead className="text-center hidden sm:table-cell">Poin Akhir</TableHead>
+                                            <TableHead className="text-center">Status</TableHead>
+                                            <TableHead className="text-right pr-4">Aksi</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredAggregatedRatings.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                    Belum ada penilaian
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            filteredAggregatedRatings.map((item) => (
+                                                <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
+                                                    <TableCell className="pl-4">
+                                                        <div className="font-medium">{item.employeeName}</div>
+                                                        <div className="md:hidden text-xs text-muted-foreground mt-1">
+                                                            {formatPeriod(item.ratingPeriod)} • {item.ratingCount} penilaian
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <Badge variant="outline">
+                                                            <Calendar className="h-3 w-3 mr-1" />
+                                                            {formatPeriod(item.ratingPeriod)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                            <span className="font-bold text-yellow-600">
+                                                                {item.totalPoints}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center hidden sm:table-cell">
+                                                        {item.hasEvaluation && item.evaluation ? (
+                                                            <div className="flex items-center justify-center gap-1">
+                                                                <Star className="h-4 w-4 fill-green-500 text-green-500" />
+                                                                <span className={`font-bold ${item.evaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
+                                                                    {item.evaluation.final_total_points}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {item.hasEvaluation ? (
+                                                            <Badge variant="outline" className="border-green-500 text-green-600">
+                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                <span className="hidden sm:inline">Sudah</span>
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="border-orange-500 text-orange-600">
+                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                                <span className="hidden sm:inline">Belum</span>
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right pr-4">
+                                                        <Button
+                                                            variant={item.hasEvaluation ? "outline" : "default"}
+                                                            size="sm"
+                                                            onClick={() => handleOpenEvaluationForm(item)}
+                                                            className="h-8 px-3"
+                                                        >
+                                                            <ClipboardCheck className="h-4 w-4 md:mr-2" />
+                                                            <span className="hidden md:inline">
+                                                                {item.hasEvaluation ? "Edit Evaluasi" : "Evaluasi"}
+                                                            </span>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* All Ratings Table (Detail View) */}
                 <Card>
                     <CardHeader>
                         <CardTitle>
-                            {user?.role === "admin_unit" ? "Penilaian Unit Anda" : "Semua Penilaian"} ({filteredRatings.length})
+                            {isAdminUnit ? "Detail Penilaian Rekan Kerja" : "Semua Penilaian"} ({filteredRatings.length})
                         </CardTitle>
                         <CardDescription>
-                            {user?.role === "admin_unit" 
-                                ? "Daftar penilaian Employee of The Month untuk pegawai di unit Anda"
+                            {isAdminUnit 
+                                ? "Daftar lengkap penilaian dari rekan kerja untuk pegawai di unit Anda"
                                 : "Daftar lengkap penilaian Employee of The Month"
                             }
                         </CardDescription>
@@ -404,6 +617,25 @@ export default function AdminEmployeeRatings() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Evaluation Form Dialog */}
+            {selectedEmployeeForEval && user && (
+                <AdminUnitEvaluationForm
+                    isOpen={isEvaluationFormOpen}
+                    onClose={() => {
+                        setIsEvaluationFormOpen(false);
+                        setSelectedEmployeeForEval(null);
+                    }}
+                    employeeId={selectedEmployeeForEval.employeeId}
+                    employeeName={selectedEmployeeForEval.employeeName}
+                    ratingPeriod={selectedEmployeeForEval.ratingPeriod}
+                    originalTotalPoints={selectedEmployeeForEval.totalPoints}
+                    workUnitId={user.work_unit_id!}
+                    evaluatorId={user.id}
+                    existingEvaluation={selectedEmployeeForEval.evaluation}
+                    onSuccess={handleEvaluationSuccess}
+                />
+            )}
         </DashboardLayout>
     );
 }
