@@ -93,16 +93,15 @@ const RetirementReminders = () => {
             return;
         }
 
-        // Filter employees approaching retirement (within 12 months)
-        const approachingRetirement = (data || []).filter(emp => {
-            if (!emp.tmt_pensiun) return false;
-            const retirementDate = new Date(emp.tmt_pensiun);
-            const monthsUntil = getMonthsUntilRetirement(retirementDate);
-            // Show employees retiring within 12 months from now
-            return monthsUntil >= 0 && monthsUntil <= 12;
+        // Show all employees with tmt_pensiun for now (can add filter later)
+        // Sort by retirement date
+        const sortedEmployees = (data || []).sort((a, b) => {
+            const dateA = a.tmt_pensiun ? new Date(a.tmt_pensiun).getTime() : Infinity;
+            const dateB = b.tmt_pensiun ? new Date(b.tmt_pensiun).getTime() : Infinity;
+            return dateA - dateB;
         });
 
-        setEmployees(approachingRetirement);
+        setEmployees(sortedEmployees);
     };
 
     const loadReminders = async () => {
