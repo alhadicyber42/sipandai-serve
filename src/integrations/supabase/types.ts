@@ -358,6 +358,53 @@ export type Database = {
         }
         Relationships: []
       }
+      faqs: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          keywords: string[] | null
+          question: string
+          updated_at: string
+          work_unit_id: number | null
+        }
+        Insert: {
+          answer: string
+          category: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          question: string
+          updated_at?: string
+          work_unit_id?: number | null
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          question?: string
+          updated_at?: string
+          work_unit_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faqs_work_unit_id_fkey"
+            columns: ["work_unit_id"]
+            isOneToOne: false
+            referencedRelation: "work_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_formations: {
         Row: {
           created_at: string
