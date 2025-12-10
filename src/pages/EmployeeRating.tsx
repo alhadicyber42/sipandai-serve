@@ -147,10 +147,30 @@ export default function EmployeeRating() {
     const activeCriteria = isNonASN ? ratingCriteriaNonASN : ratingCriteria;
 
     useEffect(() => {
-        if (employeeId) {
+        if (employeeId && user) {
             loadEmployee();
+            checkRatingQuota();
         }
-    }, [employeeId]);
+    }, [employeeId, user]);
+
+    const checkRatingQuota = async () => {
+        if (!user) return;
+        
+        const now = new Date();
+        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // Check if user has already rated anyone this period
+        const { data: existingRatings, error } = await supabase
+            .from("employee_ratings")
+            .select("id, rated_employee_id")
+            .eq("rater_id", user.id)
+            .eq("rating_period", currentPeriod);
+
+        if (existingRatings && existingRatings.length > 0) {
+            toast.error("Anda sudah menggunakan kuota penilaian untuk periode bulan ini. Setiap pegawai hanya dapat memberikan 1 penilaian per periode.");
+            navigate("/employee-of-the-month");
+        }
+    };
 
     const loadEmployee = async () => {
         setIsLoading(true);
@@ -229,18 +249,17 @@ export default function EmployeeRating() {
 
             const maxPossiblePoints = activeCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
 
-            // Check for duplicate rating in database
-            const { data: existingRating } = await supabase
+            // Check if user has already used their rating quota this period (any employee)
+            const { data: existingRatings } = await supabase
                 .from("employee_ratings")
                 .select("id")
                 .eq("rater_id", user.id)
-                .eq("rated_employee_id", employeeId)
-                .eq("rating_period", ratingPeriod)
-                .maybeSingle();
+                .eq("rating_period", ratingPeriod);
 
-            if (existingRating) {
-                toast.error("Anda sudah memberikan penilaian untuk pegawai ini di periode ini");
+            if (existingRatings && existingRatings.length > 0) {
+                toast.error("Anda sudah menggunakan kuota penilaian untuk periode ini. Setiap pegawai hanya dapat memberikan 1 penilaian per bulan.");
                 setIsSubmitting(false);
+                navigate("/employee-of-the-month");
                 return;
             }
 
