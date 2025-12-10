@@ -47,7 +47,7 @@ export default function Cuti() {
   const [endDate, setEndDate] = useState<Date>();
   const [documentLinks, setDocumentLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState("");
-  const [editingDocuments, setEditingDocuments] = useState<string[]>([]);
+  const [editingDocuments, setEditingDocuments] = useState<Array<{name: string; url: string; verification_status?: string; verification_note?: string}>>([]);
   const [savingDocuments, setSavingDocuments] = useState<Set<number>>(new Set());
   const [selectedLeaveType, setSelectedLeaveType] = useState<string>("");
 
@@ -282,6 +282,14 @@ export default function Cuti() {
     const leaveLabel = LEAVE_LABELS[leaveType as keyof typeof LEAVE_LABELS];
     const title = `${leaveLabel} - ${user?.name}`;
 
+    // Format documents as proper objects for DocumentVerification component
+    const formattedDocuments = documentLinks.map((link, index) => ({
+      name: `Dokumen Pendukung ${index + 1}`,
+      url: link,
+      verification_status: "menunggu_review",
+      verification_note: ""
+    }));
+
     // Insert service
     const { data: serviceData, error: serviceError } = await supabase
       .from("services")
@@ -292,7 +300,7 @@ export default function Cuti() {
         status: "submitted",
         title,
         description: `${leaveLabel} - ${totalDays} hari`,
-        documents: documentLinks,
+        documents: formattedDocuments,
       })
       .select()
       .single();
@@ -374,21 +382,42 @@ export default function Cuti() {
     setEditingService(service);
     setIsEditDialogOpen(true);
 
-    // Load existing document links
+    // Load existing documents and normalize to proper format
     if (service.documents && Array.isArray(service.documents)) {
-      setEditingDocuments(service.documents);
+      const normalizedDocs = service.documents.map((doc: any, index: number) => {
+        // If it's already an object with url property
+        if (typeof doc === 'object' && doc.url) {
+          return {
+            name: doc.name || `Dokumen ${index + 1}`,
+            url: doc.url,
+            verification_status: doc.verification_status || 'menunggu_review',
+            verification_note: doc.verification_note || ''
+          };
+        }
+        // If it's a string (legacy format)
+        if (typeof doc === 'string') {
+          return {
+            name: `Dokumen Pendukung ${index + 1}`,
+            url: doc,
+            verification_status: 'menunggu_review',
+            verification_note: ''
+          };
+        }
+        return doc;
+      });
+      setEditingDocuments(normalizedDocs);
     }
   };
 
   const handleSaveDocument = async (index: number) => {
-    if (!editingService || !editingDocuments[index]?.trim()) {
+    if (!editingService || !editingDocuments[index]?.url?.trim()) {
       toast.error("Masukkan link dokumen terlebih dahulu");
       return;
     }
 
     // Validate URL
     const urlSchema = z.string().url({ message: "Link tidak valid" });
-    const validation = urlSchema.safeParse(editingDocuments[index].trim());
+    const validation = urlSchema.safeParse(editingDocuments[index].url.trim());
 
     if (!validation.success) {
       toast.error("Link tidak valid. Pastikan menggunakan format yang benar (https://...)");
@@ -398,15 +427,23 @@ export default function Cuti() {
     setSavingDocuments(prev => new Set(prev).add(index));
 
     try {
+      // Reset verification status when document is updated
+      const updatedDocs = editingDocuments.map((doc, i) => 
+        i === index 
+          ? { ...doc, verification_status: 'menunggu_review', verification_note: '' }
+          : doc
+      );
+      
       const { error } = await supabase
         .from("services")
-        .update({ documents: editingDocuments })
+        .update({ documents: updatedDocs })
         .eq("id", editingService.id);
 
       if (error) throw error;
 
       toast.success("Dokumen berhasil disimpan");
-      setEditingService({ ...editingService, documents: editingDocuments });
+      setEditingDocuments(updatedDocs);
+      setEditingService({ ...editingService, documents: updatedDocs });
     } catch (error) {
       console.error(error);
       toast.error("Gagal menyimpan dokumen");
@@ -996,14 +1033,15 @@ export default function Cuti() {
                     <div className="space-y-2">
                       <Label>Dokumen Pendukung</Label>
                       <div className="space-y-3">
-                        {editingDocuments.map((link, index) => {
-                          const isSaved = editingService?.documents?.[index] === link;
-                          const hasChanges = editingService?.documents?.[index] !== link;
+                        {editingDocuments.map((doc, index) => {
+                          const originalDoc = editingService?.documents?.[index];
+                          const isSaved = originalDoc?.url === doc.url;
+                          const hasChanges = originalDoc?.url !== doc.url;
 
                           return (
                             <div key={index} className={`space-y-2 p-3 border rounded-lg ${isSaved ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}>
                               <Label className="flex items-center justify-between">
-                                <span>Dokumen {index + 1}</span>
+                                <span>{doc.name || `Dokumen ${index + 1}`}</span>
                                 {isSaved && (
                                   <Badge variant="outline" className="border-green-500 text-green-700">Tersimpan</Badge>
                                 )}
@@ -1012,11 +1050,11 @@ export default function Cuti() {
                                 <Input
                                   type="url"
                                   placeholder="https://drive.google.com/..."
-                                  value={link}
+                                  value={doc.url}
                                   onChange={(e) => {
-                                    const newLinks = [...editingDocuments];
-                                    newLinks[index] = e.target.value;
-                                    setEditingDocuments(newLinks);
+                                    const newDocs = [...editingDocuments];
+                                    newDocs[index] = { ...doc, url: e.target.value };
+                                    setEditingDocuments(newDocs);
                                   }}
                                   className="flex-1"
                                 />
@@ -1025,7 +1063,7 @@ export default function Cuti() {
                                   variant={isSaved ? "outline" : "default"}
                                   size="sm"
                                   onClick={() => handleSaveDocument(index)}
-                                  disabled={!hasChanges || savingDocuments.has(index) || !link.trim()}
+                                  disabled={!hasChanges || savingDocuments.has(index) || !doc.url.trim()}
                                 >
                                   {savingDocuments.has(index) ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
                                 </Button>

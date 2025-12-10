@@ -302,7 +302,33 @@ export function ServiceList({
 
   const handleDetailOpen = (service: Service) => {
     setSelectedService(service);
-    setVerifiedDocuments(service.documents || []);
+    
+    // Normalize documents: convert string array to VerifiedDocument array if needed
+    const normalizedDocs = (service.documents || []).map((doc: any, index: number) => {
+      // If it's already an object with url property, use it
+      if (typeof doc === 'object' && doc.url) {
+        return {
+          name: doc.name || `Dokumen ${index + 1}`,
+          url: doc.url,
+          note: doc.note || '',
+          verification_status: doc.verification_status || 'menunggu_review',
+          verification_note: doc.verification_note || ''
+        };
+      }
+      // If it's a string (legacy format), convert it
+      if (typeof doc === 'string') {
+        return {
+          name: `Dokumen Pendukung ${index + 1}`,
+          url: doc,
+          note: '',
+          verification_status: 'menunggu_review' as const,
+          verification_note: ''
+        };
+      }
+      return doc;
+    });
+    
+    setVerifiedDocuments(normalizedDocs);
     setIsDetailOpen(true);
   };
 
