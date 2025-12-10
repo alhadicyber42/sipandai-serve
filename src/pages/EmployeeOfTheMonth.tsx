@@ -759,6 +759,7 @@ export default function EmployeeOfTheMonth() {
                                                                 ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn)
                                                                 : e.employee.kriteria_asn === "Non ASN"
                                                         )
+                                                        .slice(0, 10) // Limit to top 10
                                                         .map((entry, index) => {
                                                             const rank = index + 1;
                                                             const isTop3 = rank <= 3;
