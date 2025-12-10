@@ -1062,10 +1062,11 @@ export default function EmployeeOfTheMonth() {
                                                             <TableHead>Nama Pegawai</TableHead>
                                                             <TableHead className="hidden md:table-cell">NIP</TableHead>
                                                             <TableHead className="hidden lg:table-cell">Jabatan</TableHead>
-                                                            <TableHead className="text-right">Aksi</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
+                                                                        <TableHead className="hidden xl:table-cell">Unit Kerja</TableHead>
+                                                                        <TableHead className="text-right">Aksi</TableHead>
+                                                                    </TableRow>
+                                                                </TableHeader>
+                                                                <TableBody>
                                                         {filteredEmployees.filter(e =>
                                                             type === "asn"
                                                                 ? (e.kriteria_asn === "ASN" || !e.kriteria_asn)
@@ -1109,6 +1110,9 @@ export default function EmployeeOfTheMonth() {
                                                                             </TableCell>
                                                                             <TableCell className="hidden md:table-cell">{employee.nip}</TableCell>
                                                                             <TableCell className="hidden lg:table-cell">{employee.jabatan || "-"}</TableCell>
+                                                                            <TableCell className="hidden xl:table-cell">
+                                                                                {WORK_UNITS.find(u => u.id === employee.work_unit_id)?.name || "-"}
+                                                                            </TableCell>
                                                                             <TableCell className="text-right">
                                                                                 {isSelf ? (
                                                                                     <Badge variant="secondary" className="text-xs">
