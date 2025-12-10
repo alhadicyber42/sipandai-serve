@@ -129,6 +129,7 @@ const App = () => (
                   <Route path="/konsultasi/:id" element={<ProtectedRoute><ConsultationDetail /></ProtectedRoute>} />
                   <Route path="/employee-of-the-month" element={<ProtectedRoute><EmployeeOfTheMonth /></ProtectedRoute>} />
                   <Route path="/employee-of-the-month/rate/:employeeId" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
+                  <Route path="/employee-rating" element={<ProtectedRoute><EmployeeRating /></ProtectedRoute>} />
                   <Route path="/admin/employee-ratings" element={<ProtectedRoute><AdminEmployeeRatings /></ProtectedRoute>} />
                   <Route path="/admin/employee/:employeeId" element={<ProtectedRoute><EmployeeProfile /></ProtectedRoute>} />
                   <Route path="/admin/penangguhan-cuti" element={<ProtectedRoute><LeaveDeferralManagement /></ProtectedRoute>} />
