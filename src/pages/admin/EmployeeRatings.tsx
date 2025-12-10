@@ -780,6 +780,26 @@ export default function AdminEmployeeRatings() {
                                                             </Button>
                                                             {(() => {
                                                                 const winner = isDesignatedWinner(item.employeeId, item.ratingPeriod);
+                                                                const category = employees.find(e => e.id === item.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+                                                                const period = item.ratingPeriod;
+                                                                
+                                                                // Filter employees by same period and category
+                                                                const sameCategory = filteredAggregatedRatings.filter(r => {
+                                                                    const empCat = employees.find(e => e.id === r.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+                                                                    return r.ratingPeriod === period && empCat === category;
+                                                                });
+                                                                
+                                                                // Get final points for comparison
+                                                                const getFinalPoints = (r: AggregatedRating) => {
+                                                                    if (r.hasFinalEvaluation && r.finalEvaluation) return r.finalEvaluation.final_total_points;
+                                                                    if (r.hasUnitEvaluation && r.unitEvaluation) return r.unitEvaluation.final_total_points;
+                                                                    return r.totalPoints;
+                                                                };
+                                                                
+                                                                // Find top employee in this category and period
+                                                                const sortedByPoints = [...sameCategory].sort((a, b) => getFinalPoints(b) - getFinalPoints(a));
+                                                                const isTopEmployee = sortedByPoints.length > 0 && sortedByPoints[0].employeeId === item.employeeId;
+                                                                
                                                                 if (winner) {
                                                                     return (
                                                                         <Button
@@ -793,15 +813,62 @@ export default function AdminEmployeeRatings() {
                                                                         </Button>
                                                                     );
                                                                 }
+                                                                
+                                                                // Only show "Tetapkan" button for top employee
+                                                                if (!isTopEmployee) return null;
+                                                                
+                                                                // Check if top for yearly as well
+                                                                const year = period.split('-')[0];
+                                                                const yearlyWinner = designatedWinners.find(w => 
+                                                                    w.employee_id === item.employeeId && 
+                                                                    w.period === year && 
+                                                                    w.winner_type === 'yearly'
+                                                                );
+                                                                const sameYearCategory = filteredAggregatedRatings.filter(r => {
+                                                                    const empCat = employees.find(e => e.id === r.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+                                                                    return r.ratingPeriod.startsWith(year) && empCat === category;
+                                                                });
+                                                                // Aggregate yearly points per employee
+                                                                const yearlyAggregate: Record<string, number> = {};
+                                                                sameYearCategory.forEach(r => {
+                                                                    if (!yearlyAggregate[r.employeeId]) yearlyAggregate[r.employeeId] = 0;
+                                                                    yearlyAggregate[r.employeeId] += getFinalPoints(r);
+                                                                });
+                                                                const sortedYearly = Object.entries(yearlyAggregate).sort((a, b) => b[1] - a[1]);
+                                                                const isTopYearly = sortedYearly.length > 0 && sortedYearly[0][0] === item.employeeId;
+                                                                
                                                                 return (
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={() => handleDesignateWinner(item, 'monthly')}
-                                                                        className="h-8 px-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
-                                                                    >
-                                                                        <Gavel className="h-4 w-4 md:mr-2" />
-                                                                        <span className="hidden md:inline">Tetapkan</span>
-                                                                    </Button>
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() => handleDesignateWinner(item, 'monthly')}
+                                                                            className="h-8 px-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                                                                        >
+                                                                            <Gavel className="h-4 w-4 md:mr-2" />
+                                                                            <span className="hidden md:inline">Tetapkan Bulanan</span>
+                                                                        </Button>
+                                                                        {isTopYearly && !yearlyWinner && (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                onClick={() => handleDesignateWinner(item, 'yearly')}
+                                                                                className="h-8 px-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
+                                                                            >
+                                                                                <Trophy className="h-4 w-4 md:mr-2" />
+                                                                                <span className="hidden md:inline">Tetapkan Tahunan</span>
+                                                                            </Button>
+                                                                        )}
+                                                                        {yearlyWinner && (
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => removeDesignatedWinner(yearlyWinner.id)}
+                                                                                className="h-8 px-3 text-purple-600 border-purple-300 hover:bg-purple-50"
+                                                                            >
+                                                                                <X className="h-4 w-4 md:mr-2" />
+                                                                                <span className="hidden md:inline">Batal Tahunan</span>
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
                                                                 );
                                                             })()}
                                                         </div>
