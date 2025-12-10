@@ -31,8 +31,8 @@ interface EmployeeWithUnit extends Profile {
 }
 
 interface ReminderWithDetails extends RetirementReminder {
-    profiles?: Profile;
-    sender?: Profile;
+    employee: { name: string; nip: string } | null;
+    sender: { name: string } | null;
 }
 
 const RetirementReminders = () => {
@@ -113,7 +113,8 @@ const RetirementReminders = () => {
     };
 
     const loadReminders = async () => {
-        const { data, error } = await supabase
+        // Fetch reminders with employee and sender names via separate queries
+        const { data: remindersData, error } = await supabase
             .from("retirement_reminders")
             .select(`*`)
             .order("sent_at", { ascending: false })
@@ -124,7 +125,37 @@ const RetirementReminders = () => {
             return;
         }
 
-        setReminders((data || []) as any);
+        if (!remindersData || remindersData.length === 0) {
+            setReminders([]);
+            return;
+        }
+
+        // Get unique user IDs and sender IDs
+        const userIds = [...new Set(remindersData.map(r => r.user_id))];
+        const senderIds = [...new Set(remindersData.map(r => r.sender_id))];
+        const allIds = [...new Set([...userIds, ...senderIds])];
+
+        // Fetch profiles for all IDs
+        const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("id, name, nip")
+            .in("id", allIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+        // Map reminders with employee and sender info
+        const remindersWithDetails: ReminderWithDetails[] = remindersData.map(reminder => ({
+            ...reminder,
+            employee: profilesMap.get(reminder.user_id) ? {
+                name: profilesMap.get(reminder.user_id)!.name,
+                nip: profilesMap.get(reminder.user_id)!.nip
+            } : null,
+            sender: profilesMap.get(reminder.sender_id) ? {
+                name: profilesMap.get(reminder.sender_id)!.name
+            } : null
+        }));
+
+        setReminders(remindersWithDetails);
     };
 
     const loadWorkUnits = async () => {
@@ -442,7 +473,7 @@ const RetirementReminders = () => {
                                                         <TableCell>
                                                             {formatDateIndonesian(new Date(reminder.sent_at))}
                                                         </TableCell>
-                                                        <TableCell>{reminder.profiles?.name || "-"}</TableCell>
+                                                        <TableCell>{reminder.employee?.name || "-"}</TableCell>
                                                         <TableCell>
                                                             <Badge variant="outline">
                                                                 {reminder.reminder_type === "email" ? (
