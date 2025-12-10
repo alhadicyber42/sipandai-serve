@@ -77,6 +77,7 @@ export default function AdminEmployeeRatings() {
   const [aggregatedRatings, setAggregatedRatings] = useState<AggregatedRating[]>([]);
   const [evaluationFilter, setEvaluationFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [workUnitFilter, setWorkUnitFilter] = useState<string>("all");
   const [designatedWinners, setDesignatedWinners] = useState<DesignatedWinner[]>([]);
   const [isDesignateDialogOpen, setIsDesignateDialogOpen] = useState(false);
   const [selectedForDesignation, setSelectedForDesignation] = useState<AggregatedRating | null>(null);
@@ -246,12 +247,16 @@ export default function AdminEmployeeRatings() {
   });
   const filteredAggregatedRatings = aggregatedRatings.filter(item => {
     const matchesSearch = item.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
-    const isAdminPusat = user?.role === "admin_pusat";
+    const isAdminPusatRole = user?.role === "admin_pusat";
 
     // For admin_unit, filter by unit evaluation status
     // For admin_pusat, filter by final evaluation status
-    const matchesEvaluation = evaluationFilter === "all" || evaluationFilter === "evaluated" && (isAdminPusat ? item.hasFinalEvaluation : item.hasUnitEvaluation) || evaluationFilter === "not_evaluated" && (isAdminPusat ? !item.hasFinalEvaluation : !item.hasUnitEvaluation);
-    return matchesSearch && matchesEvaluation;
+    const matchesEvaluation = evaluationFilter === "all" || evaluationFilter === "evaluated" && (isAdminPusatRole ? item.hasFinalEvaluation : item.hasUnitEvaluation) || evaluationFilter === "not_evaluated" && (isAdminPusatRole ? !item.hasFinalEvaluation : !item.hasUnitEvaluation);
+    
+    // Filter by work unit (only for admin_pusat)
+    const matchesWorkUnit = workUnitFilter === "all" || item.employeeWorkUnitId?.toString() === workUnitFilter;
+    
+    return matchesSearch && matchesEvaluation && matchesWorkUnit;
   });
 
   // Helper function to get employee category
@@ -449,6 +454,18 @@ export default function AdminEmployeeRatings() {
                                         <SelectItem value="all">Semua Status</SelectItem>
                                         <SelectItem value="evaluated">Sudah Dievaluasi</SelectItem>
                                         <SelectItem value="not_evaluated">Belum Dievaluasi</SelectItem>
+                                    </SelectContent>
+                                </Select>}
+                            {isAdminPusat && <Select value={workUnitFilter} onValueChange={setWorkUnitFilter}>
+                                    <SelectTrigger className="w-full md:w-[200px]">
+                                        <Building2 className="h-4 w-4 mr-2" />
+                                        <SelectValue placeholder="Unit Kerja" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Unit Kerja</SelectItem>
+                                        {WORK_UNITS.map(unit => <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                {unit.name}
+                                            </SelectItem>)}
                                     </SelectContent>
                                 </Select>}
                         </div>
