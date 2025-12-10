@@ -49,7 +49,11 @@ export default function EmployeeOfTheMonth() {
     const [yearlyWinners, setYearlyWinners] = useState<DesignatedWinner[]>([]);
 
     const isUserUnit = user?.role === "user_unit";
+    const isAdminUnit = user?.role === "admin_unit";
     const isAdminPusat = user?.role === "admin_pusat";
+    
+    // Unit leaderboard for admin_unit
+    const [unitLeaderboard, setUnitLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
 
     useEffect(() => {
         loadEmployees();
@@ -57,7 +61,10 @@ export default function EmployeeOfTheMonth() {
         loadYearlyLeaderboard();
         loadMyRatings();
         loadDesignatedWinners();
-    }, [user]);
+        if (isAdminUnit && user?.work_unit_id) {
+            loadUnitLeaderboard();
+        }
+    }, [user, isAdminUnit]);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
@@ -339,6 +346,106 @@ export default function EmployeeOfTheMonth() {
         }
     };
 
+    // Load unit-specific leaderboard for admin_unit
+    const loadUnitLeaderboard = async () => {
+        if (!user?.work_unit_id) return;
+        
+        try {
+            const now = new Date();
+            const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            // Get all employees in the unit
+            const { data: unitEmployees } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("work_unit_id", user.work_unit_id)
+                .eq("role", "user_unit");
+
+            if (!unitEmployees || unitEmployees.length === 0) {
+                setUnitLeaderboard([]);
+                return;
+            }
+
+            const unitEmployeeIds = unitEmployees.map(e => e.id);
+
+            // Fetch all ratings where rated_employee_id is in this unit
+            const { data: ratings, error } = await supabase
+                .from("employee_ratings")
+                .select("*")
+                .eq("rating_period", currentPeriod)
+                .in("rated_employee_id", unitEmployeeIds);
+
+            if (error) {
+                console.error('Error loading unit ratings:', error);
+                return;
+            }
+
+            // Fetch admin unit evaluations for current period
+            const { data: unitEvaluations } = await supabase
+                .from("admin_unit_evaluations")
+                .select("*")
+                .eq("rating_period", currentPeriod)
+                .eq("work_unit_id", user.work_unit_id);
+
+            // Fetch admin pusat (final) evaluations for current period for unit employees
+            const { data: finalEvaluations } = await supabase
+                .from("admin_pusat_evaluations")
+                .select("*")
+                .eq("rating_period", currentPeriod)
+                .in("rated_employee_id", unitEmployeeIds);
+
+            // Build a map of employees who have ratings
+            const employeesWithRatings = new Set<string>();
+            const ratingCountByEmployee: Record<string, number> = {};
+
+            (ratings || []).forEach((rating: any) => {
+                const employeeId = rating.rated_employee_id;
+                employeesWithRatings.add(employeeId);
+                ratingCountByEmployee[employeeId] = (ratingCountByEmployee[employeeId] || 0) + 1;
+            });
+
+            // Create maps for quick lookup
+            const unitEvalMap = new Map<string, any>();
+            const finalEvalMap = new Map<string, any>();
+
+            (unitEvaluations || []).forEach((eval_: any) => {
+                unitEvalMap.set(eval_.rated_employee_id, eval_);
+            });
+
+            (finalEvaluations || []).forEach((eval_: any) => {
+                finalEvalMap.set(eval_.rated_employee_id, eval_);
+            });
+
+            // Create leaderboard entries
+            const leaderboardData: Array<{ employeeId: string, totalPoints: number, ratingCount: number }> = [];
+
+            employeesWithRatings.forEach((employeeId) => {
+                let finalPoints: number;
+
+                if (finalEvalMap.has(employeeId)) {
+                    finalPoints = finalEvalMap.get(employeeId).final_total_points;
+                } else if (unitEvalMap.has(employeeId)) {
+                    finalPoints = unitEvalMap.get(employeeId).final_total_points;
+                } else {
+                    const employeeRatings = (ratings || []).filter((r: any) => r.rated_employee_id === employeeId);
+                    const totalPeerPoints = employeeRatings.reduce((sum: number, r: any) => sum + (r.total_points || 0), 0);
+                    finalPoints = employeeRatings.length > 0 ? Math.round(totalPeerPoints / employeeRatings.length) : 0;
+                }
+
+                leaderboardData.push({
+                    employeeId,
+                    totalPoints: finalPoints,
+                    ratingCount: ratingCountByEmployee[employeeId] || 0
+                });
+            });
+
+            leaderboardData.sort((a, b) => b.totalPoints - a.totalPoints);
+            setUnitLeaderboard(leaderboardData);
+        } catch (error) {
+            console.error('Error loading unit leaderboard:', error);
+        }
+    };
+
     const loadYearlyLeaderboard = async () => {
         try {
             const now = new Date();
@@ -458,6 +565,16 @@ export default function EmployeeOfTheMonth() {
     }).filter(entry => entry.employee); // Filter out entries without employee data
 
     const yearlyLeaderboardWithDetails = yearlyLeaderboard.map((entry, index) => {
+        const employee = employees.find(e => e.id === entry.employeeId);
+        return {
+            ...entry,
+            rank: index + 1,
+            employee
+        };
+    }).filter(entry => entry.employee);
+
+    // Unit leaderboard with details for admin_unit
+    const unitLeaderboardWithDetails = unitLeaderboard.map((entry, index) => {
         const employee = employees.find(e => e.id === entry.employeeId);
         return {
             ...entry,
@@ -740,7 +857,7 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 h-auto sm:h-12 bg-muted/50">
+                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminUnit ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         <TabsTrigger
                             value="employees"
                             className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
@@ -749,6 +866,16 @@ export default function EmployeeOfTheMonth() {
                             <span className="hidden sm:inline">Daftar Pegawai</span>
                             <span className="sm:hidden">Pegawai</span>
                         </TabsTrigger>
+                        {isAdminUnit && (
+                            <TabsTrigger
+                                value="unit_leaderboard"
+                                className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white py-2 sm:py-3"
+                            >
+                                <Building2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Leaderboard Unit</span>
+                                <span className="sm:hidden">Unit</span>
+                            </TabsTrigger>
+                        )}
                         <TabsTrigger
                             value="leaderboard"
                             className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white py-2 sm:py-3"
@@ -909,6 +1036,113 @@ export default function EmployeeOfTheMonth() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* Unit Leaderboard Tab - Only for admin_unit */}
+                    {isAdminUnit && (
+                        <TabsContent value="unit_leaderboard" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
+                            <Card className="border-teal-200 dark:border-teal-800">
+                                <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-teal-700 dark:text-teal-400">
+                                        <Building2 className="h-5 w-5" />
+                                        Leaderboard Unit - {WORK_UNITS.find(u => u.id === user?.work_unit_id)?.name || 'Unit Kerja'}
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Peringkat pegawai di unit Anda berdasarkan penilaian dari seluruh pegawai (lintas unit) bulan ini
+                                    </p>
+                                </CardHeader>
+                                <CardContent className="pt-6">
+                                    {unitLeaderboardWithDetails.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                            <p className="text-muted-foreground text-lg">
+                                                Belum ada data penilaian pegawai unit Anda untuk periode ini
+                                            </p>
+                                            <p className="text-sm text-muted-foreground mt-2">
+                                                Penilaian dari seluruh pegawai akan ditampilkan di sini
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {unitLeaderboardWithDetails.map((entry, index) => {
+                                                const rank = index + 1;
+                                                const isTop3 = rank <= 3;
+                                                const isWinner = rank === 1;
+                                                const kriteria = entry.employee?.kriteria_asn || 'ASN';
+
+                                                return (
+                                                    <div
+                                                        key={entry.employeeId}
+                                                        className={`
+                                                            flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md
+                                                            ${isWinner ? 'bg-gradient-to-r from-teal-50 to-cyan-100/50 dark:from-teal-950/30 dark:to-cyan-900/20 border-teal-400 dark:border-teal-600' :
+                                                                isTop3 ? 'bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/20 dark:to-cyan-950/10 border-teal-300 dark:border-teal-700' :
+                                                                    'bg-muted/30 border-border hover:border-teal-300'}
+                                                        `}
+                                                    >
+                                                        {/* Rank Number */}
+                                                        <div className={`
+                                                            flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-xl shrink-0
+                                                            ${isWinner ? 'bg-gradient-to-br from-teal-400 to-cyan-600 text-white shadow-lg ring-2 ring-teal-300' :
+                                                                rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md ring-2 ring-gray-200' :
+                                                                    rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md ring-2 ring-orange-300' :
+                                                                        'bg-muted text-muted-foreground'}
+                                                        `}>
+                                                            {rank}
+                                                        </div>
+
+                                                        {/* Avatar */}
+                                                        <Avatar className={`h-10 w-10 sm:h-14 sm:w-14 ${isTop3 ? 'border-2 sm:border-4' : 'border'} ${isWinner ? 'border-teal-400' : isTop3 ? 'border-cyan-400' : 'border-border'}`}>
+                                                            <AvatarImage
+                                                                src={entry.employee?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee?.name}`}
+                                                                alt={entry.employee?.name}
+                                                            />
+                                                            <AvatarFallback className={isWinner ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' : ''}>
+                                                                {getInitials(entry.employee?.name || '')}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+
+                                                        {/* Employee Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <h3 className={`font-bold line-clamp-1 ${isWinner ? 'text-sm sm:text-lg text-teal-700 dark:text-teal-400' : 'text-sm sm:text-base'}`}>
+                                                                    {entry.employee?.name}
+                                                                </h3>
+                                                                <Badge variant="outline" className={`text-[10px] ${kriteria === 'ASN' ? 'border-yellow-500 text-yellow-600' : 'border-emerald-500 text-emerald-600'}`}>
+                                                                    {kriteria}
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="text-[10px] sm:text-sm text-muted-foreground truncate">
+                                                                {entry.employee?.nip}
+                                                            </p>
+                                                            {entry.employee?.jabatan && (
+                                                                <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">
+                                                                    <Briefcase className="h-3 w-3 inline mr-1" />
+                                                                    {entry.employee.jabatan}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Points */}
+                                                        <div className="text-right shrink-0">
+                                                            <div className={`flex items-center justify-end gap-1 sm:gap-2 ${isWinner ? 'text-teal-600 dark:text-teal-400' : 'text-foreground'}`}>
+                                                                <Star className={`h-4 w-4 sm:h-5 sm:w-5 ${isWinner ? 'fill-current' : ''}`} />
+                                                                <span className="text-lg sm:text-2xl font-black">
+                                                                    {entry.totalPoints}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[9px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                                                                {entry.ratingCount} penilaian
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    )}
 
                     {/* Leaderboard Tab */}
                     <TabsContent value="leaderboard" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
