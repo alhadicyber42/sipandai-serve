@@ -690,7 +690,7 @@ export default function Cuti() {
                             <div className="flex gap-2">
                               <div className="flex-1">
                                 <Input
-                                  placeholder="https://drive.google.com/... atau https://www.dropbox.com/..."
+                                  placeholder="Paste link dokumen di sini..."
                                   value={currentLink}
                                   onChange={(e) => setCurrentLink(e.target.value)}
                                   onKeyDown={(e) => {
@@ -702,15 +702,24 @@ export default function Cuti() {
                                   className="h-10"
                                 />
                               </div>
-                              <Button type="button" onClick={addDocumentLink} variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                              <Button 
+                                type="button" 
+                                onClick={addDocumentLink} 
+                                variant="default"
+                                className="h-10 px-4 shrink-0 gap-1"
+                              >
                                 <Plus className="h-4 w-4" />
+                                <span className="hidden sm:inline">Tambah</span>
                               </Button>
                             </div>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                              ⚠️ Setelah paste link, tekan tombol "Tambah" untuk menyimpan dokumen
+                            </p>
                             {documentLinks.length > 0 && (
                               <div className="space-y-2 mt-2">
                                 {documentLinks.map((link, index) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg border border-border/50">
-                                    <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <div key={index} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                                    <LinkIcon className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                                     <a
                                       href={link}
                                       target="_blank"
@@ -733,7 +742,7 @@ export default function Cuti() {
                               </div>
                             )}
                             <p className="text-xs text-muted-foreground">
-                              Tambahkan link ke dokumen pendukung (Google Drive, Dropbox, OneDrive, dll)
+                              Gunakan link dari Google Drive, Dropbox, OneDrive, dll
                             </p>
                           </div>
                         </div>
