@@ -50,6 +50,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoDataState, SearchState } from "@/components/EmptyState";
 import { TrackingStatusDialog } from "@/components/TrackingStatusDialog";
 import { exportToExcel } from "@/lib/exportToExcel";
+import { getApprovalStatus, canGenerateLeaveCertificate } from "@/lib/leave-workflow";
+
+import { requiresCentralApproval } from "@/lib/leave-workflow";
 
 export interface Service {
   id: string;
@@ -159,13 +162,18 @@ export function ServiceList({
 
     setIsSubmitting(true);
     try {
-      const newStatus =
-        user?.role === "admin_unit" ? "approved_by_unit" : "approved_final";
+      // Use workflow-based approval for leave (cuti) services
+      let newStatus: string;
+      if (selectedService.service_type === "cuti") {
+        newStatus = getApprovalStatus(selectedService.work_unit_id, user?.role || "");
+      } else {
+        newStatus = user?.role === "admin_unit" ? "approved_by_unit" : "approved_final";
+      }
 
       const { error } = await supabase
         .from("services")
         .update({
-          status: newStatus,
+          status: newStatus as any,
           approved_at: new Date().toISOString(),
           documents: (verifiedDocuments && verifiedDocuments.length > 0 ? verifiedDocuments : selectedService.documents) as any,
           notes: [
@@ -423,6 +431,10 @@ export function ServiceList({
       return (service.status === "submitted" || service.status === "resubmitted" || service.status === "returned_to_unit") && service.work_unit_id === user.work_unit_id;
     }
     if (user?.role === "admin_pusat") {
+      // For leave (cuti) services, admin_pusat only handles units 1-7
+      if (service.service_type === "cuti") {
+        return (service.status === "approved_by_unit") && requiresCentralApproval(service.work_unit_id);
+      }
       return service.status === "submitted" || service.status === "resubmitted" || service.status === "approved_by_unit";
     }
     return false;
@@ -620,7 +632,26 @@ export function ServiceList({
                                 Update Status
                               </DropdownMenuItem>
                             )}
-                            {(user?.role === "admin_unit" || user?.role === "admin_pusat") &&
+                            {/* Generate Certificate - only for leave (cuti) services with proper workflow */}
+                            {service.service_type === "cuti" &&
+                              canGenerateLeaveCertificate(
+                                service.work_unit_id,
+                                service.status,
+                                user?.role || "",
+                                user?.work_unit_id
+                              ) &&
+                              onGenerateCertificate && (
+                                <DropdownMenuItem
+                                  onClick={() => onGenerateCertificate(service)}
+                                  className="min-h-[44px] cursor-pointer"
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Generate Surat Cuti
+                                </DropdownMenuItem>
+                              )}
+                            {/* Generate Certificate for non-cuti services (original behavior) */}
+                            {service.service_type !== "cuti" &&
+                              (user?.role === "admin_unit" || user?.role === "admin_pusat") &&
                               service.status === "approved_final" &&
                               onGenerateCertificate && (
                                 <DropdownMenuItem

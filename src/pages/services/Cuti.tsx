@@ -29,6 +29,7 @@ import { generateDocument } from "@/lib/docxEngine";
 import { LetterTemplate } from "@/types/leave-certificate";
 import { Database } from "@/integrations/supabase/types";
 import { Service } from "@/components/ServiceList";
+import { requiresCentralApproval, canGenerateLeaveCertificate } from "@/lib/leave-workflow";
 
 type LeaveDetail = Database['public']['Tables']['leave_details']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -89,6 +90,9 @@ export default function Cuti() {
       query = query.eq("user_id", user.id);
     } else if (user.role === "admin_unit") {
       query = query.eq("work_unit_id", user.work_unit_id);
+    } else if (user.role === "admin_pusat") {
+      // Admin pusat only sees leave requests from units 1-7 that require central approval
+      query = query.in("work_unit_id", [1, 2, 3, 4, 5, 6, 7]);
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });
@@ -869,52 +873,80 @@ export default function Cuti() {
         )}
 
         {isAdmin && (
-          <div className="grid gap-4 md:grid-cols-4">
-            {isLoading ? (
-              <>
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-              </>
-            ) : (
-              <>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{services.length}</div>
-                    <p className="text-sm text-muted-foreground">Total Usulan</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-warning">
-                      {services.filter((s) => s.status === "submitted" || s.status === "resubmitted" || s.status === "approved_by_unit").length}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Diproses</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-success">
-                      {services.filter((s) => s.status === "approved_final").length}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Disetujui</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-destructive">
-                      {
-                        services.filter(
-                          (s) => s.status === "returned_to_user" || s.status === "returned_to_unit"
-                        ).length
-                      }
-                    </div>
-                    <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+          <div className="space-y-4">
+            {/* Info about workflow */}
+            <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+                {user?.role === "admin_pusat" ? (
+                  <>
+                    <strong>Alur Persetujuan:</strong> Anda menangani persetujuan cuti untuk Unit Kerja 1-7 (BBPVP). 
+                    Cuti dari unit ini memerlukan persetujuan Admin Pusat setelah disetujui Admin Unit.
+                  </>
+                ) : (
+                  <>
+                    <strong>Alur Persetujuan:</strong> {" "}
+                    {user?.work_unit_id && user.work_unit_id >= 1 && user.work_unit_id <= 7 ? (
+                      "Unit kerja Anda memerlukan persetujuan Admin Pusat untuk cuti. Setelah Anda setujui, usulan akan diteruskan ke Admin Pusat."
+                    ) : (
+                      "Unit kerja Anda tidak memerlukan persetujuan Admin Pusat. Anda dapat langsung menerbitkan surat keterangan cuti."
+                    )}
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid gap-4 md:grid-cols-4">
+              {isLoading ? (
+                <>
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
+                </>
+              ) : (
+                <>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">{services.length}</div>
+                      <p className="text-sm text-muted-foreground">Total Usulan</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-warning">
+                        {services.filter((s) => 
+                          s.status === "submitted" || 
+                          s.status === "resubmitted" || 
+                          (user?.role === "admin_pusat" && s.status === "approved_by_unit")
+                        ).length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Menunggu Review</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-success">
+                        {services.filter((s) => s.status === "approved_final").length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Disetujui</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold text-destructive">
+                        {
+                          services.filter(
+                            (s) => s.status === "returned_to_user" || s.status === "returned_to_unit"
+                          ).length
+                        }
+                      </div>
+                      <p className="text-sm text-muted-foreground">Dikembalikan/Ditolak</p>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
           </div>
         )}
 
