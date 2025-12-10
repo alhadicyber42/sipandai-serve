@@ -78,6 +78,7 @@ export default function DaftarPegawaiUnit() {
           id,
           name,
           nip,
+          email,
           phone,
           work_unit_id,
           role,
@@ -112,7 +113,7 @@ export default function DaftarPegawaiUnit() {
             phone: profile.phone,
             work_unit_id: profile.work_unit_id,
             work_unit_name: (profile.work_units as any)?.name || "-",
-            email: "-", // Will be populated via edge function in future
+            email: (profile as any).email || "-",
             role: roleError ? (profile as any).role : (roleData?.role || (profile as any).role || "user_unit"),
           });
         }
