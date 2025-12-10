@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart, Link } from "lucide-react";
+import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart, Link, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -247,13 +247,27 @@ export function AdminUnitEvaluationForm({
                                                 <Link className="h-3 w-3" />
                                                 Link Bukti Dukung
                                             </Label>
-                                            <Input
-                                                id="disciplinary-link"
-                                                type="url"
-                                                value={disciplinaryEvidenceLink}
-                                                onChange={(e) => setDisciplinaryEvidenceLink(e.target.value)}
-                                                placeholder="https://..."
-                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="disciplinary-link"
+                                                    type="url"
+                                                    value={disciplinaryEvidenceLink}
+                                                    onChange={(e) => setDisciplinaryEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="flex-1"
+                                                />
+                                                {disciplinaryEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(disciplinaryEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-destructive flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
@@ -302,13 +316,27 @@ export function AdminUnitEvaluationForm({
                                                 <Link className="h-3 w-3" />
                                                 Link Bukti Dukung
                                             </Label>
-                                            <Input
-                                                id="attendance-link"
-                                                type="url"
-                                                value={attendanceEvidenceLink}
-                                                onChange={(e) => setAttendanceEvidenceLink(e.target.value)}
-                                                placeholder="https://..."
-                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="attendance-link"
+                                                    type="url"
+                                                    value={attendanceEvidenceLink}
+                                                    onChange={(e) => setAttendanceEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="flex-1"
+                                                />
+                                                {attendanceEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(attendanceEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-orange-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
@@ -357,13 +385,27 @@ export function AdminUnitEvaluationForm({
                                                 <Link className="h-3 w-3" />
                                                 Link Bukti Dukung
                                             </Label>
-                                            <Input
-                                                id="performance-link"
-                                                type="url"
-                                                value={performanceEvidenceLink}
-                                                onChange={(e) => setPerformanceEvidenceLink(e.target.value)}
-                                                placeholder="https://..."
-                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="performance-link"
+                                                    type="url"
+                                                    value={performanceEvidenceLink}
+                                                    onChange={(e) => setPerformanceEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="flex-1"
+                                                />
+                                                {performanceEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(performanceEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-amber-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
@@ -412,13 +454,27 @@ export function AdminUnitEvaluationForm({
                                                 <Link className="h-3 w-3" />
                                                 Link Bukti Dukung
                                             </Label>
-                                            <Input
-                                                id="contribution-link"
-                                                type="url"
-                                                value={contributionEvidenceLink}
-                                                onChange={(e) => setContributionEvidenceLink(e.target.value)}
-                                                placeholder="https://..."
-                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="contribution-link"
+                                                    type="url"
+                                                    value={contributionEvidenceLink}
+                                                    onChange={(e) => setContributionEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="flex-1"
+                                                />
+                                                {contributionEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(contributionEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <p className="text-xs text-green-600 flex items-center gap-1">
                                             <TrendingUp className="h-3 w-3" />

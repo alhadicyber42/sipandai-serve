@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     Award, TrendingDown, TrendingUp, CheckCircle2, Star, Calculator, 
     Gavel, Clock, BarChart3, HandHeart, Crown, Building2, ArrowRight,
-    AlertTriangle, Sparkles
+    AlertTriangle, Sparkles, Link, ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,15 +48,19 @@ export function AdminPusatEvaluationForm({
     // Form states - can override admin_unit decisions
     const [hasDisciplinaryAction, setHasDisciplinaryAction] = useState(false);
     const [disciplinaryActionNote, setDisciplinaryActionNote] = useState("");
+    const [disciplinaryEvidenceLink, setDisciplinaryEvidenceLink] = useState("");
     
     const [hasPoorAttendance, setHasPoorAttendance] = useState(false);
     const [attendanceNote, setAttendanceNote] = useState("");
+    const [attendanceEvidenceLink, setAttendanceEvidenceLink] = useState("");
     
     const [hasPoorPerformance, setHasPoorPerformance] = useState(false);
     const [performanceNote, setPerformanceNote] = useState("");
+    const [performanceEvidenceLink, setPerformanceEvidenceLink] = useState("");
     
     const [hasContribution, setHasContribution] = useState(false);
     const [contributionDescription, setContributionDescription] = useState("");
+    const [contributionEvidenceLink, setContributionEvidenceLink] = useState("");
 
     // Additional adjustment unique to admin_pusat
     const [additionalAdjustment, setAdditionalAdjustment] = useState(0);
@@ -71,36 +75,48 @@ export function AdminPusatEvaluationForm({
             // Load existing admin_pusat evaluation
             setHasDisciplinaryAction(existingEvaluation.has_disciplinary_action);
             setDisciplinaryActionNote(existingEvaluation.disciplinary_action_note || "");
+            setDisciplinaryEvidenceLink(existingEvaluation.disciplinary_evidence_link || "");
             setHasPoorAttendance(existingEvaluation.has_poor_attendance);
             setAttendanceNote(existingEvaluation.attendance_note || "");
+            setAttendanceEvidenceLink(existingEvaluation.attendance_evidence_link || "");
             setHasPoorPerformance(existingEvaluation.has_poor_performance);
             setPerformanceNote(existingEvaluation.performance_note || "");
+            setPerformanceEvidenceLink(existingEvaluation.performance_evidence_link || "");
             setHasContribution(existingEvaluation.has_contribution);
             setContributionDescription(existingEvaluation.contribution_description || "");
+            setContributionEvidenceLink(existingEvaluation.contribution_evidence_link || "");
             setAdditionalAdjustment(existingEvaluation.additional_adjustment || 0);
             setAdditionalAdjustmentNote(existingEvaluation.additional_adjustment_note || "");
         } else if (adminUnitEvaluation) {
             // Pre-fill from admin_unit evaluation
             setHasDisciplinaryAction(adminUnitEvaluation.has_disciplinary_action);
             setDisciplinaryActionNote(adminUnitEvaluation.disciplinary_action_note || "");
+            setDisciplinaryEvidenceLink(adminUnitEvaluation.disciplinary_evidence_link || "");
             setHasPoorAttendance(adminUnitEvaluation.has_poor_attendance);
             setAttendanceNote(adminUnitEvaluation.attendance_note || "");
+            setAttendanceEvidenceLink(adminUnitEvaluation.attendance_evidence_link || "");
             setHasPoorPerformance(adminUnitEvaluation.has_poor_performance);
             setPerformanceNote(adminUnitEvaluation.performance_note || "");
+            setPerformanceEvidenceLink(adminUnitEvaluation.performance_evidence_link || "");
             setHasContribution(adminUnitEvaluation.has_contribution);
             setContributionDescription(adminUnitEvaluation.contribution_description || "");
+            setContributionEvidenceLink(adminUnitEvaluation.contribution_evidence_link || "");
             setAdditionalAdjustment(0);
             setAdditionalAdjustmentNote("");
         } else {
             // Reset form
             setHasDisciplinaryAction(false);
             setDisciplinaryActionNote("");
+            setDisciplinaryEvidenceLink("");
             setHasPoorAttendance(false);
             setAttendanceNote("");
+            setAttendanceEvidenceLink("");
             setHasPoorPerformance(false);
             setPerformanceNote("");
+            setPerformanceEvidenceLink("");
             setHasContribution(false);
             setContributionDescription("");
+            setContributionEvidenceLink("");
             setAdditionalAdjustment(0);
             setAdditionalAdjustmentNote("");
         }
@@ -145,15 +161,19 @@ export function AdminPusatEvaluationForm({
                 has_disciplinary_action: hasDisciplinaryAction,
                 disciplinary_penalty: disciplinaryPenalty,
                 disciplinary_action_note: disciplinaryActionNote.trim() || null,
+                disciplinary_evidence_link: disciplinaryEvidenceLink.trim() || null,
                 has_poor_attendance: hasPoorAttendance,
                 attendance_penalty: attendancePenalty,
                 attendance_note: attendanceNote.trim() || null,
+                attendance_evidence_link: attendanceEvidenceLink.trim() || null,
                 has_poor_performance: hasPoorPerformance,
                 performance_penalty: performancePenalty,
                 performance_note: performanceNote.trim() || null,
+                performance_evidence_link: performanceEvidenceLink.trim() || null,
                 has_contribution: hasContribution,
                 contribution_bonus: contributionBonus,
                 contribution_description: contributionDescription.trim() || null,
+                contribution_evidence_link: contributionEvidenceLink.trim() || null,
                 additional_adjustment: additionalAdjustment,
                 additional_adjustment_note: additionalAdjustmentNote.trim() || null,
                 final_total_points: finalTotalPoints
@@ -327,14 +347,43 @@ export function AdminPusatEvaluationForm({
                                     </div>
                                 </CardHeader>
                                 {hasDisciplinaryAction && (
-                                    <CardContent className="pt-0 pb-3 px-4">
-                                        <Textarea
-                                            value={disciplinaryActionNote}
-                                            onChange={(e) => setDisciplinaryActionNote(e.target.value)}
-                                            placeholder="Jelaskan hukuman disiplin..."
-                                            className="min-h-[60px] text-sm"
-                                        />
-                                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                    <CardContent className="pt-0 pb-3 px-4 space-y-3">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium">Catatan <span className="text-destructive">*</span></Label>
+                                            <Textarea
+                                                value={disciplinaryActionNote}
+                                                onChange={(e) => setDisciplinaryActionNote(e.target.value)}
+                                                placeholder="Jelaskan hukuman disiplin..."
+                                                className="min-h-[60px] text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="url"
+                                                    value={disciplinaryEvidenceLink}
+                                                    onChange={(e) => setDisciplinaryEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="text-sm flex-1"
+                                                />
+                                                {disciplinaryEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(disciplinaryEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-red-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{disciplinaryPenalty} poin
                                         </p>
@@ -358,14 +407,43 @@ export function AdminPusatEvaluationForm({
                                     </div>
                                 </CardHeader>
                                 {hasPoorAttendance && (
-                                    <CardContent className="pt-0 pb-3 px-4">
-                                        <Textarea
-                                            value={attendanceNote}
-                                            onChange={(e) => setAttendanceNote(e.target.value)}
-                                            placeholder="Catatan presensi (opsional)..."
-                                            className="min-h-[50px] text-sm"
-                                        />
-                                        <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                                    <CardContent className="pt-0 pb-3 px-4 space-y-3">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium">Catatan (opsional)</Label>
+                                            <Textarea
+                                                value={attendanceNote}
+                                                onChange={(e) => setAttendanceNote(e.target.value)}
+                                                placeholder="Catatan presensi (opsional)..."
+                                                className="min-h-[50px] text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="url"
+                                                    value={attendanceEvidenceLink}
+                                                    onChange={(e) => setAttendanceEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="text-sm flex-1"
+                                                />
+                                                {attendanceEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(attendanceEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-orange-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{attendancePenalty} poin
                                         </p>
@@ -389,14 +467,43 @@ export function AdminPusatEvaluationForm({
                                     </div>
                                 </CardHeader>
                                 {hasPoorPerformance && (
-                                    <CardContent className="pt-0 pb-3 px-4">
-                                        <Textarea
-                                            value={performanceNote}
-                                            onChange={(e) => setPerformanceNote(e.target.value)}
-                                            placeholder="Catatan E-Kinerja (opsional)..."
-                                            className="min-h-[50px] text-sm"
-                                        />
-                                        <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                    <CardContent className="pt-0 pb-3 px-4 space-y-3">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium">Catatan (opsional)</Label>
+                                            <Textarea
+                                                value={performanceNote}
+                                                onChange={(e) => setPerformanceNote(e.target.value)}
+                                                placeholder="Catatan E-Kinerja (opsional)..."
+                                                className="min-h-[50px] text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="url"
+                                                    value={performanceEvidenceLink}
+                                                    onChange={(e) => setPerformanceEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="text-sm flex-1"
+                                                />
+                                                {performanceEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(performanceEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-amber-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{performancePenalty} poin
                                         </p>
@@ -420,14 +527,43 @@ export function AdminPusatEvaluationForm({
                                     </div>
                                 </CardHeader>
                                 {hasContribution && (
-                                    <CardContent className="pt-0 pb-3 px-4">
-                                        <Textarea
-                                            value={contributionDescription}
-                                            onChange={(e) => setContributionDescription(e.target.value)}
-                                            placeholder="Jelaskan kontribusi pegawai..."
-                                            className="min-h-[60px] text-sm"
-                                        />
-                                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                    <CardContent className="pt-0 pb-3 px-4 space-y-3">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium">Deskripsi Kontribusi <span className="text-destructive">*</span></Label>
+                                            <Textarea
+                                                value={contributionDescription}
+                                                onChange={(e) => setContributionDescription(e.target.value)}
+                                                placeholder="Jelaskan kontribusi pegawai..."
+                                                className="min-h-[60px] text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="url"
+                                                    value={contributionEvidenceLink}
+                                                    onChange={(e) => setContributionEvidenceLink(e.target.value)}
+                                                    placeholder="https://..."
+                                                    className="text-sm flex-1"
+                                                />
+                                                {contributionEvidenceLink && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(contributionEvidenceLink, '_blank')}
+                                                        className="shrink-0"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-green-600 flex items-center gap-1">
                                             <TrendingUp className="h-3 w-3" />
                                             Penambahan: +{contributionBonus} poin
                                         </p>

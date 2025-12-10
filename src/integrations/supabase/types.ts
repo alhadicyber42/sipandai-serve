@@ -20,12 +20,15 @@ export type Database = {
           additional_adjustment_note: string | null
           admin_unit_evaluation_id: string | null
           admin_unit_final_points: number | null
+          attendance_evidence_link: string | null
           attendance_note: string | null
           attendance_penalty: number
           contribution_bonus: number
           contribution_description: string | null
+          contribution_evidence_link: string | null
           created_at: string
           disciplinary_action_note: string | null
+          disciplinary_evidence_link: string | null
           disciplinary_penalty: number
           evaluator_id: string
           final_total_points: number
@@ -35,6 +38,7 @@ export type Database = {
           has_poor_performance: boolean
           id: string
           peer_total_points: number
+          performance_evidence_link: string | null
           performance_note: string | null
           performance_penalty: number
           rated_employee_id: string
@@ -46,12 +50,15 @@ export type Database = {
           additional_adjustment_note?: string | null
           admin_unit_evaluation_id?: string | null
           admin_unit_final_points?: number | null
+          attendance_evidence_link?: string | null
           attendance_note?: string | null
           attendance_penalty?: number
           contribution_bonus?: number
           contribution_description?: string | null
+          contribution_evidence_link?: string | null
           created_at?: string
           disciplinary_action_note?: string | null
+          disciplinary_evidence_link?: string | null
           disciplinary_penalty?: number
           evaluator_id: string
           final_total_points?: number
@@ -61,6 +68,7 @@ export type Database = {
           has_poor_performance?: boolean
           id?: string
           peer_total_points?: number
+          performance_evidence_link?: string | null
           performance_note?: string | null
           performance_penalty?: number
           rated_employee_id: string
@@ -72,12 +80,15 @@ export type Database = {
           additional_adjustment_note?: string | null
           admin_unit_evaluation_id?: string | null
           admin_unit_final_points?: number | null
+          attendance_evidence_link?: string | null
           attendance_note?: string | null
           attendance_penalty?: number
           contribution_bonus?: number
           contribution_description?: string | null
+          contribution_evidence_link?: string | null
           created_at?: string
           disciplinary_action_note?: string | null
+          disciplinary_evidence_link?: string | null
           disciplinary_penalty?: number
           evaluator_id?: string
           final_total_points?: number
@@ -87,6 +98,7 @@ export type Database = {
           has_poor_performance?: boolean
           id?: string
           peer_total_points?: number
+          performance_evidence_link?: string | null
           performance_note?: string | null
           performance_penalty?: number
           rated_employee_id?: string
