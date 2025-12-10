@@ -690,14 +690,13 @@ export default function AdminEmployeeRatings() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-2 sm:p-6">
-                            <Tabs defaultValue="all" className="w-full">
-                                <TabsList className="grid w-full grid-cols-3 mb-4">
-                                    <TabsTrigger value="all">Semua ({filteredAggregatedRatings.length})</TabsTrigger>
+                            <Tabs defaultValue="ASN" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2 mb-4">
                                     <TabsTrigger value="ASN">ASN ({filteredAggregatedByCategory('ASN').length})</TabsTrigger>
                                     <TabsTrigger value="Non ASN">Non ASN ({filteredAggregatedByCategory('Non ASN').length})</TabsTrigger>
                                 </TabsList>
                                 
-                                {['all', 'ASN', 'Non ASN'].map((tabValue) => {
+                                {['ASN', 'Non ASN'].map((tabValue) => {
                                     const dataToShow = filteredAggregatedByCategory(tabValue);
                                     return (
                                         <TabsContent key={tabValue} value={tabValue}>
@@ -929,14 +928,13 @@ export default function AdminEmployeeRatings() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-2 sm:p-6">
-                        <Tabs defaultValue="all" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 mb-4">
-                                <TabsTrigger value="all">Semua ({filteredRatings.length})</TabsTrigger>
+                        <Tabs defaultValue="ASN" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-4">
                                 <TabsTrigger value="ASN">ASN ({filteredRatingsByCategory('ASN').length})</TabsTrigger>
                                 <TabsTrigger value="Non ASN">Non ASN ({filteredRatingsByCategory('Non ASN').length})</TabsTrigger>
                             </TabsList>
                             
-                            {['all', 'ASN', 'Non ASN'].map((tabValue) => {
+                            {['ASN', 'Non ASN'].map((tabValue) => {
                                 const ratingsToShow = filteredRatingsByCategory(tabValue);
                                 return (
                                     <TabsContent key={tabValue} value={tabValue}>
