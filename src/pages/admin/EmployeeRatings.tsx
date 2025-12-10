@@ -557,12 +557,21 @@ export default function AdminEmployeeRatings() {
                                 
                                 {['ASN', 'Non ASN'].map(tabValue => {
               const dataToShow = filteredAggregatedByCategory(tabValue);
+              // Sort by final points for leaderboard ranking
+              const getFinalPointsForSort = (r: AggregatedRating) => {
+                if (r.hasFinalEvaluation && r.finalEvaluation) return r.finalEvaluation.final_total_points;
+                if (r.hasUnitEvaluation && r.unitEvaluation) return r.unitEvaluation.final_total_points;
+                return r.totalPoints;
+              };
+              const sortedData = [...dataToShow].sort((a, b) => getFinalPointsForSort(b) - getFinalPointsForSort(a));
+              
               return <TabsContent key={tabValue} value={tabValue}>
                                             <div className="overflow-x-auto">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
-                                                            <TableHead className="pl-4">Pegawai</TableHead>
+                                                            <TableHead className="pl-4 w-16 text-center">#</TableHead>
+                                                            <TableHead>Pegawai</TableHead>
                                                             <TableHead className="hidden lg:table-cell">Unit Kerja</TableHead>
                                                             <TableHead className="hidden md:table-cell">Periode</TableHead>
                                                             <TableHead className="text-center">Poin Rekan</TableHead>
@@ -573,12 +582,25 @@ export default function AdminEmployeeRatings() {
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {dataToShow.length === 0 ? <TableRow>
-                                                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                                        {sortedData.length === 0 ? <TableRow>
+                                                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                                                     Belum ada penilaian
                                                                 </TableCell>
-                                                            </TableRow> : dataToShow.map(item => <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
-                                                                    <TableCell className="pl-4">
+                                                            </TableRow> : sortedData.map((item, index) => {
+                                                              const rank = index + 1;
+                                                              const getRankStyle = (r: number) => {
+                                                                if (r === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
+                                                                if (r === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
+                                                                if (r === 3) return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
+                                                                return 'bg-muted text-muted-foreground';
+                                                              };
+                                                              return <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
+                                                                    <TableCell className="pl-4 text-center">
+                                                                        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${getRankStyle(rank)}`}>
+                                                                            {rank}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell>
                                                                         <div className="font-medium">{item.employeeName}</div>
                                                                         <div className="lg:hidden text-xs text-muted-foreground mt-1">
                                                                             {item.employeeWorkUnit || 'Unit tidak diketahui'}
@@ -692,7 +714,7 @@ export default function AdminEmployeeRatings() {
                             })()}
                                                                         </div>
                                                                     </TableCell>
-                                                                </TableRow>)}
+                                                                </TableRow>})}
                                                     </TableBody>
                                                 </Table>
                                             </div>
