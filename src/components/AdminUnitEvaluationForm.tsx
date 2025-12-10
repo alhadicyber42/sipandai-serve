@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart } from "lucide-react";
+import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart, Link } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,37 +42,49 @@ export function AdminUnitEvaluationForm({
     // Form states
     const [hasDisciplinaryAction, setHasDisciplinaryAction] = useState(false);
     const [disciplinaryActionNote, setDisciplinaryActionNote] = useState("");
+    const [disciplinaryEvidenceLink, setDisciplinaryEvidenceLink] = useState("");
     
     const [hasPoorAttendance, setHasPoorAttendance] = useState(false);
     const [attendanceNote, setAttendanceNote] = useState("");
+    const [attendanceEvidenceLink, setAttendanceEvidenceLink] = useState("");
     
     const [hasPoorPerformance, setHasPoorPerformance] = useState(false);
     const [performanceNote, setPerformanceNote] = useState("");
+    const [performanceEvidenceLink, setPerformanceEvidenceLink] = useState("");
     
     const [hasContribution, setHasContribution] = useState(false);
     const [contributionDescription, setContributionDescription] = useState("");
+    const [contributionEvidenceLink, setContributionEvidenceLink] = useState("");
 
     // Load existing evaluation if available
     useEffect(() => {
         if (existingEvaluation) {
             setHasDisciplinaryAction(existingEvaluation.has_disciplinary_action);
             setDisciplinaryActionNote(existingEvaluation.disciplinary_action_note || "");
+            setDisciplinaryEvidenceLink(existingEvaluation.disciplinary_evidence_link || "");
             setHasPoorAttendance(existingEvaluation.has_poor_attendance);
             setAttendanceNote(existingEvaluation.attendance_note || "");
+            setAttendanceEvidenceLink(existingEvaluation.attendance_evidence_link || "");
             setHasPoorPerformance(existingEvaluation.has_poor_performance);
             setPerformanceNote(existingEvaluation.performance_note || "");
+            setPerformanceEvidenceLink(existingEvaluation.performance_evidence_link || "");
             setHasContribution(existingEvaluation.has_contribution);
             setContributionDescription(existingEvaluation.contribution_description || "");
+            setContributionEvidenceLink(existingEvaluation.contribution_evidence_link || "");
         } else {
             // Reset form
             setHasDisciplinaryAction(false);
             setDisciplinaryActionNote("");
+            setDisciplinaryEvidenceLink("");
             setHasPoorAttendance(false);
             setAttendanceNote("");
+            setAttendanceEvidenceLink("");
             setHasPoorPerformance(false);
             setPerformanceNote("");
+            setPerformanceEvidenceLink("");
             setHasContribution(false);
             setContributionDescription("");
+            setContributionEvidenceLink("");
         }
     }, [existingEvaluation, isOpen]);
 
@@ -105,12 +118,16 @@ export function AdminUnitEvaluationForm({
                 work_unit_id: workUnitId,
                 has_disciplinary_action: hasDisciplinaryAction,
                 disciplinary_action_note: disciplinaryActionNote.trim() || null,
+                disciplinary_evidence_link: disciplinaryEvidenceLink.trim() || null,
                 has_poor_attendance: hasPoorAttendance,
                 attendance_note: attendanceNote.trim() || null,
+                attendance_evidence_link: attendanceEvidenceLink.trim() || null,
                 has_poor_performance: hasPoorPerformance,
                 performance_note: performanceNote.trim() || null,
+                performance_evidence_link: performanceEvidenceLink.trim() || null,
                 has_contribution: hasContribution,
                 contribution_description: contributionDescription.trim() || null,
+                contribution_evidence_link: contributionEvidenceLink.trim() || null,
                 original_total_points: originalTotalPoints,
                 disciplinary_penalty: disciplinaryPenalty,
                 attendance_penalty: attendancePenalty,
@@ -210,19 +227,34 @@ export function AdminUnitEvaluationForm({
                                     Apakah pegawai memiliki hukuman disiplin dalam periode ini?
                                 </CardDescription>
                             </CardHeader>
-                            {hasDisciplinaryAction && (
+                        {hasDisciplinaryAction && (
                                 <CardContent className="pt-0">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="disciplinary-note" className="text-sm font-medium">
-                                            Catatan Hukuman Disiplin <span className="text-destructive">*</span>
-                                        </Label>
-                                        <Textarea
-                                            id="disciplinary-note"
-                                            value={disciplinaryActionNote}
-                                            onChange={(e) => setDisciplinaryActionNote(e.target.value)}
-                                            placeholder="Jelaskan jenis hukuman disiplin yang diterima..."
-                                            className="min-h-[80px]"
-                                        />
+                                    <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="disciplinary-note" className="text-sm font-medium">
+                                                Catatan Hukuman Disiplin <span className="text-destructive">*</span>
+                                            </Label>
+                                            <Textarea
+                                                id="disciplinary-note"
+                                                value={disciplinaryActionNote}
+                                                onChange={(e) => setDisciplinaryActionNote(e.target.value)}
+                                                placeholder="Jelaskan jenis hukuman disiplin yang diterima..."
+                                                className="min-h-[80px]"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="disciplinary-link" className="text-sm font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <Input
+                                                id="disciplinary-link"
+                                                type="url"
+                                                value={disciplinaryEvidenceLink}
+                                                onChange={(e) => setDisciplinaryEvidenceLink(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                         <p className="text-xs text-destructive flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{disciplinaryPenalty} poin
@@ -250,19 +282,34 @@ export function AdminUnitEvaluationForm({
                                     Apakah presensi kehadiran pegawai buruk dalam periode ini?
                                 </CardDescription>
                             </CardHeader>
-                            {hasPoorAttendance && (
+                        {hasPoorAttendance && (
                                 <CardContent className="pt-0">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="attendance-note" className="text-sm font-medium">
-                                            Catatan Presensi (opsional)
-                                        </Label>
-                                        <Textarea
-                                            id="attendance-note"
-                                            value={attendanceNote}
-                                            onChange={(e) => setAttendanceNote(e.target.value)}
-                                            placeholder="Jelaskan masalah presensi..."
-                                            className="min-h-[60px]"
-                                        />
+                                    <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="attendance-note" className="text-sm font-medium">
+                                                Catatan Presensi (opsional)
+                                            </Label>
+                                            <Textarea
+                                                id="attendance-note"
+                                                value={attendanceNote}
+                                                onChange={(e) => setAttendanceNote(e.target.value)}
+                                                placeholder="Jelaskan masalah presensi..."
+                                                className="min-h-[60px]"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="attendance-link" className="text-sm font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <Input
+                                                id="attendance-link"
+                                                type="url"
+                                                value={attendanceEvidenceLink}
+                                                onChange={(e) => setAttendanceEvidenceLink(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                         <p className="text-xs text-orange-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{attendancePenalty} poin
@@ -290,19 +337,34 @@ export function AdminUnitEvaluationForm({
                                     Apakah E-Kinerja pegawai tidak baik atau di bawah ekspektasi?
                                 </CardDescription>
                             </CardHeader>
-                            {hasPoorPerformance && (
+                        {hasPoorPerformance && (
                                 <CardContent className="pt-0">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="performance-note" className="text-sm font-medium">
-                                            Catatan E-Kinerja (opsional)
-                                        </Label>
-                                        <Textarea
-                                            id="performance-note"
-                                            value={performanceNote}
-                                            onChange={(e) => setPerformanceNote(e.target.value)}
-                                            placeholder="Jelaskan masalah E-Kinerja..."
-                                            className="min-h-[60px]"
-                                        />
+                                    <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="performance-note" className="text-sm font-medium">
+                                                Catatan E-Kinerja (opsional)
+                                            </Label>
+                                            <Textarea
+                                                id="performance-note"
+                                                value={performanceNote}
+                                                onChange={(e) => setPerformanceNote(e.target.value)}
+                                                placeholder="Jelaskan masalah E-Kinerja..."
+                                                className="min-h-[60px]"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="performance-link" className="text-sm font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <Input
+                                                id="performance-link"
+                                                type="url"
+                                                value={performanceEvidenceLink}
+                                                onChange={(e) => setPerformanceEvidenceLink(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                         <p className="text-xs text-amber-600 flex items-center gap-1">
                                             <TrendingDown className="h-3 w-3" />
                                             Pengurangan: -{performancePenalty} poin
@@ -330,19 +392,34 @@ export function AdminUnitEvaluationForm({
                                     Apakah pegawai memiliki kontribusi besar di unit kerja?
                                 </CardDescription>
                             </CardHeader>
-                            {hasContribution && (
+                        {hasContribution && (
                                 <CardContent className="pt-0">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contribution-desc" className="text-sm font-medium">
-                                            Deskripsi Kontribusi <span className="text-destructive">*</span>
-                                        </Label>
-                                        <Textarea
-                                            id="contribution-desc"
-                                            value={contributionDescription}
-                                            onChange={(e) => setContributionDescription(e.target.value)}
-                                            placeholder="Jelaskan kontribusi yang diberikan pegawai..."
-                                            className="min-h-[80px]"
-                                        />
+                                    <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contribution-desc" className="text-sm font-medium">
+                                                Deskripsi Kontribusi <span className="text-destructive">*</span>
+                                            </Label>
+                                            <Textarea
+                                                id="contribution-desc"
+                                                value={contributionDescription}
+                                                onChange={(e) => setContributionDescription(e.target.value)}
+                                                placeholder="Jelaskan kontribusi yang diberikan pegawai..."
+                                                className="min-h-[80px]"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contribution-link" className="text-sm font-medium flex items-center gap-1">
+                                                <Link className="h-3 w-3" />
+                                                Link Bukti Dukung
+                                            </Label>
+                                            <Input
+                                                id="contribution-link"
+                                                type="url"
+                                                value={contributionEvidenceLink}
+                                                onChange={(e) => setContributionEvidenceLink(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                         <p className="text-xs text-green-600 flex items-center gap-1">
                                             <TrendingUp className="h-3 w-3" />
                                             Bonus: +{contributionBonus} poin
