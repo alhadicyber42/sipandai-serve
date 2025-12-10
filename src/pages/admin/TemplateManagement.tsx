@@ -14,7 +14,6 @@ import {
     updateTemplate,
     deleteTemplate,
     setDefaultTemplate,
-    initializeDefaultTemplate,
     getTemplatesByWorkUnit
 } from "@/lib/templateStorage";
 import { LetterTemplate, LetterCategory } from "@/types/leave-certificate";
@@ -60,13 +59,12 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
     useEffect(() => {
         if (user?.work_unit_id) {
             setSelectedWorkUnitId(user.work_unit_id);
-            initializeDefaultTemplate(user.work_unit_id, "Unit Kerja", user.id);
         }
         loadTemplates();
     }, [user, selectedWorkUnitId, selectedCategory]);
 
-    const loadTemplates = () => {
-        const data = getTemplatesByWorkUnit(selectedWorkUnitId, selectedCategory);
+    const loadTemplates = async () => {
+        const data = await getTemplatesByWorkUnit(selectedWorkUnitId, selectedCategory);
         setTemplates(data);
     };
 
@@ -82,22 +80,22 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
         setDeletingTemplateId(id);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deletingTemplateId) {
-            deleteTemplate(deletingTemplateId);
+            await deleteTemplate(deletingTemplateId);
             toast.success("Template berhasil dihapus");
             setDeletingTemplateId(null);
             loadTemplates();
         }
     };
 
-    const handleSetDefault = (id: string) => {
-        setDefaultTemplate(id);
+    const handleSetDefault = async (id: string) => {
+        await setDefaultTemplate(id);
         toast.success("Template default berhasil diubah");
         loadTemplates();
     };
 
-    const handleSaveTemplate = () => {
+    const handleSaveTemplate = async () => {
         if (!newTemplateName.trim()) {
             toast.error("Nama template harus diisi");
             return;
@@ -110,7 +108,7 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
 
         try {
             if (editingTemplate) {
-                updateTemplate(editingTemplate.id, {
+                await updateTemplate(editingTemplate.id, {
                     template_name: newTemplateName,
                     category: newTemplateCategory,
                     file_content: newTemplateFile?.base64,
@@ -118,7 +116,7 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                 });
                 toast.success("Template berhasil diperbarui");
             } else {
-                createTemplate({
+                await createTemplate({
                     work_unit_id: selectedWorkUnitId,
                     template_name: newTemplateName,
                     category: newTemplateCategory,

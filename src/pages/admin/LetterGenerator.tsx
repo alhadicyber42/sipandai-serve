@@ -72,12 +72,15 @@ export default function LetterGenerator() {
     ]);
 
     useEffect(() => {
-        if (user?.work_unit_id && category) {
-            const loadedTemplates = getTemplatesByWorkUnit(user.work_unit_id, category as LetterCategory);
-            setTemplates(loadedTemplates);
-        } else {
-            setTemplates([]);
-        }
+        const loadTemplates = async () => {
+            if (user?.work_unit_id && category) {
+                const loadedTemplates = await getTemplatesByWorkUnit(user.work_unit_id, category as LetterCategory);
+                setTemplates(loadedTemplates);
+            } else {
+                setTemplates([]);
+            }
+        };
+        loadTemplates();
     }, [user, category]);
 
 

@@ -499,12 +499,12 @@ export default function Cuti() {
 
   };
 
-  const handleGenerateCertificate = (service: Service) => {
+  const handleGenerateCertificate = async (service: Service) => {
     // 1. Get default template for this user's unit
     // In real app, we should get unit from service.user_id -> profile -> work_unit_id
     // For now, we use current user's unit or default 1
     const workUnitId = user?.work_unit_id || 1;
-    const template = getDefaultTemplate(workUnitId, 'cuti');
+    const template = await getDefaultTemplate(workUnitId, 'cuti');
 
     if (!template) {
       toast.error("Template surat keterangan belum tersedia untuk unit kerja ini.");

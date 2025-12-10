@@ -532,6 +532,56 @@ export type Database = {
           },
         ]
       }
+      letter_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          file_content: string | null
+          file_name: string | null
+          id: string
+          is_default: boolean
+          template_content: string | null
+          template_name: string
+          updated_at: string
+          work_unit_id: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by: string
+          file_content?: string | null
+          file_name?: string | null
+          id?: string
+          is_default?: boolean
+          template_content?: string | null
+          template_name: string
+          updated_at?: string
+          work_unit_id: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          file_content?: string | null
+          file_name?: string | null
+          id?: string
+          is_default?: boolean
+          template_content?: string | null
+          template_name?: string
+          updated_at?: string
+          work_unit_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_templates_work_unit_id_fkey"
+            columns: ["work_unit_id"]
+            isOneToOne: false
+            referencedRelation: "work_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agama: string | null
