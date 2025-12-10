@@ -31,6 +31,7 @@ export default function EmployeeOfTheMonth() {
     const [slideshowTestimonialsNonASN, setSlideshowTestimonialsNonASN] = useState<TestimonialItem[]>([]);
     const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     const [ratedEmployeeIds, setRatedEmployeeIds] = useState<Set<string>>(new Set());
+    const [hasRatedThisPeriod, setHasRatedThisPeriod] = useState(false);
 
     useEffect(() => {
         loadEmployees();
@@ -119,6 +120,8 @@ export default function EmployeeOfTheMonth() {
 
         if (myRatings) {
             setRatedEmployeeIds(new Set(myRatings.map(r => r.rated_employee_id)));
+            // Check if user has rated anyone this period (only 1 rating allowed per period)
+            setHasRatedThisPeriod(myRatings.length > 0);
         }
     };
 
@@ -593,6 +596,26 @@ export default function EmployeeOfTheMonth() {
                                 </div>
                             </CardHeader>
                             <CardContent>
+                                {/* Info about rating limit */}
+                                {hasRatedThisPeriod ? (
+                                    <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                                        <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                                            <span className="text-amber-500">⚠️</span>
+                                            <span>
+                                                <strong>Kuota penilaian Anda sudah terpakai.</strong> Setiap pegawai hanya dapat memberikan 1 penilaian per periode bulan.
+                                            </span>
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                                            <span className="text-blue-500">ℹ️</span>
+                                            <span>
+                                                Anda memiliki <strong>1 kuota penilaian</strong> untuk periode bulan ini. Pilih satu pegawai yang menurut Anda paling layak menjadi Employee of the Month.
+                                            </span>
+                                        </p>
+                                    </div>
+                                )}
                                 <Tabs defaultValue="asn" className="w-full">
                                     <TabsList className="grid w-full grid-cols-2 mb-6">
                                         <TabsTrigger value="asn">ASN</TabsTrigger>
@@ -656,13 +679,17 @@ export default function EmployeeOfTheMonth() {
                                                                             </Badge>
                                                                         </TableCell>
                                                                         <TableCell className="text-right">
-                                                                            {ratedEmployeeIds.has(employee.id) ? (
+                                                                            {employee.id === user?.id ? (
+                                                                                <Badge variant="outline" className="text-muted-foreground">
+                                                                                    Anda sendiri
+                                                                                </Badge>
+                                                                            ) : ratedEmployeeIds.has(employee.id) ? (
                                                                                 <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                                                                     ✓ Sudah Dinilai
                                                                                 </Badge>
-                                                                            ) : employee.id === user?.id ? (
+                                                                            ) : hasRatedThisPeriod ? (
                                                                                 <Badge variant="outline" className="text-muted-foreground">
-                                                                                    Anda sendiri
+                                                                                    Kuota Habis
                                                                                 </Badge>
                                                                             ) : (
                                                                                 <Button
