@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
 import { AdminPusatEvaluationForm } from "@/components/AdminPusatEvaluationForm";
 import { WORK_UNITS } from "@/lib/constants";
+import { toast } from "sonner";
 
 interface Rating {
     id: string;
@@ -36,6 +37,7 @@ interface AggregatedRating {
     employeeName: string;
     employeeWorkUnit?: string;
     employeeWorkUnitId?: number;
+    employeeCategory?: string;
     ratingPeriod: string;
     totalPoints: number;
     ratingCount: number;
@@ -43,6 +45,15 @@ interface AggregatedRating {
     unitEvaluation?: any;
     hasFinalEvaluation: boolean;
     finalEvaluation?: any;
+}
+
+interface DesignatedWinner {
+    id: string;
+    employee_id: string;
+    winner_type: 'monthly' | 'yearly';
+    employee_category: 'ASN' | 'Non ASN';
+    period: string;
+    final_points: number;
 }
 
 export default function AdminEmployeeRatings() {
@@ -58,6 +69,10 @@ export default function AdminEmployeeRatings() {
     const [finalEvaluations, setFinalEvaluations] = useState<any[]>([]);
     const [aggregatedRatings, setAggregatedRatings] = useState<AggregatedRating[]>([]);
     const [evaluationFilter, setEvaluationFilter] = useState<string>("all");
+    const [designatedWinners, setDesignatedWinners] = useState<DesignatedWinner[]>([]);
+    const [isDesignateDialogOpen, setIsDesignateDialogOpen] = useState(false);
+    const [selectedForDesignation, setSelectedForDesignation] = useState<AggregatedRating | null>(null);
+    const [designationType, setDesignationType] = useState<'monthly' | 'yearly'>('monthly');
     
     // Evaluation form state for admin_unit
     const [isEvaluationFormOpen, setIsEvaluationFormOpen] = useState(false);
