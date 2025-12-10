@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -131,9 +131,13 @@ const ratingCriteriaNonASN: RatingCriteria[] = [
 ];
 
 export default function EmployeeRating() {
-    const { employeeId } = useParams();
+    const { employeeId: routeEmployeeId } = useParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    
+    // Support both route param and query param for employee ID
+    const employeeId = routeEmployeeId || searchParams.get('id');
     const [employee, setEmployee] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
