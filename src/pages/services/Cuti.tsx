@@ -253,6 +253,10 @@ export default function Cuti() {
     const substituteEmployee = formData.get("substitute_employee") as string;
     const emergencyContact = formData.get("emergency_contact") as string;
 
+    // Debug: Log document links before submit
+    console.log("Document links before submit:", documentLinks);
+    console.log("Number of documents:", documentLinks.length);
+
     if (!startDate || !endDate) {
       toast.error("Pilih tanggal mulai dan selesai");
       setIsSubmitting(false);
@@ -568,7 +572,17 @@ export default function Cuti() {
               </div>
 
               {user?.role === "user_unit" && (
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (open) {
+                    // Reset form state when dialog opens
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                    setDocumentLinks([]);
+                    setCurrentLink("");
+                    setSelectedLeaveType("");
+                  }
+                }}>
                   <DialogTrigger asChild>
                     <Button size="lg" className="gap-2 bg-white text-green-600 hover:bg-white/90 shadow-lg border-none">
                       <Plus className="h-5 w-5" />
@@ -665,7 +679,14 @@ export default function Cuti() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Dokumen Pendukung (Link)</Label>
+                            <div className="flex items-center justify-between">
+                              <Label>Dokumen Pendukung (Link)</Label>
+                              {documentLinks.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {documentLinks.length} dokumen
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex gap-2">
                               <div className="flex-1">
                                 <Input
