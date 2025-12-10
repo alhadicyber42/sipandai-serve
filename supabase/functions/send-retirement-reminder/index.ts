@@ -104,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "SIPANDAI <onboarding@resend.dev>",
+      from: "SIPANDAI <noreply@sipandai.site>",
       to: [employeeEmail],
       subject: `📢 Pengingat: Masa Pensiun Anda ${monthsUntil} Bulan Lagi`,
       html: emailHtml,
