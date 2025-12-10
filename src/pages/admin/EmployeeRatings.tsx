@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2 } from "lucide-react";
+import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2, Gavel, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
@@ -84,6 +84,7 @@ export default function AdminEmployeeRatings() {
 
     useEffect(() => {
         loadData();
+        loadDesignatedWinners();
     }, []);
 
     useEffect(() => {
@@ -297,6 +298,94 @@ export default function AdminEmployeeRatings() {
     const handleOpenFinalEvaluationForm = (item: AggregatedRating) => {
         setSelectedEmployeeForFinalEval(item);
         setIsFinalEvaluationFormOpen(true);
+    };
+
+    // Handle designation of winner
+    const handleDesignateWinner = async (item: AggregatedRating, type: 'monthly' | 'yearly' = 'monthly') => {
+        if (!user) return;
+        
+        try {
+            const category = employees.find(e => e.id === item.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+            const period = type === 'monthly' ? item.ratingPeriod : item.ratingPeriod.split('-')[0];
+            const finalPoints = item.hasFinalEvaluation 
+                ? item.finalEvaluation?.final_total_points 
+                : item.hasUnitEvaluation 
+                    ? item.unitEvaluation?.final_total_points 
+                    : Math.round(item.totalPoints / item.ratingCount);
+
+            // Check if winner already exists for this period and category
+            const { data: existing } = await supabase
+                .from("designated_winners")
+                .select("id")
+                .eq("winner_type", type)
+                .eq("employee_category", category)
+                .eq("period", period);
+
+            if (existing && existing.length > 0) {
+                // Update existing winner
+                const { error } = await supabase
+                    .from("designated_winners")
+                    .update({
+                        employee_id: item.employeeId,
+                        final_points: finalPoints,
+                        designated_by: user.id,
+                        designated_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", existing[0].id);
+
+                if (error) throw error;
+            } else {
+                // Insert new winner
+                const { error } = await supabase
+                    .from("designated_winners")
+                    .insert({
+                        employee_id: item.employeeId,
+                        winner_type: type,
+                        employee_category: category,
+                        period,
+                        final_points: finalPoints,
+                        designated_by: user.id
+                    });
+
+                if (error) throw error;
+            }
+
+            toast.success(`${item.employeeName} berhasil ditetapkan sebagai pemenang ${category}!`);
+            loadDesignatedWinners();
+        } catch (error: any) {
+            console.error('Error designating winner:', error);
+            toast.error("Gagal menetapkan pemenang: " + error.message);
+        }
+    };
+
+    const loadDesignatedWinners = async () => {
+        const { data } = await supabase
+            .from("designated_winners")
+            .select("*");
+        
+        setDesignatedWinners((data as DesignatedWinner[]) || []);
+    };
+
+    const removeDesignatedWinner = async (winnerId: string) => {
+        try {
+            const { error } = await supabase
+                .from("designated_winners")
+                .delete()
+                .eq("id", winnerId);
+
+            if (error) throw error;
+
+            toast.success("Penetapan pemenang berhasil dibatalkan");
+            loadDesignatedWinners();
+        } catch (error: any) {
+            console.error('Error removing winner:', error);
+            toast.error("Gagal membatalkan penetapan: " + error.message);
+        }
+    };
+
+    const isDesignatedWinner = (employeeId: string, period: string) => {
+        return designatedWinners.find(w => w.employee_id === employeeId && w.period === period);
     };
 
     const isAdminUnit = user?.role === "admin_unit";
@@ -677,17 +766,45 @@ export default function AdminEmployeeRatings() {
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-right pr-4">
-                                                        <Button
-                                                            variant={item.hasFinalEvaluation ? "outline" : "default"}
-                                                            size="sm"
-                                                            onClick={() => handleOpenFinalEvaluationForm(item)}
-                                                            className={`h-8 px-3 ${!item.hasFinalEvaluation ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
-                                                        >
-                                                            <Crown className="h-4 w-4 md:mr-2" />
-                                                            <span className="hidden md:inline">
-                                                                {item.hasFinalEvaluation ? "Edit Final" : "Nilai Final"}
-                                                            </span>
-                                                        </Button>
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button
+                                                                variant={item.hasFinalEvaluation ? "outline" : "default"}
+                                                                size="sm"
+                                                                onClick={() => handleOpenFinalEvaluationForm(item)}
+                                                                className={`h-8 px-3 ${!item.hasFinalEvaluation ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                                                            >
+                                                                <Crown className="h-4 w-4 md:mr-2" />
+                                                                <span className="hidden md:inline">
+                                                                    {item.hasFinalEvaluation ? "Edit Final" : "Nilai Final"}
+                                                                </span>
+                                                            </Button>
+                                                            {(() => {
+                                                                const winner = isDesignatedWinner(item.employeeId, item.ratingPeriod);
+                                                                if (winner) {
+                                                                    return (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => removeDesignatedWinner(winner.id)}
+                                                                            className="h-8 px-3 text-red-600 border-red-300 hover:bg-red-50"
+                                                                        >
+                                                                            <X className="h-4 w-4 md:mr-2" />
+                                                                            <span className="hidden md:inline">Batalkan</span>
+                                                                        </Button>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => handleDesignateWinner(item, 'monthly')}
+                                                                        className="h-8 px-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                                                                    >
+                                                                        <Gavel className="h-4 w-4 md:mr-2" />
+                                                                        <span className="hidden md:inline">Tetapkan</span>
+                                                                    </Button>
+                                                                );
+                                                            })()}
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
