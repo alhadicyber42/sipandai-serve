@@ -466,74 +466,107 @@ export default function AdminEmployeeRatings() {
                                 Berikan evaluasi lanjutan untuk setiap pegawai berdasarkan kriteria pimpinan unit
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="p-0 sm:p-6">
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="pl-4">Pegawai</TableHead>
-                                            <TableHead className="hidden md:table-cell">Periode</TableHead>
-                                            <TableHead className="text-center">Poin Awal</TableHead>
-                                            <TableHead className="text-center hidden sm:table-cell">Poin Akhir</TableHead>
-                                            <TableHead className="text-center">Status</TableHead>
-                                            <TableHead className="text-right pr-4">Aksi</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredAggregatedRatings.length === 0 ? <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                                    Belum ada penilaian
-                                                </TableCell>
-                                            </TableRow> : filteredAggregatedRatings.map(item => <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
-                                                    <TableCell className="pl-4">
-                                                        <div className="font-medium">{item.employeeName}</div>
-                                                        <div className="md:hidden text-xs text-muted-foreground mt-1">
-                                                            {formatPeriod(item.ratingPeriod)} • {item.ratingCount} penilaian
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="hidden md:table-cell">
-                                                        <Badge variant="outline">
-                                                            <Calendar className="h-3 w-3 mr-1" />
-                                                            {formatPeriod(item.ratingPeriod)}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <div className="flex items-center justify-center gap-1">
-                                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                            <span className="font-bold text-yellow-600">
-                                                                {item.totalPoints}
-                                                            </span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center hidden sm:table-cell">
-                                                        {item.hasUnitEvaluation && item.unitEvaluation ? <div className="flex items-center justify-center gap-1">
-                                                                <Star className="h-4 w-4 fill-green-500 text-green-500" />
-                                                                <span className={`font-bold ${item.unitEvaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
-                                                                    {item.unitEvaluation.final_total_points}
-                                                                </span>
-                                                            </div> : <span className="text-muted-foreground text-sm">-</span>}
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        {item.hasUnitEvaluation ? <Badge variant="outline" className="border-green-500 text-green-600">
-                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                                <span className="hidden sm:inline">Sudah</span>
-                                                            </Badge> : <Badge variant="outline" className="border-orange-500 text-orange-600">
-                                                                <AlertCircle className="h-3 w-3 mr-1" />
-                                                                <span className="hidden sm:inline">Belum</span>
-                                                            </Badge>}
-                                                    </TableCell>
-                                                    <TableCell className="text-right pr-4">
-                                                        <Button variant={item.hasUnitEvaluation ? "outline" : "default"} size="sm" onClick={() => handleOpenEvaluationForm(item)} className="h-8 px-3">
-                                                            <ClipboardCheck className="h-4 w-4 md:mr-2" />
-                                                            <span className="hidden md:inline">
-                                                                {item.hasUnitEvaluation ? "Edit Evaluasi" : "Evaluasi"}
-                                                            </span>
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>)}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                        <CardContent className="p-2 sm:p-6">
+                            <Tabs defaultValue="ASN" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2 mb-4">
+                                    <TabsTrigger value="ASN">ASN ({filteredAggregatedByCategory('ASN').length})</TabsTrigger>
+                                    <TabsTrigger value="Non ASN">Non ASN ({filteredAggregatedByCategory('Non ASN').length})</TabsTrigger>
+                                </TabsList>
+                                
+                                {['ASN', 'Non ASN'].map(tabValue => {
+              const dataToShow = filteredAggregatedByCategory(tabValue);
+              // Sort by unit evaluation points for leaderboard ranking
+              const getUnitFinalPoints = (r: AggregatedRating) => {
+                if (r.hasUnitEvaluation && r.unitEvaluation) return r.unitEvaluation.final_total_points;
+                return r.totalPoints;
+              };
+              const sortedData = [...dataToShow].sort((a, b) => getUnitFinalPoints(b) - getUnitFinalPoints(a));
+              
+              return <TabsContent key={tabValue} value={tabValue}>
+                                            <div className="overflow-x-auto">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="pl-4 w-16 text-center">#</TableHead>
+                                                            <TableHead>Pegawai</TableHead>
+                                                            <TableHead className="hidden md:table-cell">Periode</TableHead>
+                                                            <TableHead className="text-center">Poin Awal</TableHead>
+                                                            <TableHead className="text-center hidden sm:table-cell">Poin Akhir</TableHead>
+                                                            <TableHead className="text-center">Status</TableHead>
+                                                            <TableHead className="text-right pr-4">Aksi</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {sortedData.length === 0 ? <TableRow>
+                                                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                                    Belum ada penilaian
+                                                                </TableCell>
+                                                            </TableRow> : sortedData.map((item, index) => {
+                                                              const rank = index + 1;
+                                                              const getRankStyle = (r: number) => {
+                                                                if (r === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
+                                                                if (r === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
+                                                                if (r === 3) return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
+                                                                return 'bg-muted text-muted-foreground';
+                                                              };
+                                                              return <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
+                                                                    <TableCell className="pl-4 text-center">
+                                                                        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${getRankStyle(rank)}`}>
+                                                                            {rank}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <div className="font-medium">{item.employeeName}</div>
+                                                                        <div className="md:hidden text-xs text-muted-foreground mt-1">
+                                                                            {formatPeriod(item.ratingPeriod)} • {item.ratingCount} penilaian
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell className="hidden md:table-cell">
+                                                                        <Badge variant="outline">
+                                                                            <Calendar className="h-3 w-3 mr-1" />
+                                                                            {formatPeriod(item.ratingPeriod)}
+                                                                        </Badge>
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        <div className="flex items-center justify-center gap-1">
+                                                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                                            <span className="font-bold text-yellow-600">
+                                                                                {item.totalPoints}
+                                                                            </span>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center hidden sm:table-cell">
+                                                                        {item.hasUnitEvaluation && item.unitEvaluation ? <div className="flex items-center justify-center gap-1">
+                                                                                <Star className="h-4 w-4 fill-green-500 text-green-500" />
+                                                                                <span className={`font-bold ${item.unitEvaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
+                                                                                    {item.unitEvaluation.final_total_points}
+                                                                                </span>
+                                                                            </div> : <span className="text-muted-foreground text-sm">-</span>}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        {item.hasUnitEvaluation ? <Badge variant="outline" className="border-green-500 text-green-600">
+                                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                                <span className="hidden sm:inline">Sudah</span>
+                                                                            </Badge> : <Badge variant="outline" className="border-orange-500 text-orange-600">
+                                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                                                <span className="hidden sm:inline">Belum</span>
+                                                                            </Badge>}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right pr-4">
+                                                                        <Button variant={item.hasUnitEvaluation ? "outline" : "default"} size="sm" onClick={() => handleOpenEvaluationForm(item)} className="h-8 px-3">
+                                                                            <ClipboardCheck className="h-4 w-4 md:mr-2" />
+                                                                            <span className="hidden md:inline">
+                                                                                {item.hasUnitEvaluation ? "Edit Evaluasi" : "Evaluasi"}
+                                                                            </span>
+                                                                        </Button>
+                                                                    </TableCell>
+                                                                </TableRow>})}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        </TabsContent>;
+            })}
+                            </Tabs>
                         </CardContent>
                     </Card>}
 
