@@ -319,6 +319,48 @@ export type Database = {
           },
         ]
       }
+      designated_winners: {
+        Row: {
+          created_at: string
+          designated_at: string
+          designated_by: string
+          employee_category: string
+          employee_id: string
+          final_points: number
+          id: string
+          notes: string | null
+          period: string
+          updated_at: string
+          winner_type: string
+        }
+        Insert: {
+          created_at?: string
+          designated_at?: string
+          designated_by: string
+          employee_category: string
+          employee_id: string
+          final_points?: number
+          id?: string
+          notes?: string | null
+          period: string
+          updated_at?: string
+          winner_type: string
+        }
+        Update: {
+          created_at?: string
+          designated_at?: string
+          designated_by?: string
+          employee_category?: string
+          employee_id?: string
+          final_points?: number
+          id?: string
+          notes?: string | null
+          period?: string
+          updated_at?: string
+          winner_type?: string
+        }
+        Relationships: []
+      }
       employee_ratings: {
         Row: {
           created_at: string
