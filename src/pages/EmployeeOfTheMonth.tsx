@@ -9,10 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { WORK_UNITS } from "@/lib/constants";
-import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2 } from "lucide-react";
+import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X } from "lucide-react";
 import confetti from "canvas-confetti";
 import { TestimonialCarousel, Testimonial } from "@/components/ui/testimonial-carousel";
 import { TestimonialSlideshow, TestimonialItem } from "@/components/TestimonialSlideshow";
@@ -47,6 +50,18 @@ export default function EmployeeOfTheMonth() {
     // Designated winners state
     const [monthlyWinners, setMonthlyWinners] = useState<DesignatedWinner[]>([]);
     const [yearlyWinners, setYearlyWinners] = useState<DesignatedWinner[]>([]);
+    
+    // Designation dialog state
+    const [isDesignateDialogOpen, setIsDesignateDialogOpen] = useState(false);
+    const [selectedForDesignation, setSelectedForDesignation] = useState<{
+        employeeId: string;
+        employeeName: string;
+        category: 'ASN' | 'Non ASN';
+        points: number;
+        type: 'monthly' | 'yearly';
+    } | null>(null);
+    const [designationNotes, setDesignationNotes] = useState("");
+    const [isDesignating, setIsDesignating] = useState(false);
 
     const isUserUnit = user?.role === "user_unit";
     const isAdminUnit = user?.role === "admin_unit";
@@ -536,6 +551,102 @@ export default function EmployeeOfTheMonth() {
             setYearlyLeaderboard(leaderboardData);
         } catch (error) {
             console.error('Error loading yearly leaderboard:', error);
+        }
+    };
+
+    // Handle designation of winner
+    const handleDesignateWinner = (
+        employeeId: string,
+        employeeName: string,
+        category: 'ASN' | 'Non ASN',
+        points: number,
+        type: 'monthly' | 'yearly'
+    ) => {
+        setSelectedForDesignation({ employeeId, employeeName, category, points, type });
+        setDesignationNotes("");
+        setIsDesignateDialogOpen(true);
+    };
+
+    const confirmDesignation = async () => {
+        if (!selectedForDesignation || !user) return;
+        
+        setIsDesignating(true);
+        
+        try {
+            const now = new Date();
+            const period = selectedForDesignation.type === 'monthly'
+                ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                : now.getFullYear().toString();
+
+            // Check if winner already exists for this period and category
+            const existingQuery = supabase
+                .from("designated_winners")
+                .select("id")
+                .eq("winner_type", selectedForDesignation.type)
+                .eq("employee_category", selectedForDesignation.category)
+                .eq("period", period);
+
+            const { data: existing } = await existingQuery;
+
+            if (existing && existing.length > 0) {
+                // Update existing winner
+                const { error } = await supabase
+                    .from("designated_winners")
+                    .update({
+                        employee_id: selectedForDesignation.employeeId,
+                        final_points: selectedForDesignation.points,
+                        designated_by: user.id,
+                        designated_at: new Date().toISOString(),
+                        notes: designationNotes || null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", existing[0].id);
+
+                if (error) throw error;
+            } else {
+                // Insert new winner
+                const { error } = await supabase
+                    .from("designated_winners")
+                    .insert({
+                        employee_id: selectedForDesignation.employeeId,
+                        winner_type: selectedForDesignation.type,
+                        employee_category: selectedForDesignation.category,
+                        period,
+                        final_points: selectedForDesignation.points,
+                        designated_by: user.id,
+                        notes: designationNotes || null
+                    });
+
+                if (error) throw error;
+            }
+
+            toast.success(`${selectedForDesignation.employeeName} berhasil ditetapkan sebagai ${selectedForDesignation.type === 'monthly' ? 'Employee of the Month' : 'Employee of the Year'} ${selectedForDesignation.category}!`);
+            setIsDesignateDialogOpen(false);
+            setSelectedForDesignation(null);
+            loadDesignatedWinners();
+        } catch (error: any) {
+            console.error('Error designating winner:', error);
+            toast.error("Gagal menetapkan pemenang: " + error.message);
+        } finally {
+            setIsDesignating(false);
+        }
+    };
+
+    // Remove designated winner
+    const removeDesignatedWinner = async (winnerId: string) => {
+        try {
+            const { error } = await supabase
+                .from("designated_winners")
+                .delete()
+                .eq("id", winnerId);
+
+            if (error) throw error;
+
+            toast.success("Penetapan pemenang berhasil dibatalkan");
+            loadDesignatedWinners();
+        } catch (error: any) {
+            console.error('Error removing winner:', error);
+            toast.error("Gagal membatalkan penetapan: " + error.message);
         }
     };
 
@@ -1306,6 +1417,38 @@ export default function EmployeeOfTheMonth() {
                                                                                     {entry.ratingCount} penilaian
                                                                                 </p>
                                                                             </div>
+
+                                                                            {/* Designate Winner Button - Only for admin_pusat */}
+                                                                            {isAdminPusat && (
+                                                                                <div className="shrink-0">
+                                                                                    {hasWinner && designatedWinner?.employee_id === entry.employeeId ? (
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant="outline"
+                                                                                            className="text-red-600 border-red-300 hover:bg-red-50"
+                                                                                            onClick={() => removeDesignatedWinner(designatedWinner.id)}
+                                                                                        >
+                                                                                            <X className="h-3 w-3 sm:mr-1" />
+                                                                                            <span className="hidden sm:inline">Batalkan</span>
+                                                                                        </Button>
+                                                                                    ) : (
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white"
+                                                                                            onClick={() => handleDesignateWinner(
+                                                                                                entry.employeeId,
+                                                                                                entry.employee.name,
+                                                                                                type === "asn" ? "ASN" : "Non ASN",
+                                                                                                entry.totalPoints,
+                                                                                                'monthly'
+                                                                                            )}
+                                                                                        >
+                                                                                            <Gavel className="h-3 w-3 sm:mr-1" />
+                                                                                            <span className="hidden sm:inline">Tetapkan</span>
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     );
                                                                 })}
@@ -1517,6 +1660,38 @@ export default function EmployeeOfTheMonth() {
                                                                                         {entry.ratingCount} periode
                                                                                     </p>
                                                                                 </div>
+
+                                                                                {/* Designate Winner Button - Only for admin_pusat */}
+                                                                                {isAdminPusat && (
+                                                                                    <div className="shrink-0">
+                                                                                        {hasWinner && designatedWinner?.employee_id === entry.employeeId ? (
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                variant="outline"
+                                                                                                className="text-red-600 border-red-300 hover:bg-red-50"
+                                                                                                onClick={() => removeDesignatedWinner(designatedWinner.id)}
+                                                                                            >
+                                                                                                <X className="h-3 w-3 sm:mr-1" />
+                                                                                                <span className="hidden sm:inline">Batalkan</span>
+                                                                                            </Button>
+                                                                                        ) : (
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                                                                                                onClick={() => handleDesignateWinner(
+                                                                                                    entry.employeeId,
+                                                                                                    entry.employee.name,
+                                                                                                    type === "asn" ? "ASN" : "Non ASN",
+                                                                                                    entry.totalPoints,
+                                                                                                    'yearly'
+                                                                                                )}
+                                                                                            >
+                                                                                                <Gavel className="h-3 w-3 sm:mr-1" />
+                                                                                                <span className="hidden sm:inline">Tetapkan</span>
+                                                                                            </Button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })}
@@ -1533,6 +1708,89 @@ export default function EmployeeOfTheMonth() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Designation Confirmation Dialog */}
+            <Dialog open={isDesignateDialogOpen} onOpenChange={setIsDesignateDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Gavel className="h-5 w-5 text-yellow-600" />
+                            Tetapkan Pemenang
+                        </DialogTitle>
+                        <DialogDescription>
+                            Anda akan menetapkan pemenang {selectedForDesignation?.type === 'monthly' ? 'Employee of the Month' : 'Employee of the Year'} kategori {selectedForDesignation?.category}
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedForDesignation && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-lg bg-gradient-to-r from-yellow-50 to-yellow-100/50 dark:from-yellow-950/30 dark:to-yellow-900/20 border border-yellow-200">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-12 w-12 border-2 border-yellow-400">
+                                        <AvatarImage 
+                                            src={employees.find(e => e.id === selectedForDesignation.employeeId)?.avatar_url} 
+                                            alt={selectedForDesignation.employeeName} 
+                                        />
+                                        <AvatarFallback className="bg-yellow-100 text-yellow-700">
+                                            {getInitials(selectedForDesignation.employeeName)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h4 className="font-bold text-lg">{selectedForDesignation.employeeName}</h4>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Badge variant="outline" className={selectedForDesignation.category === 'ASN' ? 'border-yellow-500 text-yellow-600' : 'border-emerald-500 text-emerald-600'}>
+                                                {selectedForDesignation.category}
+                                            </Badge>
+                                            <span className="flex items-center gap-1">
+                                                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                                {selectedForDesignation.points} poin
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="notes">Catatan (Opsional)</Label>
+                                <Textarea
+                                    id="notes"
+                                    placeholder="Tambahkan catatan mengenai penetapan pemenang..."
+                                    value={designationNotes}
+                                    onChange={(e) => setDesignationNotes(e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDesignateDialogOpen(false)}
+                            disabled={isDesignating}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            onClick={confirmDesignation}
+                            disabled={isDesignating}
+                            className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
+                        >
+                            {isDesignating ? (
+                                <>
+                                    <span className="animate-spin mr-2">⏳</span>
+                                    Menyimpan...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Tetapkan Pemenang
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 }
