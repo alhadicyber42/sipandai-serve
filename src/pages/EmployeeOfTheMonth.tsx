@@ -775,18 +775,15 @@ export default function EmployeeOfTheMonth() {
                                                                                 'bg-muted/30 border-border hover:border-primary/50'}
                                                                     `}
                                                                 >
-                                                                    {/* Rank Badge */}
+                                                                    {/* Rank Number */}
                                                                     <div className={`
-                                                                        flex items-center justify-center w-6 h-6 sm:w-12 sm:h-12 rounded-full font-black text-xs sm:text-lg shrink-0
-                                                                        ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg' :
-                                                                            rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
-                                                                                rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
+                                                                        flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-xl shrink-0
+                                                                        ${isWinner ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg ring-2 ring-yellow-300' :
+                                                                            rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md ring-2 ring-gray-200' :
+                                                                                rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md ring-2 ring-orange-300' :
                                                                                     'bg-muted text-muted-foreground'}
                                                                     `}>
-                                                                        {isWinner ? <Crown className="h-3 w-3 sm:h-6 sm:w-6" /> :
-                                                                            rank === 2 ? <Medal className="h-3 w-3 sm:h-6 sm:w-6" /> :
-                                                                                rank === 3 ? <Medal className="h-3 w-3 sm:h-6 sm:w-6" /> :
-                                                                                    `#${rank}`}
+                                                                        {rank}
                                                                     </div>
 
                                                                     {/* Avatar */}
