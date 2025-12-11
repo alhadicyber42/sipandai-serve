@@ -8,9 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart, Link, ExternalLink } from "lucide-react";
+import { AlertTriangle, Award, TrendingDown, TrendingUp, CheckCircle2, XCircle, Star, Calculator, Gavel, Clock, BarChart3, HandHeart, Link, ExternalLink, Lock, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface VerificationStatus {
+    disciplinary_verified?: boolean;
+    attendance_verified?: boolean;
+    performance_verified?: boolean;
+    contribution_verified?: boolean;
+}
 
 interface AdminUnitEvaluationFormProps {
     isOpen: boolean;
@@ -23,6 +30,7 @@ interface AdminUnitEvaluationFormProps {
     evaluatorId: string;
     existingEvaluation?: any;
     onSuccess: () => void;
+    verificationStatus?: VerificationStatus;
 }
 
 export function AdminUnitEvaluationForm({
@@ -35,7 +43,8 @@ export function AdminUnitEvaluationForm({
     workUnitId,
     evaluatorId,
     existingEvaluation,
-    onSuccess
+    onSuccess,
+    verificationStatus
 }: AdminUnitEvaluationFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -55,6 +64,12 @@ export function AdminUnitEvaluationForm({
     const [hasContribution, setHasContribution] = useState(false);
     const [contributionDescription, setContributionDescription] = useState("");
     const [contributionEvidenceLink, setContributionEvidenceLink] = useState("");
+
+    // Check verification status
+    const isDisciplinaryVerified = verificationStatus?.disciplinary_verified || false;
+    const isAttendanceVerified = verificationStatus?.attendance_verified || false;
+    const isPerformanceVerified = verificationStatus?.performance_verified || false;
+    const isContributionVerified = verificationStatus?.contribution_verified || false;
 
     // Load existing evaluation if available
     useEffect(() => {
@@ -210,21 +225,34 @@ export function AdminUnitEvaluationForm({
                         </h4>
 
                         {/* 1. Disciplinary Action - 15% penalty */}
-                        <Card className={hasDisciplinaryAction ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20" : ""}>
+                        <Card className={`${hasDisciplinaryAction ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20" : ""} ${isDisciplinaryVerified ? "opacity-75" : ""}`}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Gavel className="h-5 w-5 text-red-600" />
                                         <CardTitle className="text-base">Hukuman Disiplin</CardTitle>
                                         <Badge variant="destructive" className="text-xs">-15%</Badge>
+                                        {isDisciplinaryVerified && (
+                                            <Badge className="text-xs bg-green-600 text-white">
+                                                <Lock className="h-3 w-3 mr-1" />
+                                                Terkunci
+                                            </Badge>
+                                        )}
                                     </div>
                                     <Switch
                                         checked={hasDisciplinaryAction}
                                         onCheckedChange={setHasDisciplinaryAction}
+                                        disabled={isDisciplinaryVerified}
                                     />
                                 </div>
                                 <CardDescription className="text-sm">
                                     Apakah pegawai memiliki hukuman disiplin dalam periode ini?
+                                    {isDisciplinaryVerified && (
+                                        <span className="block text-green-600 mt-1 text-xs">
+                                            <ShieldCheck className="h-3 w-3 inline mr-1" />
+                                            Kriteria ini sudah diverifikasi oleh Admin Pusat dan tidak dapat diubah.
+                                        </span>
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                         {hasDisciplinaryAction && (
@@ -240,6 +268,7 @@ export function AdminUnitEvaluationForm({
                                                 onChange={(e) => setDisciplinaryActionNote(e.target.value)}
                                                 placeholder="Jelaskan jenis hukuman disiplin yang diterima..."
                                                 className="min-h-[80px]"
+                                                disabled={isDisciplinaryVerified}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -255,6 +284,7 @@ export function AdminUnitEvaluationForm({
                                                     onChange={(e) => setDisciplinaryEvidenceLink(e.target.value)}
                                                     placeholder="https://..."
                                                     className="flex-1"
+                                                    disabled={isDisciplinaryVerified}
                                                 />
                                                 {disciplinaryEvidenceLink && (
                                                     <Button
@@ -279,21 +309,34 @@ export function AdminUnitEvaluationForm({
                         </Card>
 
                         {/* 2. Attendance - 5% penalty */}
-                        <Card className={hasPoorAttendance ? "border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/20" : ""}>
+                        <Card className={`${hasPoorAttendance ? "border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/20" : ""} ${isAttendanceVerified ? "opacity-75" : ""}`}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-5 w-5 text-orange-600" />
                                         <CardTitle className="text-base">Presensi Kehadiran</CardTitle>
                                         <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">-5%</Badge>
+                                        {isAttendanceVerified && (
+                                            <Badge className="text-xs bg-green-600 text-white">
+                                                <Lock className="h-3 w-3 mr-1" />
+                                                Terkunci
+                                            </Badge>
+                                        )}
                                     </div>
                                     <Switch
                                         checked={hasPoorAttendance}
                                         onCheckedChange={setHasPoorAttendance}
+                                        disabled={isAttendanceVerified}
                                     />
                                 </div>
                                 <CardDescription className="text-sm">
                                     Apakah presensi kehadiran pegawai buruk dalam periode ini?
+                                    {isAttendanceVerified && (
+                                        <span className="block text-green-600 mt-1 text-xs">
+                                            <ShieldCheck className="h-3 w-3 inline mr-1" />
+                                            Kriteria ini sudah diverifikasi oleh Admin Pusat dan tidak dapat diubah.
+                                        </span>
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                         {hasPoorAttendance && (
@@ -309,6 +352,7 @@ export function AdminUnitEvaluationForm({
                                                 onChange={(e) => setAttendanceNote(e.target.value)}
                                                 placeholder="Jelaskan masalah presensi..."
                                                 className="min-h-[60px]"
+                                                disabled={isAttendanceVerified}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -324,6 +368,7 @@ export function AdminUnitEvaluationForm({
                                                     onChange={(e) => setAttendanceEvidenceLink(e.target.value)}
                                                     placeholder="https://..."
                                                     className="flex-1"
+                                                    disabled={isAttendanceVerified}
                                                 />
                                                 {attendanceEvidenceLink && (
                                                     <Button
@@ -348,21 +393,34 @@ export function AdminUnitEvaluationForm({
                         </Card>
 
                         {/* 3. E-Kinerja - 5% penalty */}
-                        <Card className={hasPoorPerformance ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20" : ""}>
+                        <Card className={`${hasPoorPerformance ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20" : ""} ${isPerformanceVerified ? "opacity-75" : ""}`}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <BarChart3 className="h-5 w-5 text-amber-600" />
                                         <CardTitle className="text-base">E-Kinerja</CardTitle>
                                         <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">-5%</Badge>
+                                        {isPerformanceVerified && (
+                                            <Badge className="text-xs bg-green-600 text-white">
+                                                <Lock className="h-3 w-3 mr-1" />
+                                                Terkunci
+                                            </Badge>
+                                        )}
                                     </div>
                                     <Switch
                                         checked={hasPoorPerformance}
                                         onCheckedChange={setHasPoorPerformance}
+                                        disabled={isPerformanceVerified}
                                     />
                                 </div>
                                 <CardDescription className="text-sm">
                                     Apakah E-Kinerja pegawai tidak baik atau di bawah ekspektasi?
+                                    {isPerformanceVerified && (
+                                        <span className="block text-green-600 mt-1 text-xs">
+                                            <ShieldCheck className="h-3 w-3 inline mr-1" />
+                                            Kriteria ini sudah diverifikasi oleh Admin Pusat dan tidak dapat diubah.
+                                        </span>
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                         {hasPoorPerformance && (
@@ -378,6 +436,7 @@ export function AdminUnitEvaluationForm({
                                                 onChange={(e) => setPerformanceNote(e.target.value)}
                                                 placeholder="Jelaskan masalah E-Kinerja..."
                                                 className="min-h-[60px]"
+                                                disabled={isPerformanceVerified}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -393,6 +452,7 @@ export function AdminUnitEvaluationForm({
                                                     onChange={(e) => setPerformanceEvidenceLink(e.target.value)}
                                                     placeholder="https://..."
                                                     className="flex-1"
+                                                    disabled={isPerformanceVerified}
                                                 />
                                                 {performanceEvidenceLink && (
                                                     <Button
@@ -417,21 +477,34 @@ export function AdminUnitEvaluationForm({
                         </Card>
 
                         {/* 4. Contribution - 10% bonus */}
-                        <Card className={hasContribution ? "border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/20" : ""}>
+                        <Card className={`${hasContribution ? "border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/20" : ""} ${isContributionVerified ? "opacity-75" : ""}`}>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <HandHeart className="h-5 w-5 text-green-600" />
                                         <CardTitle className="text-base">Kontribusi</CardTitle>
                                         <Badge className="text-xs bg-green-600">+10%</Badge>
+                                        {isContributionVerified && (
+                                            <Badge className="text-xs bg-green-600 text-white">
+                                                <Lock className="h-3 w-3 mr-1" />
+                                                Terkunci
+                                            </Badge>
+                                        )}
                                     </div>
                                     <Switch
                                         checked={hasContribution}
                                         onCheckedChange={setHasContribution}
+                                        disabled={isContributionVerified}
                                     />
                                 </div>
                                 <CardDescription className="text-sm">
                                     Apakah pegawai memiliki kontribusi besar di unit kerja?
+                                    {isContributionVerified && (
+                                        <span className="block text-green-600 mt-1 text-xs">
+                                            <ShieldCheck className="h-3 w-3 inline mr-1" />
+                                            Kriteria ini sudah diverifikasi oleh Admin Pusat dan tidak dapat diubah.
+                                        </span>
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                         {hasContribution && (
@@ -447,6 +520,7 @@ export function AdminUnitEvaluationForm({
                                                 onChange={(e) => setContributionDescription(e.target.value)}
                                                 placeholder="Jelaskan kontribusi yang diberikan pegawai..."
                                                 className="min-h-[80px]"
+                                                disabled={isContributionVerified}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -462,6 +536,7 @@ export function AdminUnitEvaluationForm({
                                                     onChange={(e) => setContributionEvidenceLink(e.target.value)}
                                                     placeholder="https://..."
                                                     className="flex-1"
+                                                    disabled={isContributionVerified}
                                                 />
                                                 {contributionEvidenceLink && (
                                                     <Button
