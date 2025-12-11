@@ -1161,10 +1161,27 @@ export default function AdminEmployeeRatings() {
             </div>
 
             {/* Evaluation Form Dialog */}
-            {selectedEmployeeForEval && user && <AdminUnitEvaluationForm isOpen={isEvaluationFormOpen} onClose={() => {
-      setIsEvaluationFormOpen(false);
-      setSelectedEmployeeForEval(null);
-    }} employeeId={selectedEmployeeForEval.employeeId} employeeName={selectedEmployeeForEval.employeeName} ratingPeriod={selectedEmployeeForEval.ratingPeriod} originalTotalPoints={selectedEmployeeForEval.totalPoints} workUnitId={user.work_unit_id!} evaluatorId={user.id} existingEvaluation={selectedEmployeeForEval.unitEvaluation} onSuccess={handleEvaluationSuccess} />}
+            {selectedEmployeeForEval && user && <AdminUnitEvaluationForm 
+              isOpen={isEvaluationFormOpen} 
+              onClose={() => {
+                setIsEvaluationFormOpen(false);
+                setSelectedEmployeeForEval(null);
+              }} 
+              employeeId={selectedEmployeeForEval.employeeId} 
+              employeeName={selectedEmployeeForEval.employeeName} 
+              ratingPeriod={selectedEmployeeForEval.ratingPeriod} 
+              originalTotalPoints={selectedEmployeeForEval.totalPoints} 
+              workUnitId={user.work_unit_id!} 
+              evaluatorId={user.id} 
+              existingEvaluation={selectedEmployeeForEval.unitEvaluation} 
+              onSuccess={handleEvaluationSuccess}
+              verificationStatus={selectedEmployeeForEval.finalEvaluation ? {
+                disciplinary_verified: selectedEmployeeForEval.finalEvaluation.disciplinary_verified,
+                attendance_verified: selectedEmployeeForEval.finalEvaluation.attendance_verified,
+                performance_verified: selectedEmployeeForEval.finalEvaluation.performance_verified,
+                contribution_verified: selectedEmployeeForEval.finalEvaluation.contribution_verified,
+              } : undefined}
+            />}
 
             {selectedEmployeeForFinalEval && user && <AdminPusatEvaluationForm isOpen={isFinalEvaluationFormOpen} onClose={() => {
       setIsFinalEvaluationFormOpen(false);
