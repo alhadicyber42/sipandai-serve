@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     Award, TrendingDown, TrendingUp, CheckCircle2, Star, Calculator, 
     Gavel, Clock, BarChart3, HandHeart, Crown, Building2, ArrowRight,
-    AlertTriangle, Sparkles, Link, ExternalLink
+    AlertTriangle, Sparkles, Link, ExternalLink, ShieldCheck, Lock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -66,6 +66,12 @@ export function AdminPusatEvaluationForm({
     const [additionalAdjustment, setAdditionalAdjustment] = useState(0);
     const [additionalAdjustmentNote, setAdditionalAdjustmentNote] = useState("");
 
+    // Verification states
+    const [disciplinaryVerified, setDisciplinaryVerified] = useState(false);
+    const [attendanceVerified, setAttendanceVerified] = useState(false);
+    const [performanceVerified, setPerformanceVerified] = useState(false);
+    const [contributionVerified, setContributionVerified] = useState(false);
+
     // Base points to use for calculations
     const basePoints = peerTotalPoints;
 
@@ -87,6 +93,11 @@ export function AdminPusatEvaluationForm({
             setContributionEvidenceLink(existingEvaluation.contribution_evidence_link || "");
             setAdditionalAdjustment(existingEvaluation.additional_adjustment || 0);
             setAdditionalAdjustmentNote(existingEvaluation.additional_adjustment_note || "");
+            // Load verification states
+            setDisciplinaryVerified(existingEvaluation.disciplinary_verified || false);
+            setAttendanceVerified(existingEvaluation.attendance_verified || false);
+            setPerformanceVerified(existingEvaluation.performance_verified || false);
+            setContributionVerified(existingEvaluation.contribution_verified || false);
         } else if (adminUnitEvaluation) {
             // Pre-fill from admin_unit evaluation
             setHasDisciplinaryAction(adminUnitEvaluation.has_disciplinary_action);
@@ -103,6 +114,11 @@ export function AdminPusatEvaluationForm({
             setContributionEvidenceLink(adminUnitEvaluation.contribution_evidence_link || "");
             setAdditionalAdjustment(0);
             setAdditionalAdjustmentNote("");
+            // Reset verification states for new evaluation
+            setDisciplinaryVerified(false);
+            setAttendanceVerified(false);
+            setPerformanceVerified(false);
+            setContributionVerified(false);
         } else {
             // Reset form
             setHasDisciplinaryAction(false);
@@ -119,6 +135,11 @@ export function AdminPusatEvaluationForm({
             setContributionEvidenceLink("");
             setAdditionalAdjustment(0);
             setAdditionalAdjustmentNote("");
+            // Reset verification states
+            setDisciplinaryVerified(false);
+            setAttendanceVerified(false);
+            setPerformanceVerified(false);
+            setContributionVerified(false);
         }
     }, [existingEvaluation, adminUnitEvaluation, isOpen]);
 
@@ -162,18 +183,26 @@ export function AdminPusatEvaluationForm({
                 disciplinary_penalty: disciplinaryPenalty,
                 disciplinary_action_note: disciplinaryActionNote.trim() || null,
                 disciplinary_evidence_link: disciplinaryEvidenceLink.trim() || null,
+                disciplinary_verified: disciplinaryVerified,
+                disciplinary_verified_at: disciplinaryVerified ? new Date().toISOString() : null,
                 has_poor_attendance: hasPoorAttendance,
                 attendance_penalty: attendancePenalty,
                 attendance_note: attendanceNote.trim() || null,
                 attendance_evidence_link: attendanceEvidenceLink.trim() || null,
+                attendance_verified: attendanceVerified,
+                attendance_verified_at: attendanceVerified ? new Date().toISOString() : null,
                 has_poor_performance: hasPoorPerformance,
                 performance_penalty: performancePenalty,
                 performance_note: performanceNote.trim() || null,
                 performance_evidence_link: performanceEvidenceLink.trim() || null,
+                performance_verified: performanceVerified,
+                performance_verified_at: performanceVerified ? new Date().toISOString() : null,
                 has_contribution: hasContribution,
                 contribution_bonus: contributionBonus,
                 contribution_description: contributionDescription.trim() || null,
                 contribution_evidence_link: contributionEvidenceLink.trim() || null,
+                contribution_verified: contributionVerified,
+                contribution_verified_at: contributionVerified ? new Date().toISOString() : null,
                 additional_adjustment: additionalAdjustment,
                 additional_adjustment_note: additionalAdjustmentNote.trim() || null,
                 final_total_points: finalTotalPoints
@@ -339,11 +368,30 @@ export function AdminPusatEvaluationForm({
                                             <Gavel className="h-4 w-4 text-red-600" />
                                             <CardTitle className="text-sm">Hukuman Disiplin</CardTitle>
                                             <Badge variant="destructive" className="text-xs">-15%</Badge>
+                                            {disciplinaryVerified && (
+                                                <Badge className="text-xs bg-green-600 text-white">
+                                                    <Lock className="h-3 w-3 mr-1" />
+                                                    Terverifikasi
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <Switch
-                                            checked={hasDisciplinaryAction}
-                                            onCheckedChange={setHasDisciplinaryAction}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            {adminUnitEvaluation && !disciplinaryVerified && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-7"
+                                                    onClick={() => setDisciplinaryVerified(true)}
+                                                >
+                                                    <ShieldCheck className="h-3 w-3 mr-1" />
+                                                    Verifikasi
+                                                </Button>
+                                            )}
+                                            <Switch
+                                                checked={hasDisciplinaryAction}
+                                                onCheckedChange={setHasDisciplinaryAction}
+                                            />
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 {hasDisciplinaryAction && (
@@ -399,11 +447,30 @@ export function AdminPusatEvaluationForm({
                                             <Clock className="h-4 w-4 text-orange-600" />
                                             <CardTitle className="text-sm">Presensi Kehadiran</CardTitle>
                                             <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">-5%</Badge>
+                                            {attendanceVerified && (
+                                                <Badge className="text-xs bg-green-600 text-white">
+                                                    <Lock className="h-3 w-3 mr-1" />
+                                                    Terverifikasi
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <Switch
-                                            checked={hasPoorAttendance}
-                                            onCheckedChange={setHasPoorAttendance}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            {adminUnitEvaluation && !attendanceVerified && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-7"
+                                                    onClick={() => setAttendanceVerified(true)}
+                                                >
+                                                    <ShieldCheck className="h-3 w-3 mr-1" />
+                                                    Verifikasi
+                                                </Button>
+                                            )}
+                                            <Switch
+                                                checked={hasPoorAttendance}
+                                                onCheckedChange={setHasPoorAttendance}
+                                            />
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 {hasPoorAttendance && (
@@ -459,11 +526,30 @@ export function AdminPusatEvaluationForm({
                                             <BarChart3 className="h-4 w-4 text-amber-600" />
                                             <CardTitle className="text-sm">E-Kinerja</CardTitle>
                                             <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">-5%</Badge>
+                                            {performanceVerified && (
+                                                <Badge className="text-xs bg-green-600 text-white">
+                                                    <Lock className="h-3 w-3 mr-1" />
+                                                    Terverifikasi
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <Switch
-                                            checked={hasPoorPerformance}
-                                            onCheckedChange={setHasPoorPerformance}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            {adminUnitEvaluation && !performanceVerified && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-7"
+                                                    onClick={() => setPerformanceVerified(true)}
+                                                >
+                                                    <ShieldCheck className="h-3 w-3 mr-1" />
+                                                    Verifikasi
+                                                </Button>
+                                            )}
+                                            <Switch
+                                                checked={hasPoorPerformance}
+                                                onCheckedChange={setHasPoorPerformance}
+                                            />
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 {hasPoorPerformance && (
@@ -519,11 +605,30 @@ export function AdminPusatEvaluationForm({
                                             <HandHeart className="h-4 w-4 text-green-600" />
                                             <CardTitle className="text-sm">Kontribusi</CardTitle>
                                             <Badge className="text-xs bg-green-600">+10%</Badge>
+                                            {contributionVerified && (
+                                                <Badge className="text-xs bg-green-600 text-white">
+                                                    <Lock className="h-3 w-3 mr-1" />
+                                                    Terverifikasi
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <Switch
-                                            checked={hasContribution}
-                                            onCheckedChange={setHasContribution}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            {adminUnitEvaluation && !contributionVerified && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-7"
+                                                    onClick={() => setContributionVerified(true)}
+                                                >
+                                                    <ShieldCheck className="h-3 w-3 mr-1" />
+                                                    Verifikasi
+                                                </Button>
+                                            )}
+                                            <Switch
+                                                checked={hasContribution}
+                                                onCheckedChange={setHasContribution}
+                                            />
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 {hasContribution && (

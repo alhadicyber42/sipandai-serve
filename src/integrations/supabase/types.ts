@@ -23,13 +23,19 @@ export type Database = {
           attendance_evidence_link: string | null
           attendance_note: string | null
           attendance_penalty: number
+          attendance_verified: boolean
+          attendance_verified_at: string | null
           contribution_bonus: number
           contribution_description: string | null
           contribution_evidence_link: string | null
+          contribution_verified: boolean
+          contribution_verified_at: string | null
           created_at: string
           disciplinary_action_note: string | null
           disciplinary_evidence_link: string | null
           disciplinary_penalty: number
+          disciplinary_verified: boolean
+          disciplinary_verified_at: string | null
           evaluator_id: string
           final_total_points: number
           has_contribution: boolean
@@ -41,6 +47,8 @@ export type Database = {
           performance_evidence_link: string | null
           performance_note: string | null
           performance_penalty: number
+          performance_verified: boolean
+          performance_verified_at: string | null
           rated_employee_id: string
           rating_period: string
           updated_at: string
@@ -53,13 +61,19 @@ export type Database = {
           attendance_evidence_link?: string | null
           attendance_note?: string | null
           attendance_penalty?: number
+          attendance_verified?: boolean
+          attendance_verified_at?: string | null
           contribution_bonus?: number
           contribution_description?: string | null
           contribution_evidence_link?: string | null
+          contribution_verified?: boolean
+          contribution_verified_at?: string | null
           created_at?: string
           disciplinary_action_note?: string | null
           disciplinary_evidence_link?: string | null
           disciplinary_penalty?: number
+          disciplinary_verified?: boolean
+          disciplinary_verified_at?: string | null
           evaluator_id: string
           final_total_points?: number
           has_contribution?: boolean
@@ -71,6 +85,8 @@ export type Database = {
           performance_evidence_link?: string | null
           performance_note?: string | null
           performance_penalty?: number
+          performance_verified?: boolean
+          performance_verified_at?: string | null
           rated_employee_id: string
           rating_period: string
           updated_at?: string
@@ -83,13 +99,19 @@ export type Database = {
           attendance_evidence_link?: string | null
           attendance_note?: string | null
           attendance_penalty?: number
+          attendance_verified?: boolean
+          attendance_verified_at?: string | null
           contribution_bonus?: number
           contribution_description?: string | null
           contribution_evidence_link?: string | null
+          contribution_verified?: boolean
+          contribution_verified_at?: string | null
           created_at?: string
           disciplinary_action_note?: string | null
           disciplinary_evidence_link?: string | null
           disciplinary_penalty?: number
+          disciplinary_verified?: boolean
+          disciplinary_verified_at?: string | null
           evaluator_id?: string
           final_total_points?: number
           has_contribution?: boolean
@@ -101,6 +123,8 @@ export type Database = {
           performance_evidence_link?: string | null
           performance_note?: string | null
           performance_penalty?: number
+          performance_verified?: boolean
+          performance_verified_at?: string | null
           rated_employee_id?: string
           rating_period?: string
           updated_at?: string
