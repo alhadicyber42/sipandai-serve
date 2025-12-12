@@ -448,6 +448,80 @@ export type Database = {
         }
         Relationships: []
       }
+      eom_participating_units: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          work_unit_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          work_unit_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          work_unit_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eom_participating_units_work_unit_id_fkey"
+            columns: ["work_unit_id"]
+            isOneToOne: true
+            referencedRelation: "work_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eom_settings: {
+        Row: {
+          created_at: string
+          created_by: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          id: string
+          period: string
+          rating_end_date: string
+          rating_start_date: string
+          updated_at: string
+          verification_end_date: string
+          verification_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          id?: string
+          period: string
+          rating_end_date: string
+          rating_start_date: string
+          updated_at?: string
+          verification_end_date: string
+          verification_start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          evaluation_end_date?: string
+          evaluation_start_date?: string
+          id?: string
+          period?: string
+          rating_end_date?: string
+          rating_start_date?: string
+          updated_at?: string
+          verification_end_date?: string
+          verification_start_date?: string
+        }
+        Relationships: []
+      }
       faqs: {
         Row: {
           answer: string
