@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2, Gavel, X, FileText } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2, Gavel, X, FileText, Lock, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
@@ -18,6 +19,7 @@ import { WinnerRecapTab } from "@/components/WinnerRecapTab";
 import { EomSettingsTab } from "@/components/EomSettingsTab";
 import { WORK_UNITS } from "@/lib/constants";
 import { toast } from "sonner";
+import { useEomPeriodStatus } from "@/hooks/useEomPeriodStatus";
 interface Rating {
   id: string;
   rater_id: string;
@@ -85,6 +87,9 @@ export default function AdminEmployeeRatings() {
   const [selectedForDesignation, setSelectedForDesignation] = useState<AggregatedRating | null>(null);
   const [designationType, setDesignationType] = useState<'monthly' | 'yearly'>('monthly');
   const [activeMainTab, setActiveMainTab] = useState<string>("penilaian");
+
+  // Period status for feature lock
+  const periodStatus = useEomPeriodStatus(selectedPeriod !== 'all' ? selectedPeriod : undefined, user?.work_unit_id);
 
   // Evaluation form state for admin_unit
   const [isEvaluationFormOpen, setIsEvaluationFormOpen] = useState(false);
