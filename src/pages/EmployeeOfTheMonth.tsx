@@ -12,13 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { WORK_UNITS } from "@/lib/constants";
-import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X } from "lucide-react";
+import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X, Lock, AlertCircle, CalendarClock } from "lucide-react";
 import confetti from "canvas-confetti";
 import { TestimonialCarousel, Testimonial } from "@/components/ui/testimonial-carousel";
 import { TestimonialSlideshow, TestimonialItem } from "@/components/TestimonialSlideshow";
+import { useEomPeriodStatus } from "@/hooks/useEomPeriodStatus";
 
 interface DesignatedWinner {
     id: string;
@@ -66,6 +68,9 @@ export default function EmployeeOfTheMonth() {
     const isUserUnit = user?.role === "user_unit";
     const isAdminUnit = user?.role === "admin_unit";
     const isAdminPusat = user?.role === "admin_pusat";
+    
+    // Period status for rating lock
+    const periodStatus = useEomPeriodStatus(undefined, user?.work_unit_id);
     
     // Unit leaderboard for admin_unit
     const [unitLeaderboard, setUnitLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
@@ -1026,6 +1031,28 @@ export default function EmployeeOfTheMonth() {
                                 </div>
                             </CardHeader>
                             <CardContent>
+                                {/* Period Lock Warning */}
+                                {!periodStatus.canRate && periodStatus.phase !== 'no_settings' && (
+                                    <Alert className="mb-4 border-orange-200 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800">
+                                        <Lock className="h-4 w-4 text-orange-600" />
+                                        <AlertTitle className="text-orange-800 dark:text-orange-300">Periode Penilaian Ditutup</AlertTitle>
+                                        <AlertDescription className="text-orange-700 dark:text-orange-400">
+                                            {periodStatus.message}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {/* Unit not participating warning */}
+                                {!periodStatus.isUnitParticipating && (
+                                    <Alert className="mb-4 border-gray-200 bg-gray-50 dark:bg-gray-950/30 dark:border-gray-800">
+                                        <AlertCircle className="h-4 w-4 text-gray-600" />
+                                        <AlertTitle className="text-gray-800 dark:text-gray-300">Unit Kerja Tidak Terdaftar</AlertTitle>
+                                        <AlertDescription className="text-gray-700 dark:text-gray-400">
+                                            Unit kerja Anda tidak terdaftar sebagai peserta Employee of the Month periode ini.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
                                 {/* Info about rating limit */}
                                 {hasRatedThisPeriod ? (
                                     <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
@@ -1036,7 +1063,7 @@ export default function EmployeeOfTheMonth() {
                                             </span>
                                         </p>
                                     </div>
-                                ) : (
+                                ) : periodStatus.canRate && periodStatus.isUnitParticipating ? (
                                     <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
                                         <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
                                             <span className="text-blue-500">ℹ️</span>
@@ -1045,7 +1072,7 @@ export default function EmployeeOfTheMonth() {
                                             </span>
                                         </p>
                                     </div>
-                                )}
+                                ) : null}
                                 <Tabs defaultValue="asn" className="w-full">
                                     <TabsList className="grid w-full grid-cols-2 mb-6">
                                         <TabsTrigger value="asn">ASN</TabsTrigger>
@@ -1125,6 +1152,11 @@ export default function EmployeeOfTheMonth() {
                                                                                 ) : hasRatedThisPeriod ? (
                                                                                     <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
                                                                                         Kuota Habis
+                                                                                    </Badge>
+                                                                                ) : !periodStatus.canRate || !periodStatus.isUnitParticipating ? (
+                                                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">
+                                                                                        <Lock className="h-3 w-3 mr-1" />
+                                                                                        Terkunci
                                                                                     </Badge>
                                                                                 ) : (
                                                                                     <Button

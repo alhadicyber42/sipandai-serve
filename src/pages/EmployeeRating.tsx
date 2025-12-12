@@ -8,9 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Send, Star } from "lucide-react";
+import { ArrowLeft, Send, Star, Lock, AlertCircle } from "lucide-react";
+import { useEomPeriodStatus } from "@/hooks/useEomPeriodStatus";
 
 interface RatingCriteria {
     id: string;
@@ -143,6 +145,9 @@ export default function EmployeeRating() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isNonASN, setIsNonASN] = useState(false);
 
+    // Period status for rating lock
+    const periodStatus = useEomPeriodStatus(undefined, user?.work_unit_id);
+
     // Form state - now each item in each criteria gets a rating
     const [ratings, setRatings] = useState<Record<string, Record<number, number>>>({});
     const [reason, setReason] = useState("");
@@ -156,6 +161,14 @@ export default function EmployeeRating() {
             checkRatingQuota();
         }
     }, [employeeId, user]);
+
+    // Redirect if period is locked
+    useEffect(() => {
+        if (!periodStatus.isLoading && !periodStatus.canRate && periodStatus.phase !== 'no_settings') {
+            toast.error("Periode penilaian sudah ditutup. " + periodStatus.message);
+            navigate("/employee-of-the-month");
+        }
+    }, [periodStatus.isLoading, periodStatus.canRate, periodStatus.phase]);
 
     const checkRatingQuota = async () => {
         if (!user) return;
