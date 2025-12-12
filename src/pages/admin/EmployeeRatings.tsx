@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
 import { AdminPusatEvaluationForm } from "@/components/AdminPusatEvaluationForm";
 import { WinnerRecapTab } from "@/components/WinnerRecapTab";
+import { EomSettingsTab } from "@/components/EomSettingsTab";
 import { WORK_UNITS } from "@/lib/constants";
 import { toast } from "sonner";
 interface Rating {
@@ -430,7 +431,7 @@ export default function AdminEmployeeRatings() {
                 {/* Main Tabs for Admin Pusat */}
                 {isAdminPusat ? (
                     <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsList className="grid w-full grid-cols-3 mb-4">
                             <TabsTrigger value="penilaian" className="gap-2">
                                 <ClipboardCheck className="h-4 w-4" />
                                 Penilaian
@@ -439,10 +440,18 @@ export default function AdminEmployeeRatings() {
                                 <FileText className="h-4 w-4" />
                                 Rekap
                             </TabsTrigger>
+                            <TabsTrigger value="pengaturan" className="gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Pengaturan
+                            </TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="rekap">
                             <WinnerRecapTab />
+                        </TabsContent>
+                        
+                        <TabsContent value="pengaturan">
+                            <EomSettingsTab />
                         </TabsContent>
                         
                         <TabsContent value="penilaian" className="space-y-6">
