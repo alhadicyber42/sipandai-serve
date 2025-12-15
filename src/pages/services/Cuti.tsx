@@ -56,17 +56,21 @@ export default function Cuti() {
   const [deferralYear, setDeferralYear] = useState<string>(new Date().getFullYear().toString());
   const [deferralDays, setDeferralDays] = useState<string>("");
   const [deferralDoc, setDeferralDoc] = useState<string>("");
+  const [deferralReason, setDeferralReason] = useState<string>("");
   const [pendingDeferrals, setPendingDeferrals] = useState<any[]>([]);
 
   // Leave Balance State
   const [leaveStats, setLeaveStats] = useState({
-    quota: 12, // Default annual quota
+    quota: 12, // Default annual quota (12 hari kerja/tahun)
     carriedOver: 0, // Loaded from leave_deferrals table
     used: 0,
     pending: 0,
-    remaining: 12
+    remaining: 12,
+    maxAllowedTotal: 18, // Default maks 18 hari (12 + 6 sisa tahun lalu)
+    hasDeferred: false, // Apakah ada penangguhan karena dinas
+    unusedYears: 0 // Berapa tahun tidak digunakan
   });
-  const [deferralDetails, setDeferralDetails] = useState<Array<{ year: number, days: number }>>([]);
+  const [deferralDetails, setDeferralDetails] = useState<Array<{ year: number, days: number, isDeferred?: boolean }>>([]);
 
   // Certificate Generation State
   const [isCertificateDialogOpen, setIsCertificateDialogOpen] = useState(false);
@@ -171,24 +175,64 @@ export default function Cuti() {
         // Load deferral balances
         const { data: deferrals } = await supabase
           .from("leave_deferrals")
-          .select("deferral_year, days_deferred, status")
+          .select("deferral_year, days_deferred, status, notes")
           .eq("user_id", user.id)
           .in("status", ["active", "pending"]);
 
         const activeDeferrals = (deferrals || []).filter(d => d.status === "active");
         const pending = (deferrals || []).filter(d => d.status === "pending");
 
+        // Hitung total cuti yang dibawa dari tahun sebelumnya
         const totalCarriedOver = activeDeferrals.reduce((sum, d) => sum + d.days_deferred, 0);
-        const deferralList = activeDeferrals.map(d => ({ year: d.deferral_year, days: d.days_deferred }));
+        
+        // Cek apakah ada penangguhan karena kepentingan dinas (notes mengandung "dinas")
+        const hasOfficialDeferral = activeDeferrals.some(d => 
+          d.notes?.toLowerCase().includes('dinas') || d.notes?.toLowerCase().includes('penangguhan')
+        );
+        
+        // Hitung berapa tahun berturut-turut tidak menggunakan cuti
+        const deferralYears = activeDeferrals.map(d => d.deferral_year).sort();
+        let consecutiveUnusedYears = 0;
+        
+        if (deferralYears.length >= 2) {
+          // Cek apakah 2 tahun berturut-turut tidak digunakan
+          for (let i = 0; i < deferralYears.length - 1; i++) {
+            if (deferralYears[i + 1] - deferralYears[i] === 1) {
+              consecutiveUnusedYears = 2;
+              break;
+            }
+          }
+        }
+
+        // Tentukan maksimal cuti sesuai peraturan:
+        // - Normal: max 18 hari (12 tahun ini + 6 sisa tahun lalu)
+        // - Jika tidak digunakan 2+ tahun atau ada penangguhan dinas: max 24 hari
+        let maxAllowedTotal = 18; // Default
+        if (consecutiveUnusedYears >= 2 || hasOfficialDeferral) {
+          maxAllowedTotal = 24;
+        }
+
+        // Batasi carried over sesuai peraturan (max 6 hari normal, atau 12 hari jika ada penangguhan/2 tahun)
+        const maxCarryOver = hasOfficialDeferral || consecutiveUnusedYears >= 2 ? 12 : 6;
+        const effectiveCarriedOver = Math.min(totalCarriedOver, maxCarryOver);
+
+        const deferralList = activeDeferrals.map(d => ({ 
+          year: d.deferral_year, 
+          days: d.days_deferred,
+          isDeferred: d.notes?.toLowerCase().includes('dinas') || d.notes?.toLowerCase().includes('penangguhan')
+        }));
 
         setDeferralDetails(deferralList);
         setPendingDeferrals(pending);
         setLeaveStats(prev => ({
           ...prev,
-          carriedOver: totalCarriedOver,
+          carriedOver: effectiveCarriedOver,
           used: usedDays,
           pending: pendingDays,
-          remaining: (prev.quota + totalCarriedOver) - usedDays
+          remaining: Math.min((prev.quota + effectiveCarriedOver) - usedDays, maxAllowedTotal - usedDays),
+          maxAllowedTotal,
+          hasDeferred: hasOfficialDeferral,
+          unusedYears: consecutiveUnusedYears
         }));
       }
 
@@ -347,10 +391,32 @@ export default function Cuti() {
     e.preventDefault();
     if (!user) return;
 
-    if (!deferralYear || !deferralDays || !deferralDoc) {
+    if (!deferralYear || !deferralDays || !deferralDoc || !deferralReason) {
       toast.error("Mohon lengkapi semua field");
       return;
     }
+
+    const days = parseInt(deferralDays);
+    
+    // Validasi jumlah hari tidak melebihi sisa cuti
+    if (days > leaveStats.remaining) {
+      toast.error(`Jumlah hari tidak boleh melebihi sisa cuti (${leaveStats.remaining} hari)`);
+      return;
+    }
+
+    // Validasi jumlah hari minimal 1
+    if (days < 1) {
+      toast.error("Jumlah hari minimal 1");
+      return;
+    }
+
+    // Map alasan ke notes
+    const reasonLabels: Record<string, string> = {
+      kepentingan_dinas: "Penangguhan karena kepentingan dinas mendesak",
+      tugas_khusus: "Penangguhan karena tugas khusus/proyek penting",
+      kekurangan_personel: "Penangguhan karena kekurangan personel",
+      lainnya: "Penangguhan cuti tahunan"
+    };
 
     try {
       setIsSubmitting(true);
@@ -360,19 +426,21 @@ export default function Cuti() {
         .insert({
           user_id: user.id,
           deferral_year: parseInt(deferralYear),
-          days_deferred: parseInt(deferralDays),
+          days_deferred: days,
           approval_document: deferralDoc,
           status: "pending",
+          notes: reasonLabels[deferralReason] || "Penangguhan cuti tahunan",
           created_by: user.id
         });
 
       if (error) throw error;
 
-      toast.success("Pengajuan penangguhan berhasil dikirim");
+      toast.success("Pengajuan penangguhan berhasil dikirim. Menunggu persetujuan Admin.");
       setIsDeferralDialogOpen(false);
       setDeferralYear(new Date().getFullYear().toString());
       setDeferralDays("");
       setDeferralDoc("");
+      setDeferralReason("");
       loadServices(); // Reload to show pending status
     } catch (error: any) {
       console.error("Error submitting deferral:", error);
@@ -877,13 +945,27 @@ export default function Cuti() {
                     </div>
 
                     <Dialog open={isDeferralDialogOpen} onOpenChange={setIsDeferralDialogOpen}>
-                      <DialogContent>
+                      <DialogContent className="max-w-lg">
                         <DialogHeader>
-                          <DialogTitle>Ajukan Penangguhan Cuti</DialogTitle>
+                          <DialogTitle>Ajukan Penangguhan Cuti Tahunan</DialogTitle>
                         </DialogHeader>
+                        
+                        {/* Info Peraturan */}
+                        <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
+                          <Info className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-xs text-blue-800 dark:text-blue-200 ml-2">
+                            <strong>Ketentuan Penangguhan Cuti:</strong>
+                            <ul className="list-disc list-inside mt-1 space-y-0.5">
+                              <li>Penangguhan dapat dilakukan oleh Pejabat yang berwenang karena <strong>kepentingan dinas mendesak</strong></li>
+                              <li>Cuti yang ditangguhkan dapat digunakan tahun berikutnya <strong>maksimal 24 hari kerja</strong> (termasuk cuti tahun berjalan)</li>
+                              <li>Sisa cuti tahun sebelumnya yang tidak ditangguhkan maksimal <strong>6 hari</strong> dapat dibawa ke tahun berikutnya</li>
+                            </ul>
+                          </AlertDescription>
+                        </Alert>
+
                         <form onSubmit={handleDeferralSubmit} className="space-y-4">
                           <div className="space-y-2">
-                            <Label>Tahun Asal Cuti</Label>
+                            <Label>Tahun Asal Cuti <span className="text-destructive">*</span></Label>
                             <Input
                               type="number"
                               min={2000}
@@ -891,41 +973,88 @@ export default function Cuti() {
                               value={deferralYear}
                               onChange={(e) => setDeferralYear(e.target.value)}
                               placeholder="Contoh: 2024"
+                              required
                             />
                             <p className="text-xs text-muted-foreground">
-                              Tahun dari mana sisa cuti berasal
+                              Tahun dari mana sisa cuti yang akan ditangguhkan berasal
                             </p>
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Jumlah Hari</Label>
+                            <Label>Jumlah Hari yang Ditangguhkan <span className="text-destructive">*</span></Label>
                             <Input
                               type="number"
                               min={1}
-                              max={12}
+                              max={Math.max(1, leaveStats.remaining)}
                               value={deferralDays}
-                              onChange={(e) => setDeferralDays(e.target.value)}
-                              placeholder="Jumlah hari yang ditangguhkan"
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val > leaveStats.remaining) {
+                                  toast.error(`Maksimal ${leaveStats.remaining} hari sesuai sisa cuti Anda`);
+                                  setDeferralDays(leaveStats.remaining.toString());
+                                } else {
+                                  setDeferralDays(e.target.value);
+                                }
+                              }}
+                              placeholder={`Maksimal ${leaveStats.remaining} hari`}
+                              required
                             />
+                            <p className="text-xs text-muted-foreground">
+                              Sisa cuti tahunan Anda: <strong>{leaveStats.remaining} hari</strong>. Cuti yang ditangguhkan akan dapat digunakan tahun berikutnya.
+                            </p>
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Dokumen Persetujuan (Link)</Label>
+                            <Label>Alasan Penangguhan <span className="text-destructive">*</span></Label>
+                            <Select 
+                              value={deferralReason} 
+                              onValueChange={setDeferralReason}
+                              required
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih alasan penangguhan" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="kepentingan_dinas">Kepentingan Dinas Mendesak</SelectItem>
+                                <SelectItem value="tugas_khusus">Tugas Khusus/Proyek Penting</SelectItem>
+                                <SelectItem value="kekurangan_personel">Kekurangan Personel</SelectItem>
+                                <SelectItem value="lainnya">Alasan Lainnya</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Dokumen Persetujuan Atasan (Link) <span className="text-destructive">*</span></Label>
                             <Input
                               value={deferralDoc}
                               onChange={(e) => setDeferralDoc(e.target.value)}
-                              placeholder="https://..."
+                              placeholder="https://drive.google.com/..."
+                              required
                             />
                             <p className="text-xs text-muted-foreground">
-                              Link Google Drive/Dropbox dokumen persetujuan
+                              Lampirkan surat persetujuan penangguhan dari Pejabat yang Berwenang
                             </p>
                           </div>
+
+                          {/* Preview dampak penangguhan */}
+                          {deferralDays && parseInt(deferralDays) > 0 && (
+                            <Alert className="bg-green-50 dark:bg-green-950 border-green-200">
+                              <CalendarCheck className="h-4 w-4 text-green-600" />
+                              <AlertDescription className="text-xs text-green-800 dark:text-green-200 ml-2">
+                                <strong>Dampak Penangguhan:</strong><br />
+                                Jika disetujui, cuti tahun berikutnya Anda menjadi maksimal <strong>24 hari kerja</strong> (termasuk {parseInt(deferralDays)} hari yang ditangguhkan + 12 hari kuota baru).
+                              </AlertDescription>
+                            </Alert>
+                          )}
 
                           <div className="flex justify-end gap-2 pt-2">
                             <Button type="button" variant="outline" onClick={() => setIsDeferralDialogOpen(false)}>
                               Batal
                             </Button>
-                            <Button type="submit" disabled={isSubmitting}>
+                            <Button 
+                              type="submit" 
+                              disabled={isSubmitting || !deferralDays || parseInt(deferralDays) < 1}
+                            >
                               {isSubmitting ? "Mengirim..." : "Kirim Pengajuan"}
                             </Button>
                           </div>
