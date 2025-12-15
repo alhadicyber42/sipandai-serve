@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck } from "lucide-react";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck, Check, X, ExternalLink } from "lucide-react";
 import { format, differenceInDays, getYear } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,10 @@ export default function Cuti() {
   const [deferralDoc, setDeferralDoc] = useState<string>("");
   const [deferralReason, setDeferralReason] = useState<string>("");
   const [pendingDeferrals, setPendingDeferrals] = useState<any[]>([]);
+  
+  // Admin deferral management
+  const [adminDeferralList, setAdminDeferralList] = useState<any[]>([]);
+  const [processingDeferralId, setProcessingDeferralId] = useState<string | null>(null);
 
   // Leave Balance State
   const [leaveStats, setLeaveStats] = useState({
@@ -79,6 +83,9 @@ export default function Cuti() {
 
   useEffect(() => {
     loadServices();
+    if (user?.role === 'admin_unit' || user?.role === 'admin_pusat') {
+      loadAdminDeferrals();
+    }
   }, [user]);
 
   const loadServices = async () => {
@@ -241,6 +248,82 @@ export default function Cuti() {
     }
 
     setIsLoading(false);
+  };
+
+  // Load deferral requests for admin
+  const loadAdminDeferrals = async () => {
+    if (!user || (user.role !== 'admin_unit' && user.role !== 'admin_pusat')) return;
+
+    let query = supabase
+      .from("leave_deferrals")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading admin deferrals:", error);
+      return;
+    }
+
+    // Enrich with user profiles
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(d => d.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name, nip, work_unit_id")
+        .in("id", userIds);
+
+      const { data: workUnitsData } = await supabase
+        .from("work_units")
+        .select("id, name");
+
+      const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+      const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
+
+      const enrichedDeferrals = data.map(d => {
+        const profile = profilesMap.get(d.user_id);
+        return {
+          ...d,
+          profile,
+          work_unit: profile?.work_unit_id ? workUnitsMap.get(profile.work_unit_id) : null
+        };
+      });
+
+      setAdminDeferralList(enrichedDeferrals);
+    } else {
+      setAdminDeferralList([]);
+    }
+  };
+
+  // Handle deferral approval/rejection by admin
+  const handleDeferralAction = async (deferralId: string, action: 'approve' | 'reject') => {
+    if (!user) return;
+
+    setProcessingDeferralId(deferralId);
+
+    try {
+      const newStatus = action === 'approve' ? 'active' : 'rejected';
+      
+      const { error } = await supabase
+        .from("leave_deferrals")
+        .update({ 
+          status: newStatus,
+          notes: adminDeferralList.find(d => d.id === deferralId)?.notes + 
+            ` | ${action === 'approve' ? 'Disetujui' : 'Ditolak'} oleh ${user.name} pada ${format(new Date(), 'dd MMM yyyy', { locale: localeId })}`
+        })
+        .eq("id", deferralId);
+
+      if (error) throw error;
+
+      toast.success(`Pengajuan penangguhan ${action === 'approve' ? 'disetujui' : 'ditolak'}`);
+      loadAdminDeferrals();
+    } catch (error: any) {
+      console.error("Error processing deferral:", error);
+      toast.error(error.message || `Gagal ${action === 'approve' ? 'menyetujui' : 'menolak'} pengajuan`);
+    } finally {
+      setProcessingDeferralId(null);
+    }
   };
 
   const addDocumentLink = () => {
@@ -1144,6 +1227,84 @@ export default function Cuti() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Admin Deferral Management Section */}
+        {isAdmin && adminDeferralList.filter(d => d.status === 'pending').length > 0 && (
+          <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-600" />
+                Pengajuan Penangguhan Cuti Menunggu Persetujuan
+                <Badge variant="secondary" className="ml-2">
+                  {adminDeferralList.filter(d => d.status === 'pending').length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {adminDeferralList
+                  .filter(d => d.status === 'pending')
+                  .map((deferral) => (
+                    <div 
+                      key={deferral.id} 
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background rounded-lg border"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="font-medium">
+                          {deferral.profile?.name || 'Unknown'}
+                          <span className="text-muted-foreground text-sm ml-2">
+                            ({deferral.profile?.nip || '-'})
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Unit: {deferral.work_unit?.name || '-'}
+                        </div>
+                        <div className="text-sm">
+                          <strong>{deferral.days_deferred} hari</strong> dari tahun {deferral.deferral_year}
+                        </div>
+                        {deferral.notes && (
+                          <div className="text-xs text-muted-foreground italic">
+                            {deferral.notes}
+                          </div>
+                        )}
+                        {deferral.approval_document && (
+                          <a 
+                            href={deferral.approval_document} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Lihat Dokumen
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleDeferralAction(deferral.id, 'reject')}
+                          disabled={processingDeferralId === deferral.id}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Tolak
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleDeferralAction(deferral.id, 'approve')}
+                          disabled={processingDeferralId === deferral.id}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Setujui
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <div className="space-y-4">
