@@ -14,9 +14,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck, Check, X, ExternalLink } from "lucide-react";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck, Check, X, ExternalLink, FileText, PauseCircle } from "lucide-react";
 import { format, differenceInDays, getYear } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,10 @@ export default function Cuti() {
   // Admin deferral management
   const [adminDeferralList, setAdminDeferralList] = useState<any[]>([]);
   const [processingDeferralId, setProcessingDeferralId] = useState<string | null>(null);
+  const [adminDeferralTab, setAdminDeferralTab] = useState<string>("pending");
+  
+  // User tabs
+  const [userSubmissionTab, setUserSubmissionTab] = useState<string>("cuti");
 
   // Leave Balance State
   const [leaveStats, setLeaveStats] = useState({
@@ -1229,97 +1234,305 @@ export default function Cuti() {
           </div>
         )}
 
-        {/* Admin Deferral Management Section */}
-        {isAdmin && adminDeferralList.filter(d => d.status === 'pending').length > 0 && (
-          <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
+        {/* Admin Deferral Management Section with Tabs */}
+        {isAdmin && adminDeferralList.length > 0 && (
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-600" />
-                Pengajuan Penangguhan Cuti Menunggu Persetujuan
-                <Badge variant="secondary" className="ml-2">
-                  {adminDeferralList.filter(d => d.status === 'pending').length}
-                </Badge>
+                <PauseCircle className="h-5 w-5 text-primary" />
+                Riwayat Penangguhan Cuti
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {adminDeferralList
-                  .filter(d => d.status === 'pending')
-                  .map((deferral) => (
-                    <div 
-                      key={deferral.id} 
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background rounded-lg border"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <div className="font-medium">
-                          {deferral.profile?.name || 'Unknown'}
-                          <span className="text-muted-foreground text-sm ml-2">
-                            ({deferral.profile?.nip || '-'})
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Unit: {deferral.work_unit?.name || '-'}
-                        </div>
-                        <div className="text-sm">
-                          <strong>{deferral.days_deferred} hari</strong> dari tahun {deferral.deferral_year}
-                        </div>
-                        {deferral.notes && (
-                          <div className="text-xs text-muted-foreground italic">
-                            {deferral.notes}
-                          </div>
-                        )}
-                        {deferral.approval_document && (
-                          <a 
-                            href={deferral.approval_document} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Lihat Dokumen
-                          </a>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => handleDeferralAction(deferral.id, 'reject')}
-                          disabled={processingDeferralId === deferral.id}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Tolak
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleDeferralAction(deferral.id, 'approve')}
-                          disabled={processingDeferralId === deferral.id}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Setujui
-                        </Button>
-                      </div>
+              <Tabs value={adminDeferralTab} onValueChange={setAdminDeferralTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="pending" className="gap-2">
+                    <Clock className="h-4 w-4" />
+                    Baru Masuk
+                    {adminDeferralList.filter(d => d.status === 'pending').length > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {adminDeferralList.filter(d => d.status === 'pending').length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="active" className="gap-2">
+                    <Check className="h-4 w-4" />
+                    Disetujui
+                  </TabsTrigger>
+                  <TabsTrigger value="rejected" className="gap-2">
+                    <X className="h-4 w-4" />
+                    Ditolak
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="pending">
+                  {adminDeferralList.filter(d => d.status === 'pending').length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Tidak ada pengajuan penangguhan yang menunggu persetujuan
                     </div>
-                  ))}
-              </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDeferralList
+                        .filter(d => d.status === 'pending')
+                        .map((deferral) => (
+                          <div 
+                            key={deferral.id} 
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-orange-50/50 dark:bg-orange-950/20 rounded-lg border border-orange-200"
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="font-medium">
+                                {deferral.profile?.name || 'Unknown'}
+                                <span className="text-muted-foreground text-sm ml-2">
+                                  ({deferral.profile?.nip || '-'})
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Unit: {deferral.work_unit?.name || '-'}
+                              </div>
+                              <div className="text-sm">
+                                <strong>{deferral.days_deferred} hari</strong> dari tahun {deferral.deferral_year}
+                              </div>
+                              {deferral.notes && (
+                                <div className="text-xs text-muted-foreground italic">
+                                  {deferral.notes}
+                                </div>
+                              )}
+                              {deferral.approval_document && (
+                                <a 
+                                  href={deferral.approval_document} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Lihat Dokumen
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                onClick={() => handleDeferralAction(deferral.id, 'reject')}
+                                disabled={processingDeferralId === deferral.id}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Tolak
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleDeferralAction(deferral.id, 'approve')}
+                                disabled={processingDeferralId === deferral.id}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Setujui
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="active">
+                  {adminDeferralList.filter(d => d.status === 'active').length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Belum ada penangguhan yang disetujui
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDeferralList
+                        .filter(d => d.status === 'active')
+                        .map((deferral) => (
+                          <div 
+                            key={deferral.id} 
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-green-50/50 dark:bg-green-950/20 rounded-lg border border-green-200"
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="font-medium">
+                                {deferral.profile?.name || 'Unknown'}
+                                <span className="text-muted-foreground text-sm ml-2">
+                                  ({deferral.profile?.nip || '-'})
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Unit: {deferral.work_unit?.name || '-'}
+                              </div>
+                              <div className="text-sm">
+                                <strong>{deferral.days_deferred} hari</strong> dari tahun {deferral.deferral_year}
+                              </div>
+                              {deferral.notes && (
+                                <div className="text-xs text-muted-foreground italic">
+                                  {deferral.notes}
+                                </div>
+                              )}
+                              <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                                <Check className="h-3 w-3 mr-1" />
+                                Disetujui
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="rejected">
+                  {adminDeferralList.filter(d => d.status === 'rejected').length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Belum ada penangguhan yang ditolak
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDeferralList
+                        .filter(d => d.status === 'rejected')
+                        .map((deferral) => (
+                          <div 
+                            key={deferral.id} 
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-200"
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="font-medium">
+                                {deferral.profile?.name || 'Unknown'}
+                                <span className="text-muted-foreground text-sm ml-2">
+                                  ({deferral.profile?.nip || '-'})
+                                </span>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Unit: {deferral.work_unit?.name || '-'}
+                              </div>
+                              <div className="text-sm">
+                                <strong>{deferral.days_deferred} hari</strong> dari tahun {deferral.deferral_year}
+                              </div>
+                              {deferral.notes && (
+                                <div className="text-xs text-muted-foreground italic">
+                                  {deferral.notes}
+                                </div>
+                              )}
+                              <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                <X className="h-3 w-3 mr-1" />
+                                Ditolak
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Cuti</h2>
-          <ServiceList
-            services={services}
-            isLoading={isLoading}
-            onReload={loadServices}
-            showFilters={isAdmin}
-            allowActions={isAdmin}
-            onEditService={handleEditService}
-            onGenerateCertificate={handleGenerateCertificate}
-          />
-        </div>
+        {/* User Submission Tabs - Cuti & Penangguhan */}
+        {user?.role === "user_unit" ? (
+          <Tabs value={userSubmissionTab} onValueChange={setUserSubmissionTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="cuti" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Cuti
+              </TabsTrigger>
+              <TabsTrigger value="penangguhan" className="gap-2">
+                <PauseCircle className="h-4 w-4" />
+                Penangguhan
+                {pendingDeferrals.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {pendingDeferrals.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
+            <TabsContent value="cuti" className="space-y-4">
+              <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Cuti</h2>
+              <ServiceList
+                services={services}
+                isLoading={isLoading}
+                onReload={loadServices}
+                showFilters={false}
+                allowActions={false}
+                onEditService={handleEditService}
+                onGenerateCertificate={handleGenerateCertificate}
+              />
+            </TabsContent>
+
+            <TabsContent value="penangguhan" className="space-y-4">
+              <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Penangguhan Cuti</h2>
+              {[...pendingDeferrals, ...deferralDetails.filter(d => d.isDeferred)].length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    Anda belum pernah mengajukan penangguhan cuti
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {/* Pending deferrals */}
+                  {pendingDeferrals.map((deferral: any) => (
+                    <Card key={deferral.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              Penangguhan {deferral.days_deferred} hari dari tahun {deferral.deferral_year}
+                            </div>
+                            {deferral.notes && (
+                              <div className="text-sm text-muted-foreground">
+                                {deferral.notes}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Diajukan: {format(new Date(deferral.created_at), 'dd MMM yyyy', { locale: localeId })}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="border-orange-500 text-orange-700">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Menunggu Persetujuan
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  {/* Approved deferrals from deferralDetails */}
+                  {deferralDetails.filter(d => d.isDeferred).map((deferral, idx) => (
+                    <Card key={`approved-${idx}`} className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              Penangguhan {deferral.days} hari dari tahun {deferral.year}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Ditangguhkan karena kepentingan dinas mendesak
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="border-green-500 text-green-700">
+                            <Check className="h-3 w-3 mr-1" />
+                            Disetujui
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Cuti</h2>
+            <ServiceList
+              services={services}
+              isLoading={isLoading}
+              onReload={loadServices}
+              showFilters={isAdmin}
+              allowActions={isAdmin}
+              onEditService={handleEditService}
+              onGenerateCertificate={handleGenerateCertificate}
+            />
+          </div>
+        )}
         {/* Edit Dialog for Returned Services */}
         {user?.role === "user_unit" && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
