@@ -59,6 +59,7 @@ export default function Cuti() {
   const [deferralDoc, setDeferralDoc] = useState<string>("");
   const [deferralReason, setDeferralReason] = useState<string>("");
   const [pendingDeferrals, setPendingDeferrals] = useState<any[]>([]);
+  const [userDeferrals, setUserDeferrals] = useState<any[]>([]);
   
   // Admin deferral management
   const [adminDeferralList, setAdminDeferralList] = useState<any[]>([]);
@@ -187,9 +188,10 @@ export default function Cuti() {
         // Load deferral balances
         const { data: deferrals } = await supabase
           .from("leave_deferrals")
-          .select("deferral_year, days_deferred, status, notes")
+          .select("id, deferral_year, days_deferred, status, notes, created_at, approval_document")
           .eq("user_id", user.id)
-          .in("status", ["active", "pending"]);
+          .in("status", ["active", "pending", "rejected"])
+          .order("created_at", { ascending: false });
 
         const activeDeferrals = (deferrals || []).filter(d => d.status === "active");
         const pending = (deferrals || []).filter(d => d.status === "pending");
@@ -236,6 +238,7 @@ export default function Cuti() {
 
         setDeferralDetails(deferralList);
         setPendingDeferrals(pending);
+        setUserDeferrals(deferrals || []);
         setLeaveStats(prev => ({
           ...prev,
           carriedOver: effectiveCarriedOver,
@@ -1459,7 +1462,7 @@ export default function Cuti() {
 
             <TabsContent value="penangguhan" className="space-y-4">
               <h2 className="text-xl font-semibold tracking-tight">Riwayat Pengajuan Penangguhan Cuti</h2>
-              {[...pendingDeferrals, ...deferralDetails.filter(d => d.isDeferred)].length === 0 ? (
+              {userDeferrals.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
                     Anda belum pernah mengajukan penangguhan cuti
@@ -1467,54 +1470,69 @@ export default function Cuti() {
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {/* Pending deferrals */}
-                  {pendingDeferrals.map((deferral: any) => (
-                    <Card key={deferral.id} className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              Penangguhan {deferral.days_deferred} hari dari tahun {deferral.deferral_year}
-                            </div>
-                            {deferral.notes && (
-                              <div className="text-sm text-muted-foreground">
-                                {deferral.notes}
+                  {userDeferrals.map((deferral: any) => {
+                    const statusConfig = {
+                      pending: {
+                        border: "border-orange-200",
+                        bg: "bg-orange-50/50 dark:bg-orange-950/20",
+                        badgeClass: "border-orange-500 text-orange-700",
+                        icon: <Clock className="h-3 w-3 mr-1" />,
+                        label: "Menunggu Persetujuan"
+                      },
+                      active: {
+                        border: "border-green-200",
+                        bg: "bg-green-50/50 dark:bg-green-950/20",
+                        badgeClass: "border-green-500 text-green-700",
+                        icon: <Check className="h-3 w-3 mr-1" />,
+                        label: "Disetujui"
+                      },
+                      rejected: {
+                        border: "border-red-200",
+                        bg: "bg-red-50/50 dark:bg-red-950/20",
+                        badgeClass: "border-red-500 text-red-700",
+                        icon: <X className="h-3 w-3 mr-1" />,
+                        label: "Ditolak"
+                      }
+                    };
+                    const config = statusConfig[deferral.status as keyof typeof statusConfig] || statusConfig.pending;
+
+                    return (
+                      <Card key={deferral.id} className={`${config.border} ${config.bg}`}>
+                        <CardContent className="p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="font-medium">
+                                Penangguhan {deferral.days_deferred} hari dari tahun {deferral.deferral_year}
                               </div>
-                            )}
-                            <div className="text-xs text-muted-foreground">
-                              Diajukan: {format(new Date(deferral.created_at), 'dd MMM yyyy', { locale: localeId })}
+                              {deferral.notes && (
+                                <div className="text-sm text-muted-foreground">
+                                  {deferral.notes}
+                                </div>
+                              )}
+                              {deferral.approval_document && (
+                                <a 
+                                  href={deferral.approval_document} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Lihat Dokumen Pendukung
+                                </a>
+                              )}
+                              <div className="text-xs text-muted-foreground">
+                                Diajukan: {format(new Date(deferral.created_at), 'dd MMM yyyy', { locale: localeId })}
+                              </div>
                             </div>
+                            <Badge variant="outline" className={config.badgeClass}>
+                              {config.icon}
+                              {config.label}
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="border-orange-500 text-orange-700">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Menunggu Persetujuan
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  {/* Approved deferrals from deferralDetails */}
-                  {deferralDetails.filter(d => d.isDeferred).map((deferral, idx) => (
-                    <Card key={`approved-${idx}`} className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              Penangguhan {deferral.days} hari dari tahun {deferral.year}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Ditangguhkan karena kepentingan dinas mendesak
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="border-green-500 text-green-700">
-                            <Check className="h-3 w-3 mr-1" />
-                            Disetujui
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
