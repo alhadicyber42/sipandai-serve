@@ -432,7 +432,7 @@ export default function EmployeeRating() {
                     <CardHeader>
                         <CardTitle className="text-lg">Alasan Memilih Pegawai Ini <span className="text-red-500">*</span></CardTitle>
                         <CardDescription>
-                            Jelaskan secara detail mengapa Anda memilih pegawai ini sebagai Employee of The Month
+                            Jelaskan secara detail mengapa Anda memilih pegawai ini sebagai Employee of The Year
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

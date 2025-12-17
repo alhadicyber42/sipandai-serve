@@ -367,7 +367,7 @@ export function WinnerRecapTab() {
             Pemenang Bulanan {selectedYear}
           </CardTitle>
           <CardDescription>
-            Daftar pemenang Employee of The Month yang sudah ditetapkan
+            Daftar pemenang Employee of The Year yang sudah ditetapkan
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6">

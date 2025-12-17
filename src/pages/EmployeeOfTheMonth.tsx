@@ -625,7 +625,7 @@ export default function EmployeeOfTheMonth() {
                 if (error) throw error;
             }
 
-            toast.success(`${selectedForDesignation.employeeName} berhasil ditetapkan sebagai ${selectedForDesignation.type === 'monthly' ? 'Employee of the Month' : 'Employee of the Year'} ${selectedForDesignation.category}!`);
+            toast.success(`${selectedForDesignation.employeeName} berhasil ditetapkan sebagai ${selectedForDesignation.type === 'monthly' ? 'Employee of the Year (Bulanan)' : 'Employee of the Year (Tahunan)'} ${selectedForDesignation.category}!`);
             setIsDesignateDialogOpen(false);
             setSelectedForDesignation(null);
             loadDesignatedWinners();
@@ -838,7 +838,7 @@ export default function EmployeeOfTheMonth() {
                             </div>
                             <div>
                                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                                    Employee of The Month
+                                    Employee of The Year
                                 </h1>
                                 <p className="text-white/90 mt-1 text-xs sm:text-sm md:text-base">
                                     Berikan apresiasi "Good Point" kepada rekan kerja terbaik Anda!
@@ -1048,7 +1048,7 @@ export default function EmployeeOfTheMonth() {
                                         <AlertCircle className="h-4 w-4 text-gray-600" />
                                         <AlertTitle className="text-gray-800 dark:text-gray-300">Unit Kerja Tidak Terdaftar</AlertTitle>
                                         <AlertDescription className="text-gray-700 dark:text-gray-400">
-                                            Unit kerja Anda tidak terdaftar sebagai peserta Employee of the Month periode ini.
+                                            Unit kerja Anda tidak terdaftar sebagai peserta Employee of the Year periode ini.
                                         </AlertDescription>
                                     </Alert>
                                 )}
@@ -1068,7 +1068,7 @@ export default function EmployeeOfTheMonth() {
                                         <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
                                             <span className="text-blue-500">ℹ️</span>
                                             <span>
-                                                Anda memiliki <strong>1 kuota penilaian</strong> untuk periode bulan ini. Pilih satu pegawai yang menurut Anda paling layak menjadi Employee of the Month.
+                                                Anda memiliki <strong>1 kuota penilaian</strong> untuk periode bulan ini. Pilih satu pegawai yang menurut Anda paling layak menjadi Employee of the Year.
                                             </span>
                                         </p>
                                     </div>
