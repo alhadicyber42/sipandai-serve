@@ -300,31 +300,43 @@ export default function Cuti() {
   const loadAdminDeferrals = async () => {
     if (!user || (user.role !== 'admin_unit' && user.role !== 'admin_pusat')) return;
 
-    let query = supabase
+    // First get profiles to filter by work unit for admin_unit
+    let profileQuery = supabase
+      .from("profiles")
+      .select("id, name, nip, work_unit_id");
+
+    if (user.role === 'admin_unit') {
+      profileQuery = profileQuery.eq("work_unit_id", user.work_unit_id);
+    }
+
+    const { data: profilesData } = await profileQuery;
+    
+    if (!profilesData || profilesData.length === 0) {
+      setAdminDeferralList([]);
+      return;
+    }
+
+    const userIds = profilesData.map(p => p.id);
+    const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+
+    // Now get deferrals for these users
+    const { data, error } = await supabase
       .from("leave_deferrals")
       .select("*")
+      .in("user_id", userIds)
       .order("created_at", { ascending: false });
-
-    const { data, error } = await query;
 
     if (error) {
       console.error("Error loading admin deferrals:", error);
       return;
     }
 
-    // Enrich with user profiles
+    // Enrich with user profiles and work units
     if (data && data.length > 0) {
-      const userIds = [...new Set(data.map(d => d.user_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, name, nip, work_unit_id")
-        .in("id", userIds);
-
       const { data: workUnitsData } = await supabase
         .from("work_units")
         .select("id, name");
 
-      const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
       const workUnitsMap = new Map((workUnitsData || []).map(w => [w.id, w]));
 
       const enrichedDeferrals = data.map(d => {
