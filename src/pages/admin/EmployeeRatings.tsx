@@ -383,10 +383,10 @@ export default function AdminEmployeeRatings() {
                         </div>
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-white">
-                                Penilaian Employee of The Month
+                                Penilaian Employee of The Year
                             </h1>
                             <p className="text-white/90 mt-1 text-sm md:text-base">
-                                {isAdminUnit ? "Lihat dan berikan evaluasi lanjutan untuk pegawai terbaik di unit Anda" : isAdminPusat ? "Berikan penilaian final untuk menentukan Employee of The Month" : "Lihat semua penilaian dan leaderboard pegawai terbaik"}
+                                {isAdminUnit ? "Lihat dan berikan evaluasi lanjutan untuk pegawai terbaik di unit Anda" : isAdminPusat ? "Berikan penilaian final untuk menentukan Employee of The Year" : "Lihat semua penilaian dan leaderboard pegawai terbaik"}
                             </p>
                         </div>
                     </div>
@@ -425,7 +425,7 @@ export default function AdminEmployeeRatings() {
                                     </h3>
                                     <p className="text-sm text-purple-700 dark:text-purple-300">
                                         Sebagai Admin Pusat, Anda dapat memberikan <strong>penilaian final</strong> dengan mengadjust semua kriteria 
-                                        dan menambahkan penyesuaian khusus untuk menentukan pemenang Employee of The Month.
+                                        dan menambahkan penyesuaian khusus untuk menentukan pemenang Employee of The Year.
                                     </p>
                                 </div>
                             </div>
@@ -515,7 +515,7 @@ export default function AdminEmployeeRatings() {
                                         Penilaian Final
                                     </CardTitle>
                                     <CardDescription>
-                                        Berikan penilaian final untuk menentukan Employee of The Month
+                                        Berikan penilaian final untuk menentukan Employee of The Year
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-2 sm:p-6">
@@ -725,7 +725,7 @@ export default function AdminEmployeeRatings() {
                                 <CardHeader>
                                     <CardTitle>Semua Penilaian</CardTitle>
                                     <CardDescription>
-                                        Daftar lengkap penilaian Employee of The Month
+                                        Daftar lengkap penilaian Employee of The Year
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-2 sm:p-6">

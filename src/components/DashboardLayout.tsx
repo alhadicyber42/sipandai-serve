@@ -71,7 +71,7 @@ export const DashboardLayout = ({
         }]
       }, {
         path: "/employee-of-the-month",
-        label: "Employee of The Month",
+        label: "Employee of The Year",
         icon: Trophy
       }, {
         path: "/profile",
@@ -130,7 +130,7 @@ export const DashboardLayout = ({
         icon: FileText
       }, {
         path: "/admin/employee-ratings",
-        label: "Employee of The Month",
+        label: "Employee of The Year",
         icon: Trophy
       }, {
         path: "/pengumuman",
@@ -198,7 +198,7 @@ export const DashboardLayout = ({
         icon: Bell
       }, {
         path: "/admin/employee-ratings",
-        label: "Employee of The Month",
+        label: "Employee of The Year",
         icon: Trophy
       }, {
         path: "/admin/penangguhan-cuti",

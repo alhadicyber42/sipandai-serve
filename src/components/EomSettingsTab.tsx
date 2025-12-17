@@ -314,7 +314,7 @@ export function EomSettingsTab() {
                 {editingSettingsId ? "Edit Pengaturan Periode" : "Tambah Pengaturan Periode Baru"}
               </CardTitle>
               <CardDescription>
-                Atur timeline untuk setiap periode penilaian Employee of the Month
+                Atur timeline untuk setiap periode penilaian Employee of the Year
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -513,7 +513,7 @@ export function EomSettingsTab() {
                 Unit Kerja Peserta
               </CardTitle>
               <CardDescription>
-                Pilih unit kerja yang dapat mengikuti penilaian Employee of the Month
+                Pilih unit kerja yang dapat mengikuti penilaian Employee of the Year
               </CardDescription>
             </CardHeader>
             <CardContent>
