@@ -253,6 +253,44 @@ export default function Cuti() {
 
     } else {
       setServices([]);
+      
+      // Still load deferrals even if there are no services (for user_unit)
+      if (user.role === "user_unit") {
+        const { data: deferrals } = await supabase
+          .from("leave_deferrals")
+          .select("id, deferral_year, days_deferred, status, notes, created_at, approval_document")
+          .eq("user_id", user.id)
+          .in("status", ["active", "pending", "rejected"])
+          .order("created_at", { ascending: false });
+
+        setUserDeferrals(deferrals || []);
+        
+        const activeDeferrals = (deferrals || []).filter(d => d.status === "active");
+        const pending = (deferrals || []).filter(d => d.status === "pending");
+        setPendingDeferrals(pending);
+        
+        const totalCarriedOver = activeDeferrals.reduce((sum, d) => sum + d.days_deferred, 0);
+        const hasOfficialDeferral = activeDeferrals.some(d => 
+          d.notes?.toLowerCase().includes('dinas') || d.notes?.toLowerCase().includes('penangguhan')
+        );
+        
+        const maxCarryOver = hasOfficialDeferral ? 12 : 6;
+        const effectiveCarriedOver = Math.min(totalCarriedOver, maxCarryOver);
+        const maxAllowedTotal = hasOfficialDeferral ? 24 : 18;
+
+        setDeferralDetails(activeDeferrals.map(d => ({ 
+          year: d.deferral_year, 
+          days: d.days_deferred,
+          isDeferred: d.notes?.toLowerCase().includes('dinas') || d.notes?.toLowerCase().includes('penangguhan')
+        })));
+        
+        setLeaveStats(prev => ({
+          ...prev,
+          carriedOver: effectiveCarriedOver,
+          maxAllowedTotal,
+          hasDeferred: hasOfficialDeferral
+        }));
+      }
     }
 
     setIsLoading(false);
