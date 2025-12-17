@@ -488,6 +488,7 @@ export default function Cuti() {
     }
 
     const days = parseInt(deferralDays);
+    const year = parseInt(deferralYear);
     
     // Validasi jumlah hari tidak melebihi sisa cuti
     if (days > leaveStats.remaining) {
@@ -512,11 +513,30 @@ export default function Cuti() {
     try {
       setIsSubmitting(true);
 
+      // Check if deferral already exists for this user and year
+      const { data: existingDeferral } = await supabase
+        .from("leave_deferrals")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .eq("deferral_year", year)
+        .maybeSingle();
+
+      if (existingDeferral) {
+        const statusLabels: Record<string, string> = {
+          pending: "menunggu persetujuan",
+          active: "sudah disetujui",
+          rejected: "sudah ditolak"
+        };
+        toast.error(`Anda sudah memiliki pengajuan penangguhan untuk tahun ${year} (${statusLabels[existingDeferral.status] || existingDeferral.status})`);
+        setIsSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("leave_deferrals")
         .insert({
           user_id: user.id,
-          deferral_year: parseInt(deferralYear),
+          deferral_year: year,
           days_deferred: days,
           approval_document: deferralDoc,
           status: "pending",
@@ -535,7 +555,11 @@ export default function Cuti() {
       loadServices(); // Reload to show pending status
     } catch (error: any) {
       console.error("Error submitting deferral:", error);
-      toast.error(error.message || "Gagal mengajukan penangguhan");
+      if (error.code === "23505") {
+        toast.error(`Anda sudah memiliki pengajuan penangguhan untuk tahun ${year}`);
+      } else {
+        toast.error(error.message || "Gagal mengajukan penangguhan");
+      }
     } finally {
       setIsSubmitting(false);
     }
