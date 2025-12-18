@@ -25,6 +25,7 @@ export const getAllTemplates = async (): Promise<LetterTemplate[]> => {
 
 /**
  * Get templates by work unit ID and optional category
+ * @deprecated Use getTemplatesByCreator instead for user-specific templates
  */
 export const getTemplatesByWorkUnit = async (workUnitId: number, category?: LetterCategory): Promise<LetterTemplate[]> => {
     let query = supabase
@@ -40,6 +41,30 @@ export const getTemplatesByWorkUnit = async (workUnitId: number, category?: Lett
 
     if (error) {
         console.error("Error reading templates:", error);
+        return [];
+    }
+
+    return (data || []).map(mapDbToTemplate);
+};
+
+/**
+ * Get templates created by a specific user (for their own use)
+ * This ensures admins only see templates they uploaded themselves
+ */
+export const getTemplatesByCreator = async (userId: string, category?: LetterCategory): Promise<LetterTemplate[]> => {
+    let query = supabase
+        .from("letter_templates")
+        .select("*")
+        .eq("created_by", userId);
+
+    if (category) {
+        query = query.eq("category", category);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error reading templates by creator:", error);
         return [];
     }
 

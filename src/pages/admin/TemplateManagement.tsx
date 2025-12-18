@@ -14,7 +14,7 @@ import {
     updateTemplate,
     deleteTemplate,
     setDefaultTemplate,
-    getTemplatesByWorkUnit
+    getTemplatesByCreator
 } from "@/lib/templateStorage";
 import { LetterTemplate, LetterCategory } from "@/types/leave-certificate";
 import { TemplateUploader } from "@/components/leave-certificate/TemplateUploader";
@@ -60,12 +60,20 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
         if (user?.work_unit_id) {
             setSelectedWorkUnitId(user.work_unit_id);
         }
+    }, [user]);
+
+    useEffect(() => {
         loadTemplates();
-    }, [user, selectedWorkUnitId, selectedCategory]);
+    }, [user, selectedCategory]);
 
     const loadTemplates = async () => {
-        const data = await getTemplatesByWorkUnit(selectedWorkUnitId, selectedCategory);
-        setTemplates(data);
+        // Load only templates created by the current user
+        if (user?.id) {
+            const data = await getTemplatesByCreator(user.id, selectedCategory);
+            setTemplates(data);
+        } else {
+            setTemplates([]);
+        }
     };
 
     const handleEdit = (template: LetterTemplate) => {

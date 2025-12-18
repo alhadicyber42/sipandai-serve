@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { LetterCategory, LetterTemplate } from "@/types/leave-certificate";
-import { getTemplatesByWorkUnit } from "@/lib/templateStorage";
+import { getTemplatesByCreator } from "@/lib/templateStorage";
 import { generateDocument } from "@/lib/docxEngine";
 import { toast } from "sonner";
 import JSZip from "jszip";
@@ -73,8 +73,9 @@ export default function LetterGenerator() {
 
     useEffect(() => {
         const loadTemplates = async () => {
-            if (user?.work_unit_id && category) {
-                const loadedTemplates = await getTemplatesByWorkUnit(user.work_unit_id, category as LetterCategory);
+            // Load templates created by the current user only
+            if (user?.id && category) {
+                const loadedTemplates = await getTemplatesByCreator(user.id, category as LetterCategory);
                 setTemplates(loadedTemplates);
             } else {
                 setTemplates([]);
