@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -48,11 +48,14 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<LetterTemplate | null>(null);
     const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Form states
-    const [newTemplateName, setNewTemplateName] = useState("");
-    const [newTemplateCategory, setNewTemplateCategory] = useState<LetterCategory>("cuti");
-    const [newTemplateFile, setNewTemplateFile] = useState<{ file: File, base64: string } | null>(null);
+    // Form states - separated to prevent re-renders affecting templates list
+    const [formData, setFormData] = useState({
+        templateName: "",
+        templateCategory: "cuti" as LetterCategory,
+        templateFile: null as { file: File; base64: string } | null
+    });
 
     const isAdminPusat = user?.role === "admin_pusat";
 
@@ -62,54 +65,93 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
         }
     }, [user]);
 
-    useEffect(() => {
-        loadTemplates();
-    }, [user, selectedCategory]);
-
-    const loadTemplates = async () => {
-        // Load only templates created by the current user
+    const loadTemplates = useCallback(async () => {
         if (user?.id) {
-            const data = await getTemplatesByCreator(user.id, selectedCategory);
-            setTemplates(data);
+            setIsLoading(true);
+            try {
+                const data = await getTemplatesByCreator(user.id, selectedCategory);
+                setTemplates(data);
+            } catch (error) {
+                console.error("Error loading templates:", error);
+                toast.error("Gagal memuat template");
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             setTemplates([]);
         }
-    };
+    }, [user?.id, selectedCategory]);
 
-    const handleEdit = (template: LetterTemplate) => {
-        setEditingTemplate(template);
-        setNewTemplateName(template.template_name);
-        setNewTemplateCategory(template.category);
-        setNewTemplateFile(null);
-        setIsCreateDialogOpen(true);
-    };
-
-    const handleDelete = (id: string) => {
-        setDeletingTemplateId(id);
-    };
-
-    const confirmDelete = async () => {
-        if (deletingTemplateId) {
-            await deleteTemplate(deletingTemplateId);
-            toast.success("Template berhasil dihapus");
-            setDeletingTemplateId(null);
-            loadTemplates();
-        }
-    };
-
-    const handleSetDefault = async (id: string) => {
-        await setDefaultTemplate(id);
-        toast.success("Template default berhasil diubah");
+    useEffect(() => {
         loadTemplates();
-    };
+    }, [loadTemplates]);
 
-    const handleSaveTemplate = async () => {
-        if (!newTemplateName.trim()) {
+    const handleEdit = useCallback((template: LetterTemplate) => {
+        setEditingTemplate(template);
+        setFormData({
+            templateName: template.template_name,
+            templateCategory: template.category,
+            templateFile: null
+        });
+        setIsCreateDialogOpen(true);
+    }, []);
+
+    const handleDelete = useCallback((id: string) => {
+        setDeletingTemplateId(id);
+    }, []);
+
+    const confirmDelete = useCallback(async () => {
+        if (deletingTemplateId) {
+            try {
+                await deleteTemplate(deletingTemplateId);
+                toast.success("Template berhasil dihapus");
+                setDeletingTemplateId(null);
+                loadTemplates();
+            } catch (error) {
+                console.error("Error deleting template:", error);
+                toast.error("Gagal menghapus template");
+            }
+        }
+    }, [deletingTemplateId, loadTemplates]);
+
+    const handleSetDefault = useCallback(async (id: string) => {
+        try {
+            await setDefaultTemplate(id);
+            toast.success("Template default berhasil diubah");
+            loadTemplates();
+        } catch (error) {
+            console.error("Error setting default template:", error);
+            toast.error("Gagal mengubah template default");
+        }
+    }, [loadTemplates]);
+
+    const handleOpenCreateDialog = useCallback(() => {
+        setEditingTemplate(null);
+        setFormData({
+            templateName: "",
+            templateCategory: selectedCategory,
+            templateFile: null
+        });
+        setIsCreateDialogOpen(true);
+    }, [selectedCategory]);
+
+    const handleCloseDialog = useCallback(() => {
+        setIsCreateDialogOpen(false);
+        setEditingTemplate(null);
+        setFormData({
+            templateName: "",
+            templateCategory: "cuti",
+            templateFile: null
+        });
+    }, []);
+
+    const handleSaveTemplate = useCallback(async () => {
+        if (!formData.templateName.trim()) {
             toast.error("Nama template harus diisi");
             return;
         }
 
-        if (!editingTemplate && !newTemplateFile) {
+        if (!editingTemplate && !formData.templateFile) {
             toast.error("File template harus diupload");
             return;
         }
@@ -117,37 +159,33 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
         try {
             if (editingTemplate) {
                 await updateTemplate(editingTemplate.id, {
-                    template_name: newTemplateName,
-                    category: newTemplateCategory,
-                    file_content: newTemplateFile?.base64,
-                    file_name: newTemplateFile?.file.name,
+                    template_name: formData.templateName,
+                    category: formData.templateCategory,
+                    file_content: formData.templateFile?.base64,
+                    file_name: formData.templateFile?.file.name,
                 });
                 toast.success("Template berhasil diperbarui");
             } else {
                 await createTemplate({
                     work_unit_id: selectedWorkUnitId,
-                    template_name: newTemplateName,
-                    category: newTemplateCategory,
-                    file_content: newTemplateFile?.base64,
-                    file_name: newTemplateFile?.file.name,
+                    template_name: formData.templateName,
+                    category: formData.templateCategory,
+                    file_content: formData.templateFile?.base64,
+                    file_name: formData.templateFile?.file.name,
                     is_default: false
                 }, user?.id || "system");
                 toast.success("Template berhasil dibuat");
             }
 
-            setIsCreateDialogOpen(false);
-            setEditingTemplate(null);
-            setNewTemplateName("");
-            setNewTemplateCategory("cuti");
-            setNewTemplateFile(null);
+            handleCloseDialog();
             loadTemplates();
         } catch (error) {
-            console.error(error);
+            console.error("Error saving template:", error);
             toast.error("Gagal menyimpan template");
         }
-    };
+    }, [formData, editingTemplate, selectedWorkUnitId, user?.id, handleCloseDialog, loadTemplates]);
 
-    const handlePreview = (template: LetterTemplate) => {
+    const handlePreview = useCallback((template: LetterTemplate) => {
         if (!template.file_content) {
             toast.error("Template ini tidak memiliki file dokumen (format lama)");
             return;
@@ -162,12 +200,24 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
             );
             toast.success("Preview template berhasil didownload");
         } catch (error) {
-            console.error(error);
+            console.error("Error generating preview:", error);
             toast.error("Gagal membuat preview template");
         }
-    };
+    }, []);
 
-    const Content = () => (
+    const handleTemplateNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({ ...prev, templateName: e.target.value }));
+    }, []);
+
+    const handleTemplateCategoryChange = useCallback((val: string) => {
+        setFormData(prev => ({ ...prev, templateCategory: val as LetterCategory }));
+    }, []);
+
+    const handleFileSelect = useCallback((file: File, base64: string) => {
+        setFormData(prev => ({ ...prev, templateFile: { file, base64 } }));
+    }, []);
+
+    const content = (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -176,13 +226,7 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                         Kelola template surat untuk berbagai keperluan unit kerja
                     </p>
                 </div>
-                <Button onClick={() => {
-                    setEditingTemplate(null);
-                    setNewTemplateName("");
-                    setNewTemplateCategory(selectedCategory);
-                    setNewTemplateFile(null);
-                    setIsCreateDialogOpen(true);
-                }}>
+                <Button onClick={handleOpenCreateDialog}>
                     <Plus className="h-4 w-4 mr-2" />
                     Buat Template Baru
                 </Button>
@@ -239,7 +283,11 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {templates.length === 0 ? (
+                {isLoading ? (
+                    <div className="col-span-full flex items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                ) : templates.length === 0 ? (
                     <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/50 text-center">
                         <FileText className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                         <p className="text-lg font-medium text-muted-foreground">Belum ada template</p>
@@ -330,7 +378,7 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
             </div>
 
             {/* Create/Edit Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
@@ -348,8 +396,8 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                             <Label htmlFor="template-name">Nama Template</Label>
                             <Input
                                 id="template-name"
-                                value={newTemplateName}
-                                onChange={(e) => setNewTemplateName(e.target.value)}
+                                value={formData.templateName}
+                                onChange={handleTemplateNameChange}
                                 placeholder="Contoh: Template Surat Cuti Tahunan"
                             />
                         </div>
@@ -357,8 +405,8 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                         <div className="space-y-2">
                             <Label htmlFor="template-category">Jenis Surat</Label>
                             <Select
-                                value={newTemplateCategory}
-                                onValueChange={(val) => setNewTemplateCategory(val as LetterCategory)}
+                                value={formData.templateCategory}
+                                onValueChange={handleTemplateCategoryChange}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Pilih Jenis Surat" />
@@ -376,14 +424,14 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
                         <div className="space-y-2">
                             <Label>Upload Template (.docx)</Label>
                             <TemplateUploader
-                                onFileSelect={(file, base64) => setNewTemplateFile({ file, base64 })}
-                                currentFileName={newTemplateFile?.file.name}
+                                onFileSelect={handleFileSelect}
+                                currentFileName={formData.templateFile?.file.name}
                             />
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                        <Button variant="outline" onClick={handleCloseDialog}>
                             Batal
                         </Button>
                         <Button onClick={handleSaveTemplate}>
@@ -417,12 +465,12 @@ export default function TemplateManagement({ isEmbedded = false }: { isEmbedded?
     );
 
     if (isEmbedded) {
-        return <Content />;
+        return content;
     }
 
     return (
         <DashboardLayout>
-            <Content />
+            {content}
         </DashboardLayout>
     );
 }
