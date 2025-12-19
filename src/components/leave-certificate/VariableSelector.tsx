@@ -3,7 +3,7 @@
  * Allows users to select and insert template variables
  */
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -16,8 +16,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { TEMPLATE_VARIABLES, VARIABLE_CATEGORIES } from "@/lib/templateVariables";
-import { TemplateVariable } from "@/types/leave-certificate";
+import { 
+    TEMPLATE_VARIABLES, 
+    VARIABLE_CATEGORIES, 
+    VARIABLE_CATEGORY_COLORS,
+    VariableCategory,
+    ExtendedTemplateVariable
+} from "@/lib/templateVariables";
 import { Code, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,31 +34,31 @@ interface VariableSelectorProps {
 export const VariableSelector = ({ onInsert, trigger }: VariableSelectorProps) => {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<TemplateVariable['category'] | 'all'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<VariableCategory | 'all'>('all');
 
-    const filteredVariables = TEMPLATE_VARIABLES.filter(v => {
-        const matchesSearch = v.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            v.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            v.key.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || v.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
+    const filteredVariables = useMemo(() => {
+        return TEMPLATE_VARIABLES.filter(v => {
+            const matchesSearch = v.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                v.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                v.key.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = selectedCategory === 'all' || v.category === selectedCategory;
+            return matchesSearch && matchesCategory;
+        });
+    }, [searchQuery, selectedCategory]);
 
-    const handleInsert = (key: string) => {
-        onInsert(`{{${key}}}`);
+    const handleInsert = useCallback((key: string) => {
+        onInsert(`{${key}}`);
         setOpen(false);
         setSearchQuery("");
-    };
+    }, [onInsert]);
 
-    const getCategoryColor = (category: TemplateVariable['category']) => {
-        const colors = {
-            employee: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-            leave: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-            unit: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-            date: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-        };
-        return colors[category];
-    };
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+    }, []);
+
+    const handleCategoryChange = useCallback((category: VariableCategory | 'all') => {
+        setSelectedCategory(category);
+    }, []);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -80,7 +85,7 @@ export const VariableSelector = ({ onInsert, trigger }: VariableSelectorProps) =
                         <Input
                             placeholder="Cari variabel..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={handleSearchChange}
                             className="pl-9"
                         />
                     </div>
@@ -90,16 +95,16 @@ export const VariableSelector = ({ onInsert, trigger }: VariableSelectorProps) =
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setSelectedCategory('all')}
+                            onClick={() => handleCategoryChange('all')}
                         >
                             Semua
                         </Button>
-                        {Object.entries(VARIABLE_CATEGORIES).map(([key, label]) => (
+                        {(Object.entries(VARIABLE_CATEGORIES) as [VariableCategory, string][]).map(([key, label]) => (
                             <Button
                                 key={key}
                                 variant={selectedCategory === key ? 'default' : 'outline'}
                                 size="sm"
-                                onClick={() => setSelectedCategory(key as TemplateVariable['category'])}
+                                onClick={() => handleCategoryChange(key)}
                             >
                                 {label}
                             </Button>
@@ -122,18 +127,23 @@ export const VariableSelector = ({ onInsert, trigger }: VariableSelectorProps) =
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                     <span className="font-medium">{variable.label}</span>
-                                                    <Badge variant="secondary" className={cn("text-xs", getCategoryColor(variable.category))}>
+                                                    <Badge variant="secondary" className={cn("text-xs", VARIABLE_CATEGORY_COLORS[variable.category])}>
                                                         {VARIABLE_CATEGORIES[variable.category]}
                                                     </Badge>
+                                                    {variable.isIndexed && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            Bertingkat
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-muted-foreground mb-2">
                                                     {variable.description}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <code className="text-xs bg-muted px-2 py-1 rounded">
-                                                        {`{{${variable.key}}}`}
+                                                        {`{${variable.key}}`}
                                                     </code>
                                                     <span className="text-xs text-muted-foreground">→</span>
                                                     <span className="text-xs text-muted-foreground italic">

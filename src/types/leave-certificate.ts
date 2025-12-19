@@ -5,6 +5,12 @@
 
 export type LetterCategory = 'cuti' | 'kenaikan_pangkat' | 'pensiun' | 'mutasi' | 'lainnya';
 
+// Variable categories - extended version
+export type VariableCategory = "pegawai" | "cuti" | "kenaikan_pangkat" | "pensiun" | "mutasi" | "unit" | "tanggal" | "custom";
+
+// Legacy category mapping for backward compatibility
+export type LegacyVariableCategory = 'employee' | 'leave' | 'unit' | 'date';
+
 export interface LetterTemplate {
     id: string;
     work_unit_id: number;
@@ -19,12 +25,24 @@ export interface LetterTemplate {
     updated_at: string;
 }
 
+// Legacy TemplateVariable for backward compatibility
 export interface TemplateVariable {
     key: string;
     label: string;
     description: string;
     example: string;
-    category: 'employee' | 'leave' | 'unit' | 'date';
+    category: LegacyVariableCategory;
+}
+
+// Extended template variable with more features
+export interface ExtendedTemplateVariable {
+    key: string;
+    label: string;
+    description: string;
+    example: string;
+    category: VariableCategory;
+    serviceTypes?: string[]; // Which service types this variable applies to
+    isIndexed?: boolean; // Whether this variable supports indexing (_1, _2, etc.)
 }
 
 export interface TemplateData {
