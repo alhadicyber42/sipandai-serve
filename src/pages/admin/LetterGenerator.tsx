@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TemplateManagement from "./TemplateManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database } from "lucide-react";
+import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -36,17 +36,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-
-interface BatchEntry {
-    id: string;
-    employeeSearch: string;
-    employeeResults: EmployeeSearchResult[];
-    selectedEmployee: EmployeeSearchResult | null;
-    isSearchingEmployee: boolean;
-    submissionResults: ApprovedSubmission[];
-    selectedSubmission: ApprovedSubmission | null;
-    isLoadingSubmissions: boolean;
-}
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ProfileData {
     id: string;
@@ -62,46 +52,60 @@ interface ProfileData {
     work_units?: { name: string } | null;
 }
 
+// Map profile data to template variables
+function mapProfileToTemplateData(profile: ProfileData): Record<string, string> {
+    return {
+        nama_pegawai: profile.name || '',
+        nip: profile.nip || '',
+        jabatan: profile.jabatan || '',
+        pangkat_golongan: profile.pangkat_golongan || '',
+        pangkat: profile.pangkat_golongan || '',
+        unit_kerja: profile.work_units?.name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        tmt_pns: profile.tmt_pns ? format(new Date(profile.tmt_pns), 'dd MMMM yyyy', { locale: localeId }) : '',
+        tmt_pensiun: profile.tmt_pensiun ? format(new Date(profile.tmt_pensiun), 'dd MMMM yyyy', { locale: localeId }) : '',
+        tanggal_surat: format(new Date(), 'dd MMMM yyyy', { locale: localeId }),
+        tahun: format(new Date(), 'yyyy'),
+        bulan: format(new Date(), 'MMMM', { locale: localeId }),
+    };
+}
+
 export default function LetterGenerator() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("generator");
+
+    // Generator Surat States
+    const [dataSourceTab, setDataSourceTab] = useState<"data-usulan" | "data-pegawai">("data-usulan");
     const [generationMode, setGenerationMode] = useState<"individual" | "batch">("individual");
+
+    // Template states
     const [category, setCategory] = useState<LetterCategory | "">("");
     const [templates, setTemplates] = useState<LetterTemplate[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
-    // Individual mode states
-    const [employeeSearch, setEmployeeSearch] = useState("");
-    const [employeeResults, setEmployeeResults] = useState<EmployeeSearchResult[]>([]);
-    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSearchResult | null>(null);
-    const [isSearchingEmployee, setIsSearchingEmployee] = useState(false);
-    const [submissionResults, setSubmissionResults] = useState<ApprovedSubmission[]>([]);
-    const [selectedSubmission, setSelectedSubmission] = useState<ApprovedSubmission | null>(null);
-    const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
-
-    // Batch mode states
-    const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([
-        {
-            id: "1",
-            employeeSearch: "",
-            employeeResults: [],
-            selectedEmployee: null,
-            isSearchingEmployee: false,
-            submissionResults: [],
-            selectedSubmission: null,
-            isLoadingSubmissions: false
-        }
-    ]);
-
-    // Data Usulan tab states
-    const [usulanCategory, setUsulanCategory] = useState<string>("cuti");
+    // ===== DATA USULAN STATES =====
+    const [usulanServiceType, setUsulanServiceType] = useState<string>("cuti");
     const [usulanList, setUsulanList] = useState<ApprovedSubmission[]>([]);
     const [isLoadingUsulan, setIsLoadingUsulan] = useState(false);
+    const [usulanSearch, setUsulanSearch] = useState("");
 
-    // Data Pegawai tab states
-    const [pegawaiSearch, setPegawaiSearch] = useState("");
+    // Individual mode - Data Usulan
+    const [selectedUsulan, setSelectedUsulan] = useState<ApprovedSubmission | null>(null);
+
+    // Batch mode - Data Usulan
+    const [selectedUsulanBatch, setSelectedUsulanBatch] = useState<string[]>([]);
+
+    // ===== DATA PEGAWAI STATES =====
     const [pegawaiList, setPegawaiList] = useState<ProfileData[]>([]);
     const [isLoadingPegawai, setIsLoadingPegawai] = useState(false);
+    const [pegawaiSearch, setPegawaiSearch] = useState("");
+
+    // Individual mode - Data Pegawai
+    const [selectedPegawai, setSelectedPegawai] = useState<ProfileData | null>(null);
+
+    // Batch mode - Data Pegawai
+    const [selectedPegawaiBatch, setSelectedPegawaiBatch] = useState<string[]>([]);
 
     // Load templates when category changes
     useEffect(() => {
@@ -116,38 +120,23 @@ export default function LetterGenerator() {
         loadTemplates();
     }, [user, category]);
 
-    // Search employees for Individual mode
-    useEffect(() => {
-        const searchTimer = setTimeout(async () => {
-            if (employeeSearch.length >= 2) {
-                setIsSearchingEmployee(true);
-                const results = await searchEmployees(employeeSearch);
-                setEmployeeResults(results);
-                setIsSearchingEmployee(false);
-            } else {
-                setEmployeeResults([]);
-            }
-        }, 300);
-        return () => clearTimeout(searchTimer);
-    }, [employeeSearch]);
-
-    // Load approved submissions for Data Usulan tab
+    // Load Data Usulan
     useEffect(() => {
         const loadUsulan = async () => {
-            if (activeTab === "data-usulan" && usulanCategory) {
+            if (dataSourceTab === "data-usulan" && usulanServiceType) {
                 setIsLoadingUsulan(true);
-                const data = await getApprovedSubmissions(usulanCategory);
+                const data = await getApprovedSubmissions(usulanServiceType);
                 setUsulanList(data);
                 setIsLoadingUsulan(false);
             }
         };
         loadUsulan();
-    }, [activeTab, usulanCategory]);
+    }, [dataSourceTab, usulanServiceType]);
 
-    // Search employees for Data Pegawai tab
+    // Load Data Pegawai
     useEffect(() => {
         const searchTimer = setTimeout(async () => {
-            if (activeTab === "data-pegawai") {
+            if (dataSourceTab === "data-pegawai") {
                 setIsLoadingPegawai(true);
                 let query = supabase
                     .from('profiles')
@@ -159,7 +148,7 @@ export default function LetterGenerator() {
                     query = query.or(`name.ilike.%${pegawaiSearch}%,nip.ilike.%${pegawaiSearch}%`);
                 }
 
-                const { data, error } = await query.limit(50);
+                const { data, error } = await query.limit(100);
                 if (!error && data) {
                     setPegawaiList(data as any[]);
                 }
@@ -167,120 +156,90 @@ export default function LetterGenerator() {
             }
         }, 300);
         return () => clearTimeout(searchTimer);
-    }, [activeTab, pegawaiSearch]);
+    }, [dataSourceTab, pegawaiSearch]);
 
-    const handleEmployeeSelect = useCallback(async (employee: EmployeeSearchResult) => {
-        setSelectedEmployee(employee);
-        setEmployeeResults([]);
-        setEmployeeSearch(employee.name);
+    // Filtered usulan list
+    const filteredUsulanList = useMemo(() => {
+        if (!usulanSearch) return usulanList;
+        const search = usulanSearch.toLowerCase();
+        return usulanList.filter(u =>
+            u.profiles?.name?.toLowerCase().includes(search) ||
+            u.profiles?.nip?.toLowerCase().includes(search)
+        );
+    }, [usulanList, usulanSearch]);
 
-        if (category) {
-            setIsLoadingSubmissions(true);
-            const submissions = await getApprovedSubmissions(category, employee.id);
-            setSubmissionResults(submissions);
-            setIsLoadingSubmissions(false);
-        }
-    }, [category]);
-
-    const handleSubmissionSelect = useCallback((submission: ApprovedSubmission) => {
-        setSelectedSubmission(submission);
-        setSubmissionResults([]);
-    }, []);
-
+    // Handle category change
     const handleCategoryChange = useCallback((val: string) => {
         setCategory(val as LetterCategory);
-        setEmployeeSearch("");
-        setEmployeeResults([]);
-        setSelectedEmployee(null);
-        setSubmissionResults([]);
-        setSelectedSubmission(null);
         setSelectedTemplateId("");
     }, []);
 
-    // Batch functions
-    const addBatchEntry = useCallback(() => {
-        const newId = (Math.max(...batchEntries.map(e => parseInt(e.id))) + 1).toString();
-        setBatchEntries(prev => [...prev, {
-            id: newId,
-            employeeSearch: "",
-            employeeResults: [],
-            selectedEmployee: null,
-            isSearchingEmployee: false,
-            submissionResults: [],
-            selectedSubmission: null,
-            isLoadingSubmissions: false
-        }]);
-    }, [batchEntries]);
-
-    const removeBatchEntry = useCallback((id: string) => {
-        setBatchEntries(prev => prev.length > 1 ? prev.filter(e => e.id !== id) : prev);
+    // Handle data source tab change
+    const handleDataSourceChange = useCallback((val: string) => {
+        setDataSourceTab(val as "data-usulan" | "data-pegawai");
+        // Reset selections
+        setSelectedUsulan(null);
+        setSelectedUsulanBatch([]);
+        setSelectedPegawai(null);
+        setSelectedPegawaiBatch([]);
     }, []);
 
-    const updateBatchEntry = useCallback((id: string, field: keyof BatchEntry, value: any) => {
-        setBatchEntries(prev => prev.map(entry =>
-            entry.id === id ? { ...entry, [field]: value } : entry
-        ));
+    // Handle usulan service type change
+    const handleUsulanServiceTypeChange = useCallback((val: string) => {
+        setUsulanServiceType(val);
+        setSelectedUsulan(null);
+        setSelectedUsulanBatch([]);
     }, []);
 
-    const handleBatchEmployeeSearch = useCallback(async (entryId: string, searchTerm: string) => {
-        updateBatchEntry(entryId, 'employeeSearch', searchTerm);
+    // Select usulan for individual mode
+    const handleSelectUsulan = useCallback((usulan: ApprovedSubmission) => {
+        setSelectedUsulan(usulan);
+    }, []);
 
-        if (searchTerm.length >= 2) {
-            updateBatchEntry(entryId, 'isSearchingEmployee', true);
-            const results = await searchEmployees(searchTerm);
-            updateBatchEntry(entryId, 'employeeResults', results);
-            updateBatchEntry(entryId, 'isSearchingEmployee', false);
+    // Toggle usulan for batch mode
+    const handleToggleUsulanBatch = useCallback((id: string) => {
+        setSelectedUsulanBatch(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    }, []);
+
+    // Select all usulan for batch mode
+    const handleSelectAllUsulan = useCallback(() => {
+        if (selectedUsulanBatch.length === filteredUsulanList.length) {
+            setSelectedUsulanBatch([]);
         } else {
-            updateBatchEntry(entryId, 'employeeResults', []);
+            setSelectedUsulanBatch(filteredUsulanList.map(u => u.id));
         }
-    }, [updateBatchEntry]);
+    }, [filteredUsulanList, selectedUsulanBatch.length]);
 
-    const handleBatchEmployeeSelect = useCallback(async (entryId: string, employee: EmployeeSearchResult) => {
-        setBatchEntries(prev => prev.map(entry => {
-            if (entry.id === entryId) {
-                return {
-                    ...entry,
-                    selectedEmployee: employee,
-                    employeeResults: [],
-                    employeeSearch: employee.name,
-                    selectedSubmission: null,
-                    submissionResults: [],
-                    isLoadingSubmissions: true
-                };
-            }
-            return entry;
-        }));
+    // Select pegawai for individual mode
+    const handleSelectPegawai = useCallback((pegawai: ProfileData) => {
+        setSelectedPegawai(pegawai);
+    }, []);
 
-        if (category) {
-            const submissions = await getApprovedSubmissions(category, employee.id);
-            setBatchEntries(prev => prev.map(entry => {
-                if (entry.id === entryId) {
-                    return {
-                        ...entry,
-                        submissionResults: submissions,
-                        isLoadingSubmissions: false
-                    };
-                }
-                return entry;
-            }));
+    // Toggle pegawai for batch mode
+    const handleTogglePegawaiBatch = useCallback((id: string) => {
+        setSelectedPegawaiBatch(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    }, []);
+
+    // Select all pegawai for batch mode
+    const handleSelectAllPegawai = useCallback(() => {
+        if (selectedPegawaiBatch.length === pegawaiList.length) {
+            setSelectedPegawaiBatch([]);
+        } else {
+            setSelectedPegawaiBatch(pegawaiList.map(p => p.id));
         }
-    }, [category]);
+    }, [pegawaiList, selectedPegawaiBatch.length]);
 
-    const handleBatchSubmissionSelect = useCallback((entryId: string, submission: ApprovedSubmission) => {
-        updateBatchEntry(entryId, 'selectedSubmission', submission);
-        updateBatchEntry(entryId, 'submissionResults', []);
-    }, [updateBatchEntry]);
-
-    const handleGenerateIndividual = useCallback(() => {
+    // Generate Individual Letter - Data Usulan
+    const handleGenerateUsulanIndividual = useCallback(() => {
         if (!selectedTemplateId) {
             toast.error("Pilih template terlebih dahulu");
             return;
         }
-        if (!selectedEmployee) {
-            toast.error("Pilih pegawai terlebih dahulu");
-            return;
-        }
-        if (!selectedSubmission) {
+        if (!selectedUsulan) {
             toast.error("Pilih usulan terlebih dahulu");
             return;
         }
@@ -292,44 +251,43 @@ export default function LetterGenerator() {
         }
 
         try {
-            const data = mapSubmissionToTemplateData(selectedSubmission, category as string);
+            const data = mapSubmissionToTemplateData(selectedUsulan, usulanServiceType);
+            const employeeName = selectedUsulan.profiles?.name || 'Unknown';
             generateDocument(
                 template.file_content,
                 data,
-                `Surat_${category}_${selectedEmployee.name}.docx`
+                `Surat_${usulanServiceType}_${employeeName}.docx`
             );
             toast.success("Surat berhasil dibuat");
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat");
         }
-    }, [selectedTemplateId, selectedEmployee, selectedSubmission, templates, category]);
+    }, [selectedTemplateId, selectedUsulan, templates, usulanServiceType]);
 
-    const handleGenerateBatch = useCallback(async () => {
+    // Generate Batch Letters - Data Usulan
+    const handleGenerateUsulanBatch = useCallback(async () => {
         if (!selectedTemplateId) {
             toast.error("Pilih template terlebih dahulu");
             return;
         }
+        if (selectedUsulanBatch.length === 0) {
+            toast.error("Pilih minimal 1 usulan");
+            return;
+        }
+
         const template = templates.find(t => t.id === selectedTemplateId);
         if (!template || !template.file_content) {
             toast.error("Template tidak valid atau tidak memiliki file");
             return;
         }
 
-        const validEntries = batchEntries.filter(entry =>
-            entry.selectedEmployee && entry.selectedSubmission
-        );
-
-        if (validEntries.length === 0) {
-            toast.error("Minimal pilih 1 pegawai dan usulannya");
-            return;
-        }
-
         try {
             const zip = new JSZip();
+            const selectedItems = usulanList.filter(u => selectedUsulanBatch.includes(u.id));
 
-            for (const entry of validEntries) {
-                const data = mapSubmissionToTemplateData(entry.selectedSubmission!, category as string);
+            for (const item of selectedItems) {
+                const data = mapSubmissionToTemplateData(item, usulanServiceType);
                 const Docxtemplater = (await import("docxtemplater")).default;
                 const PizZip = (await import("pizzip")).default;
 
@@ -345,20 +303,103 @@ export default function LetterGenerator() {
                     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 });
 
-                const employeeName = entry.selectedEmployee?.name || 'Unknown';
+                const employeeName = item.profiles?.name || 'Unknown';
                 const sanitizedName = employeeName.replace(/[^a-z0-9]/gi, '_');
+                zip.file(`Surat_${usulanServiceType}_${sanitizedName}.docx`, blob);
+            }
+
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            saveAs(zipBlob, `Batch_Surat_${usulanServiceType}_${new Date().getTime()}.zip`);
+
+            toast.success(`Berhasil membuat ${selectedItems.length} surat`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Gagal membuat surat batch");
+        }
+    }, [selectedTemplateId, selectedUsulanBatch, usulanList, templates, usulanServiceType]);
+
+    // Generate Individual Letter - Data Pegawai
+    const handleGeneratePegawaiIndividual = useCallback(() => {
+        if (!selectedTemplateId) {
+            toast.error("Pilih template terlebih dahulu");
+            return;
+        }
+        if (!selectedPegawai) {
+            toast.error("Pilih pegawai terlebih dahulu");
+            return;
+        }
+
+        const template = templates.find(t => t.id === selectedTemplateId);
+        if (!template || !template.file_content) {
+            toast.error("Template tidak valid atau tidak memiliki file");
+            return;
+        }
+
+        try {
+            const data = mapProfileToTemplateData(selectedPegawai);
+            generateDocument(
+                template.file_content,
+                data,
+                `Surat_${category}_${selectedPegawai.name}.docx`
+            );
+            toast.success("Surat berhasil dibuat");
+        } catch (error) {
+            console.error(error);
+            toast.error("Gagal membuat surat");
+        }
+    }, [selectedTemplateId, selectedPegawai, templates, category]);
+
+    // Generate Batch Letters - Data Pegawai
+    const handleGeneratePegawaiBatch = useCallback(async () => {
+        if (!selectedTemplateId) {
+            toast.error("Pilih template terlebih dahulu");
+            return;
+        }
+        if (selectedPegawaiBatch.length === 0) {
+            toast.error("Pilih minimal 1 pegawai");
+            return;
+        }
+
+        const template = templates.find(t => t.id === selectedTemplateId);
+        if (!template || !template.file_content) {
+            toast.error("Template tidak valid atau tidak memiliki file");
+            return;
+        }
+
+        try {
+            const zip = new JSZip();
+            const selectedItems = pegawaiList.filter(p => selectedPegawaiBatch.includes(p.id));
+
+            for (const item of selectedItems) {
+                const data = mapProfileToTemplateData(item);
+                const Docxtemplater = (await import("docxtemplater")).default;
+                const PizZip = (await import("pizzip")).default;
+
+                const zipFile = new PizZip(atob(template.file_content));
+                const doc = new Docxtemplater(zipFile, {
+                    paragraphLoop: true,
+                    linebreaks: true,
+                });
+
+                doc.render(data);
+                const blob = doc.getZip().generate({
+                    type: "blob",
+                    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                });
+
+                const sanitizedName = item.name.replace(/[^a-z0-9]/gi, '_');
                 zip.file(`Surat_${category}_${sanitizedName}.docx`, blob);
             }
 
             const zipBlob = await zip.generateAsync({ type: "blob" });
             saveAs(zipBlob, `Batch_Surat_${category}_${new Date().getTime()}.zip`);
 
-            toast.success(`Berhasil membuat ${validEntries.length} surat`);
+            toast.success(`Berhasil membuat ${selectedItems.length} surat`);
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, templates, batchEntries, category]);
+    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, category]);
 
     const getServiceTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
@@ -386,14 +427,6 @@ export default function LetterGenerator() {
                             <FileText className="h-4 w-4" />
                             Generator Surat
                         </TabsTrigger>
-                        <TabsTrigger value="data-usulan" className="flex items-center gap-2">
-                            <ClipboardList className="h-4 w-4" />
-                            Data Usulan
-                        </TabsTrigger>
-                        <TabsTrigger value="data-pegawai" className="flex items-center gap-2">
-                            <Database className="h-4 w-4" />
-                            Data Pegawai
-                        </TabsTrigger>
                         <TabsTrigger value="templates" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
                             Manajemen Template
@@ -406,16 +439,17 @@ export default function LetterGenerator() {
                             <CardHeader>
                                 <CardTitle>Generator Surat</CardTitle>
                                 <CardDescription>
-                                    Pilih jenis surat, template, dan data usulan untuk membuat surat.
+                                    Pilih sumber data dan template untuk membuat surat secara otomatis
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <CardContent className="space-y-6">
+                                {/* Template Selection */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
                                     <div className="space-y-2">
-                                        <Label>Jenis Surat</Label>
+                                        <Label>Kategori Surat</Label>
                                         <Select value={category} onValueChange={handleCategoryChange}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Pilih jenis surat" />
+                                                <SelectValue placeholder="Pilih kategori surat" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="cuti">Cuti</SelectItem>
@@ -431,7 +465,7 @@ export default function LetterGenerator() {
                                         <Label>Template Surat</Label>
                                         <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId} disabled={!category}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={category ? "Pilih template" : "Pilih jenis surat terlebih dahulu"} />
+                                                <SelectValue placeholder={category ? "Pilih template" : "Pilih kategori terlebih dahulu"} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {templates.length === 0 ? (
@@ -446,429 +480,346 @@ export default function LetterGenerator() {
                                     </div>
                                 </div>
 
-                                {/* Mode Selection */}
-                                <div className="space-y-2">
-                                    <Label>Mode Pembuatan</Label>
-                                    <Tabs value={generationMode} onValueChange={(val) => setGenerationMode(val as "individual" | "batch")}>
+                                {/* Data Source Tabs */}
+                                <div className="space-y-4">
+                                    <Label className="text-base font-semibold">Sumber Data</Label>
+                                    <Tabs value={dataSourceTab} onValueChange={handleDataSourceChange}>
                                         <TabsList className="grid w-full grid-cols-2">
-                                            <TabsTrigger value="individual" className="flex items-center gap-2">
-                                                <User className="h-4 w-4" />
-                                                Individual
+                                            <TabsTrigger value="data-usulan" className="flex items-center gap-2">
+                                                <ClipboardList className="h-4 w-4" />
+                                                Data Usulan
                                             </TabsTrigger>
-                                            <TabsTrigger value="batch" className="flex items-center gap-2">
-                                                <Users className="h-4 w-4" />
-                                                Batch
+                                            <TabsTrigger value="data-pegawai" className="flex items-center gap-2">
+                                                <Database className="h-4 w-4" />
+                                                Data Pegawai
                                             </TabsTrigger>
                                         </TabsList>
 
-                                        {/* Individual Mode */}
-                                        <TabsContent value="individual" className="space-y-4 mt-4">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
+                                        {/* Data Usulan Content */}
+                                        <TabsContent value="data-usulan" className="space-y-4 mt-4">
+                                            <p className="text-sm text-muted-foreground">
+                                                Generate surat dari data usulan yang sudah disetujui. Data variabel akan otomatis terisi dari data usulan.
+                                            </p>
+
+                                            {/* Service Type Filter */}
+                                            <div className="flex flex-wrap gap-4 items-end">
+                                                <div className="space-y-2 flex-1 min-w-[200px]">
+                                                    <Label>Jenis Layanan</Label>
+                                                    <Select value={usulanServiceType} onValueChange={handleUsulanServiceTypeChange}>
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="cuti">Cuti</SelectItem>
+                                                            <SelectItem value="kenaikan_pangkat">Kenaikan Pangkat</SelectItem>
+                                                            <SelectItem value="pensiun">Pensiun</SelectItem>
+                                                            <SelectItem value="mutasi">Mutasi</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2 flex-1 min-w-[200px]">
                                                     <Label>Cari Pegawai</Label>
                                                     <div className="relative">
-                                                        <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                                         <Input
                                                             className="pl-9"
-                                                            placeholder={category ? "Ketik nama atau NIP pegawai..." : "Pilih jenis surat terlebih dahulu"}
-                                                            value={employeeSearch}
-                                                            onChange={(e) => {
-                                                                setEmployeeSearch(e.target.value);
-                                                                if (selectedEmployee) {
-                                                                    setSelectedEmployee(null);
-                                                                    setSelectedSubmission(null);
-                                                                    setSubmissionResults([]);
-                                                                }
-                                                            }}
-                                                            disabled={!category}
+                                                            placeholder="Cari nama atau NIP..."
+                                                            value={usulanSearch}
+                                                            onChange={(e) => setUsulanSearch(e.target.value)}
                                                         />
-                                                        {isSearchingEmployee && (
-                                                            <div className="absolute right-2.5 top-2.5">
-                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {/* Employee Results */}
-                                                {!selectedEmployee && employeeResults.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        <Label className="text-muted-foreground">Pilih Pegawai:</Label>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {employeeResults.map((emp) => (
-                                                                <Card
-                                                                    key={emp.id}
-                                                                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                                                    onClick={() => handleEmployeeSelect(emp)}
-                                                                >
-                                                                    <CardContent className="p-3 flex justify-between items-center">
-                                                                        <div>
-                                                                            <div className="font-semibold">{emp.name}</div>
-                                                                            <div className="text-sm text-muted-foreground">NIP: {emp.nip}</div>
-                                                                        </div>
-                                                                        <Button size="sm" variant="secondary">Pilih</Button>
-                                                                    </CardContent>
-                                                                </Card>
-                                                            ))}
+                                            {/* Mode Selection for Data Usulan */}
+                                            <Tabs value={generationMode} onValueChange={(val) => setGenerationMode(val as "individual" | "batch")}>
+                                                <TabsList className="grid w-full grid-cols-2">
+                                                    <TabsTrigger value="individual" className="flex items-center gap-2">
+                                                        <User className="h-4 w-4" />
+                                                        Individual
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="batch" className="flex items-center gap-2">
+                                                        <Users className="h-4 w-4" />
+                                                        Batch
+                                                    </TabsTrigger>
+                                                </TabsList>
+
+                                                {/* Individual Mode - Data Usulan */}
+                                                <TabsContent value="individual" className="space-y-4 mt-4">
+                                                    {isLoadingUsulan ? (
+                                                        <div className="text-center py-8">
+                                                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                                                            <p className="text-sm text-muted-foreground mt-2">Memuat data usulan...</p>
                                                         </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Selected Employee */}
-                                                {selectedEmployee && (
-                                                    <div className="space-y-4">
-                                                        <Card className="bg-primary/5 border-primary/30">
-                                                            <CardContent className="p-3 flex justify-between items-center">
-                                                                <div>
-                                                                    <div className="text-xs text-muted-foreground">Pegawai Terpilih:</div>
-                                                                    <div className="font-semibold">{selectedEmployee.name}</div>
-                                                                    <div className="text-sm text-muted-foreground">NIP: {selectedEmployee.nip}</div>
-                                                                </div>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => {
-                                                                        setSelectedEmployee(null);
-                                                                        setSelectedSubmission(null);
-                                                                        setSubmissionResults([]);
-                                                                        setEmployeeSearch("");
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                                    Ganti
-                                                                </Button>
-                                                            </CardContent>
-                                                        </Card>
-
-                                                        {isLoadingSubmissions && (
-                                                            <div className="text-center py-6">
-                                                                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                                                                <p className="text-sm text-muted-foreground mt-2">Memuat usulan...</p>
-                                                            </div>
-                                                        )}
-
-                                                        {!isLoadingSubmissions && !selectedSubmission && submissionResults.length > 0 && (
-                                                            <div className="space-y-2">
-                                                                <Label className="text-muted-foreground">Pilih Usulan yang Disetujui:</Label>
-                                                                <div className="grid grid-cols-1 gap-2">
-                                                                    {submissionResults.map((sub) => (
-                                                                        <Card
-                                                                            key={sub.id}
-                                                                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                                                            onClick={() => handleSubmissionSelect(sub)}
-                                                                        >
-                                                                            <CardContent className="p-3 flex justify-between items-center">
+                                                    ) : filteredUsulanList.length === 0 ? (
+                                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                                            <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                                                            <p className="text-muted-foreground mt-2">
+                                                                Tidak ada usulan {getServiceTypeLabel(usulanServiceType)} yang disetujui
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <ScrollArea className="h-[300px] border rounded-lg">
+                                                            <div className="p-2 space-y-2">
+                                                                {filteredUsulanList.map((usulan) => (
+                                                                    <Card
+                                                                        key={usulan.id}
+                                                                        className={`cursor-pointer transition-colors ${selectedUsulan?.id === usulan.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                                                                        onClick={() => handleSelectUsulan(usulan)}
+                                                                    >
+                                                                        <CardContent className="p-3">
+                                                                            <div className="flex justify-between items-start">
                                                                                 <div>
-                                                                                    <div className="font-semibold text-primary">
-                                                                                        {formatSubmissionLabel(sub, category as string)}
-                                                                                    </div>
-                                                                                    <div className="text-xs text-muted-foreground">
-                                                                                        Diajukan: {format(new Date(sub.created_at), 'dd MMM yyyy', { locale: localeId })}
+                                                                                    <div className="font-semibold">{usulan.profiles?.name}</div>
+                                                                                    <div className="text-sm text-muted-foreground">NIP: {usulan.profiles?.nip}</div>
+                                                                                    <div className="text-sm text-primary mt-1">
+                                                                                        {formatSubmissionLabel(usulan, usulanServiceType)}
                                                                                     </div>
                                                                                 </div>
-                                                                                <Button size="sm" variant="secondary">Pilih</Button>
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    ))}
+                                                                                {selectedUsulan?.id === usulan.id && (
+                                                                                    <Badge variant="default">Terpilih</Badge>
+                                                                                )}
+                                                                            </div>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                ))}
+                                                            </div>
+                                                        </ScrollArea>
+                                                    )}
+
+                                                    {selectedUsulan && (
+                                                        <Button onClick={handleGenerateUsulanIndividual} className="w-full" disabled={!selectedTemplateId}>
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            Buat Surat untuk {selectedUsulan.profiles?.name}
+                                                        </Button>
+                                                    )}
+                                                </TabsContent>
+
+                                                {/* Batch Mode - Data Usulan */}
+                                                <TabsContent value="batch" className="space-y-4 mt-4">
+                                                    {isLoadingUsulan ? (
+                                                        <div className="text-center py-8">
+                                                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                                                            <p className="text-sm text-muted-foreground mt-2">Memuat data usulan...</p>
+                                                        </div>
+                                                    ) : filteredUsulanList.length === 0 ? (
+                                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                                            <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                                                            <p className="text-muted-foreground mt-2">
+                                                                Tidak ada usulan {getServiceTypeLabel(usulanServiceType)} yang disetujui
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Checkbox
+                                                                        checked={selectedUsulanBatch.length === filteredUsulanList.length && filteredUsulanList.length > 0}
+                                                                        onCheckedChange={handleSelectAllUsulan}
+                                                                    />
+                                                                    <span className="text-sm">Pilih Semua</span>
                                                                 </div>
+                                                                <Badge variant="secondary">
+                                                                    {selectedUsulanBatch.length} dipilih
+                                                                </Badge>
                                                             </div>
-                                                        )}
+                                                            <ScrollArea className="h-[300px] border rounded-lg">
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow>
+                                                                            <TableHead className="w-12"></TableHead>
+                                                                            <TableHead>Nama</TableHead>
+                                                                            <TableHead>NIP</TableHead>
+                                                                            <TableHead>Detail</TableHead>
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {filteredUsulanList.map((usulan) => (
+                                                                            <TableRow key={usulan.id} className="cursor-pointer" onClick={() => handleToggleUsulanBatch(usulan.id)}>
+                                                                                <TableCell>
+                                                                                    <Checkbox
+                                                                                        checked={selectedUsulanBatch.includes(usulan.id)}
+                                                                                        onCheckedChange={() => handleToggleUsulanBatch(usulan.id)}
+                                                                                    />
+                                                                                </TableCell>
+                                                                                <TableCell className="font-medium">{usulan.profiles?.name}</TableCell>
+                                                                                <TableCell>{usulan.profiles?.nip}</TableCell>
+                                                                                <TableCell className="text-primary">
+                                                                                    {formatSubmissionLabel(usulan, usulanServiceType)}
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </ScrollArea>
+                                                        </>
+                                                    )}
 
-                                                        {!isLoadingSubmissions && submissionResults.length === 0 && !selectedSubmission && (
-                                                            <div className="text-center py-6 border rounded-lg bg-muted/20">
-                                                                <p className="text-muted-foreground">
-                                                                    Tidak ada usulan {getServiceTypeLabel(category as string)} yang disetujui untuk pegawai ini.
-                                                                </p>
-                                                            </div>
-                                                        )}
-
-                                                        {selectedSubmission && (
-                                                            <Card className="bg-muted/50">
-                                                                <CardContent className="p-3 flex justify-between items-center">
-                                                                    <div>
-                                                                        <div className="text-xs text-muted-foreground">Usulan Terpilih:</div>
-                                                                        <div className="font-semibold text-primary">
-                                                                            {formatSubmissionLabel(selectedSubmission, category as string)}
-                                                                        </div>
-                                                                    </div>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => setSelectedSubmission(null)}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 mr-1" />
-                                                                        Ganti
-                                                                    </Button>
-                                                                </CardContent>
-                                                            </Card>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {selectedEmployee && selectedSubmission && (
-                                                    <Button onClick={handleGenerateIndividual} className="w-full">
-                                                        Buat Surat Individual
-                                                    </Button>
-                                                )}
-                                            </div>
+                                                    {selectedUsulanBatch.length > 0 && (
+                                                        <Button onClick={handleGenerateUsulanBatch} className="w-full" disabled={!selectedTemplateId}>
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            Buat {selectedUsulanBatch.length} Surat (ZIP)
+                                                        </Button>
+                                                    )}
+                                                </TabsContent>
+                                            </Tabs>
                                         </TabsContent>
 
-                                        {/* Batch Mode */}
-                                        <TabsContent value="batch" className="space-y-4 mt-4">
-                                            <div className="space-y-4">
-                                                {batchEntries.map((entry, index) => (
-                                                    <Card key={entry.id}>
-                                                        <CardHeader className="pb-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <CardTitle className="text-sm">Pegawai #{index + 1}</CardTitle>
-                                                                {batchEntries.length > 1 && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => removeBatchEntry(entry.id)}
-                                                                        className="h-8 w-8"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </CardHeader>
-                                                        <CardContent className="space-y-3">
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs">Cari Pegawai</Label>
-                                                                <div className="relative">
-                                                                    <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                                    <Input
-                                                                        className="pl-9 text-sm"
-                                                                        placeholder={category ? "Ketik nama/NIP..." : "Pilih jenis surat dulu"}
-                                                                        value={entry.employeeSearch}
-                                                                        onChange={(e) => handleBatchEmployeeSearch(entry.id, e.target.value)}
-                                                                        disabled={!category}
-                                                                    />
-                                                                </div>
+                                        {/* Data Pegawai Content */}
+                                        <TabsContent value="data-pegawai" className="space-y-4 mt-4">
+                                            <p className="text-sm text-muted-foreground">
+                                                Generate surat custom menggunakan data pegawai. Data variabel akan terisi dari profil pegawai.
+                                            </p>
 
-                                                                {!entry.selectedEmployee && entry.employeeResults.length > 0 && (
-                                                                    <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
-                                                                        {entry.employeeResults.map((emp) => (
-                                                                            <Button
-                                                                                key={emp.id}
-                                                                                variant="ghost"
-                                                                                className="justify-start h-auto py-2 text-left"
-                                                                                onClick={() => handleBatchEmployeeSelect(entry.id, emp)}
-                                                                            >
-                                                                                <div>
-                                                                                    <div className="font-medium text-sm">{emp.name}</div>
-                                                                                    <div className="text-xs text-muted-foreground">NIP: {emp.nip}</div>
-                                                                                </div>
-                                                                            </Button>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-
-                                                                {entry.selectedEmployee && (
-                                                                    <Badge variant="secondary" className="w-fit">
-                                                                        {entry.selectedEmployee.name}
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-
-                                                            {entry.selectedEmployee && (
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-xs">Pilih Usulan</Label>
-                                                                    {entry.isLoadingSubmissions ? (
-                                                                        <div className="text-sm text-muted-foreground">Memuat...</div>
-                                                                    ) : entry.submissionResults.length > 0 ? (
-                                                                        <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
-                                                                            {entry.submissionResults.map((sub) => (
-                                                                                <Button
-                                                                                    key={sub.id}
-                                                                                    variant="ghost"
-                                                                                    className="justify-start h-auto py-2 text-left"
-                                                                                    onClick={() => handleBatchSubmissionSelect(entry.id, sub)}
-                                                                                >
-                                                                                    <div className="text-sm">
-                                                                                        {formatSubmissionLabel(sub, category as string)}
-                                                                                    </div>
-                                                                                </Button>
-                                                                            ))}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="text-sm text-muted-foreground">Tidak ada usulan disetujui</div>
-                                                                    )}
-
-                                                                    {entry.selectedSubmission && (
-                                                                        <Badge variant="outline" className="w-fit">
-                                                                            {formatSubmissionLabel(entry.selectedSubmission, category as string)}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                ))}
-
-                                                <Button variant="outline" onClick={addBatchEntry} className="w-full">
-                                                    <Plus className="h-4 w-4 mr-2" />
-                                                    Tambah Pegawai
-                                                </Button>
-
-                                                <Button
-                                                    onClick={handleGenerateBatch}
-                                                    className="w-full"
-                                                    disabled={!batchEntries.some(e => e.selectedEmployee && e.selectedSubmission)}
-                                                >
-                                                    Buat Surat Batch ({batchEntries.filter(e => e.selectedEmployee && e.selectedSubmission).length} surat)
-                                                </Button>
+                                            {/* Search Filter */}
+                                            <div className="space-y-2">
+                                                <Label>Cari Pegawai</Label>
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        className="pl-9"
+                                                        placeholder="Cari nama atau NIP..."
+                                                        value={pegawaiSearch}
+                                                        onChange={(e) => setPegawaiSearch(e.target.value)}
+                                                    />
+                                                </div>
                                             </div>
+
+                                            {/* Mode Selection for Data Pegawai */}
+                                            <Tabs value={generationMode} onValueChange={(val) => setGenerationMode(val as "individual" | "batch")}>
+                                                <TabsList className="grid w-full grid-cols-2">
+                                                    <TabsTrigger value="individual" className="flex items-center gap-2">
+                                                        <User className="h-4 w-4" />
+                                                        Individual
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="batch" className="flex items-center gap-2">
+                                                        <Users className="h-4 w-4" />
+                                                        Batch
+                                                    </TabsTrigger>
+                                                </TabsList>
+
+                                                {/* Individual Mode - Data Pegawai */}
+                                                <TabsContent value="individual" className="space-y-4 mt-4">
+                                                    {isLoadingPegawai ? (
+                                                        <div className="text-center py-8">
+                                                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                                                            <p className="text-sm text-muted-foreground mt-2">Memuat data pegawai...</p>
+                                                        </div>
+                                                    ) : pegawaiList.length === 0 ? (
+                                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                                            <Database className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                                                            <p className="text-muted-foreground mt-2">
+                                                                Tidak ada data pegawai ditemukan
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <ScrollArea className="h-[300px] border rounded-lg">
+                                                            <div className="p-2 space-y-2">
+                                                                {pegawaiList.map((pegawai) => (
+                                                                    <Card
+                                                                        key={pegawai.id}
+                                                                        className={`cursor-pointer transition-colors ${selectedPegawai?.id === pegawai.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                                                                        onClick={() => handleSelectPegawai(pegawai)}
+                                                                    >
+                                                                        <CardContent className="p-3">
+                                                                            <div className="flex justify-between items-start">
+                                                                                <div>
+                                                                                    <div className="font-semibold">{pegawai.name}</div>
+                                                                                    <div className="text-sm text-muted-foreground">NIP: {pegawai.nip}</div>
+                                                                                    <div className="text-xs text-muted-foreground mt-1">
+                                                                                        {pegawai.jabatan || '-'} • {pegawai.work_units?.name || '-'}
+                                                                                    </div>
+                                                                                </div>
+                                                                                {selectedPegawai?.id === pegawai.id && (
+                                                                                    <Badge variant="default">Terpilih</Badge>
+                                                                                )}
+                                                                            </div>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                ))}
+                                                            </div>
+                                                        </ScrollArea>
+                                                    )}
+
+                                                    {selectedPegawai && (
+                                                        <Button onClick={handleGeneratePegawaiIndividual} className="w-full" disabled={!selectedTemplateId}>
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            Buat Surat untuk {selectedPegawai.name}
+                                                        </Button>
+                                                    )}
+                                                </TabsContent>
+
+                                                {/* Batch Mode - Data Pegawai */}
+                                                <TabsContent value="batch" className="space-y-4 mt-4">
+                                                    {isLoadingPegawai ? (
+                                                        <div className="text-center py-8">
+                                                            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                                                            <p className="text-sm text-muted-foreground mt-2">Memuat data pegawai...</p>
+                                                        </div>
+                                                    ) : pegawaiList.length === 0 ? (
+                                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                                            <Database className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                                                            <p className="text-muted-foreground mt-2">
+                                                                Tidak ada data pegawai ditemukan
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Checkbox
+                                                                        checked={selectedPegawaiBatch.length === pegawaiList.length && pegawaiList.length > 0}
+                                                                        onCheckedChange={handleSelectAllPegawai}
+                                                                    />
+                                                                    <span className="text-sm">Pilih Semua</span>
+                                                                </div>
+                                                                <Badge variant="secondary">
+                                                                    {selectedPegawaiBatch.length} dipilih
+                                                                </Badge>
+                                                            </div>
+                                                            <ScrollArea className="h-[300px] border rounded-lg">
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow>
+                                                                            <TableHead className="w-12"></TableHead>
+                                                                            <TableHead>Nama</TableHead>
+                                                                            <TableHead>NIP</TableHead>
+                                                                            <TableHead>Jabatan</TableHead>
+                                                                            <TableHead>Unit Kerja</TableHead>
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {pegawaiList.map((pegawai) => (
+                                                                            <TableRow key={pegawai.id} className="cursor-pointer" onClick={() => handleTogglePegawaiBatch(pegawai.id)}>
+                                                                                <TableCell>
+                                                                                    <Checkbox
+                                                                                        checked={selectedPegawaiBatch.includes(pegawai.id)}
+                                                                                        onCheckedChange={() => handleTogglePegawaiBatch(pegawai.id)}
+                                                                                    />
+                                                                                </TableCell>
+                                                                                <TableCell className="font-medium">{pegawai.name}</TableCell>
+                                                                                <TableCell>{pegawai.nip}</TableCell>
+                                                                                <TableCell>{pegawai.jabatan || '-'}</TableCell>
+                                                                                <TableCell>{pegawai.work_units?.name || '-'}</TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </ScrollArea>
+                                                        </>
+                                                    )}
+
+                                                    {selectedPegawaiBatch.length > 0 && (
+                                                        <Button onClick={handleGeneratePegawaiBatch} className="w-full" disabled={!selectedTemplateId}>
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            Buat {selectedPegawaiBatch.length} Surat (ZIP)
+                                                        </Button>
+                                                    )}
+                                                </TabsContent>
+                                            </Tabs>
                                         </TabsContent>
                                     </Tabs>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Data Usulan Tab */}
-                    <TabsContent value="data-usulan" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <ClipboardList className="h-5 w-5" />
-                                    Data Usulan yang Disetujui
-                                </CardTitle>
-                                <CardDescription>
-                                    Daftar usulan layanan yang telah disetujui dan siap dibuatkan surat.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Filter Jenis Layanan</Label>
-                                    <Select value={usulanCategory} onValueChange={setUsulanCategory}>
-                                        <SelectTrigger className="w-full md:w-[250px]">
-                                            <SelectValue placeholder="Pilih jenis layanan" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="cuti">Cuti</SelectItem>
-                                            <SelectItem value="kenaikan_pangkat">Kenaikan Pangkat</SelectItem>
-                                            <SelectItem value="pensiun">Pensiun</SelectItem>
-                                            <SelectItem value="mutasi">Mutasi</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {isLoadingUsulan ? (
-                                    <div className="text-center py-8">
-                                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                                        <p className="text-sm text-muted-foreground mt-2">Memuat data...</p>
-                                    </div>
-                                ) : usulanList.length === 0 ? (
-                                    <div className="text-center py-8 border rounded-lg bg-muted/20">
-                                        <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-                                        <p className="text-muted-foreground">
-                                            Belum ada usulan {getServiceTypeLabel(usulanCategory)} yang disetujui.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <ScrollArea className="h-[400px]">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No</TableHead>
-                                                    <TableHead>Nama Pegawai</TableHead>
-                                                    <TableHead>NIP</TableHead>
-                                                    <TableHead>Detail Usulan</TableHead>
-                                                    <TableHead>Tanggal Disetujui</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {usulanList.map((usulan, index) => (
-                                                    <TableRow key={usulan.id}>
-                                                        <TableCell>{index + 1}</TableCell>
-                                                        <TableCell className="font-medium">{usulan.profiles?.name || '-'}</TableCell>
-                                                        <TableCell>{usulan.profiles?.nip || '-'}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant="outline">
-                                                                {formatSubmissionLabel(usulan, usulanCategory)}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {format(new Date(usulan.created_at), 'dd MMM yyyy', { locale: localeId })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Data Pegawai Tab */}
-                    <TabsContent value="data-pegawai" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Database className="h-5 w-5" />
-                                    Data Pegawai
-                                </CardTitle>
-                                <CardDescription>
-                                    Daftar data profil pegawai yang dapat digunakan untuk mengisi variabel template surat.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Cari Pegawai</Label>
-                                    <div className="relative w-full md:w-[300px]">
-                                        <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            className="pl-9"
-                                            placeholder="Ketik nama atau NIP..."
-                                            value={pegawaiSearch}
-                                            onChange={(e) => setPegawaiSearch(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
-                                {isLoadingPegawai ? (
-                                    <div className="text-center py-8">
-                                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                                        <p className="text-sm text-muted-foreground mt-2">Memuat data...</p>
-                                    </div>
-                                ) : pegawaiList.length === 0 ? (
-                                    <div className="text-center py-8 border rounded-lg bg-muted/20">
-                                        <User className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-                                        <p className="text-muted-foreground">
-                                            {pegawaiSearch ? `Tidak ditemukan pegawai dengan kata kunci "${pegawaiSearch}"` : "Tidak ada data pegawai."}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <ScrollArea className="h-[400px]">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No</TableHead>
-                                                    <TableHead>Nama</TableHead>
-                                                    <TableHead>NIP</TableHead>
-                                                    <TableHead>Jabatan</TableHead>
-                                                    <TableHead>Pangkat/Golongan</TableHead>
-                                                    <TableHead>Unit Kerja</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {pegawaiList.map((pegawai, index) => (
-                                                    <TableRow key={pegawai.id}>
-                                                        <TableCell>{index + 1}</TableCell>
-                                                        <TableCell className="font-medium">{pegawai.name}</TableCell>
-                                                        <TableCell>{pegawai.nip || '-'}</TableCell>
-                                                        <TableCell>{pegawai.jabatan || '-'}</TableCell>
-                                                        <TableCell>{pegawai.pangkat_golongan || '-'}</TableCell>
-                                                        <TableCell>{pegawai.work_units?.name || '-'}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
-                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
