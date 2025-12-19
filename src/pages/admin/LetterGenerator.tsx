@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TemplateManagement from "./TemplateManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database, Search } from "lucide-react";
+import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database, Search, BookOpen, Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import VariableIndex from "@/components/letter-generator/VariableIndex";
+import VariablePreview from "@/components/letter-generator/VariablePreview";
 
 interface ProfileData {
     id: string;
@@ -430,6 +432,10 @@ export default function LetterGenerator() {
                         <TabsTrigger value="templates" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
                             Manajemen Template
+                        </TabsTrigger>
+                        <TabsTrigger value="variables" className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            Index Variabel
                         </TabsTrigger>
                     </TabsList>
 
@@ -827,6 +833,11 @@ export default function LetterGenerator() {
                     {/* Template Management Tab */}
                     <TabsContent value="templates">
                         <TemplateManagement />
+                    </TabsContent>
+
+                    {/* Variable Index Tab */}
+                    <TabsContent value="variables">
+                        <VariableIndex />
                     </TabsContent>
                 </Tabs>
             </div>
