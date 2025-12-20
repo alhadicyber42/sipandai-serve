@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { LEAVE_LABELS } from "@/lib/constants";
 
 export interface EmployeeSearchResult {
     id: string;
@@ -9,21 +10,39 @@ export interface EmployeeSearchResult {
     work_unit_id: number;
 }
 
+// Extended profile data for template mapping
+export interface ProfileData {
+    id: string;
+    name: string;
+    nip: string;
+    jabatan?: string | null;
+    pangkat_golongan?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    tmt_pns?: string | null;
+    tmt_pensiun?: string | null;
+    tempat_lahir?: string | null;
+    tanggal_lahir?: string | null;
+    jenis_kelamin?: string | null;
+    alamat?: string | null;
+    work_unit_id?: number | null;
+    work_units?: { name: string; code: string } | null;
+}
+
 export interface ApprovedSubmission {
     id: string;
     service_type: string;
     status: string;
     created_at: string;
     user_id: string;
+    work_unit_id: number;
     description?: string;
     // Leave specific
     leave_details?: any[];
-    // Profile data
-    profiles?: {
-        id: string;
-        name: string;
-        nip: string;
-    };
+    // Profile data - extended
+    profiles?: ProfileData;
+    // Work unit data
+    work_units?: { name: string; code: string } | null;
     // Other service type fields
     current_position?: string;
     proposed_position?: string;
@@ -35,6 +54,7 @@ export interface ApprovedSubmission {
     years_of_service?: number;
     current_unit?: string;
     target_unit?: string;
+    target_work_unit_id?: number;
 }
 
 /**
@@ -72,7 +92,8 @@ export async function getApprovedSubmissions(
         .from('services')
         .select(`
             *,
-            leave_details(*)
+            leave_details(*),
+            work_units(name, code)
         `)
         .eq('service_type', serviceType as any)
         .eq('status', 'approved_final');
@@ -95,10 +116,15 @@ export async function getApprovedSubmissions(
     // Get unique user IDs from services
     const userIds = [...new Set(servicesData.map(s => s.user_id))];
     
-    // Fetch profiles for these users
+    // Fetch complete profiles for these users with work_units
     const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, name, nip')
+        .select(`
+            id, name, nip, jabatan, pangkat_golongan, email, phone, 
+            tmt_pns, tmt_pensiun, tempat_lahir, tanggal_lahir, 
+            jenis_kelamin, alamat, work_unit_id,
+            work_units(name, code)
+        `)
         .in('id', userIds);
 
     if (profilesError) {
@@ -132,7 +158,12 @@ export async function searchSubmissionsByEmployee(
     // First search profiles by name or NIP
     const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, name, nip')
+        .select(`
+            id, name, nip, jabatan, pangkat_golongan, email, phone, 
+            tmt_pns, tmt_pensiun, tempat_lahir, tanggal_lahir, 
+            jenis_kelamin, alamat, work_unit_id,
+            work_units(name, code)
+        `)
         .or(`name.ilike.%${searchTerm}%,nip.ilike.%${searchTerm}%`)
         .limit(50);
 
@@ -147,7 +178,8 @@ export async function searchSubmissionsByEmployee(
         .from('services')
         .select(`
             *,
-            leave_details(*)
+            leave_details(*),
+            work_units(name, code)
         `)
         .eq('service_type', serviceType as any)
         .eq('status', 'approved_final')
@@ -172,31 +204,80 @@ export async function searchSubmissionsByEmployee(
 }
 
 /**
- * Map submission data to template variables based on service type
+ * Get leave type label in Indonesian
  */
-export function mapSubmissionToTemplateData(submission: any, serviceType: string): any {
-    const baseData = {
-        nama_pegawai: submission.profiles?.name || '',
-        nip_pegawai: submission.profiles?.nip || '',
-        jabatan_pegawai: submission.profiles?.jabatan || 'Staf',
-        tanggal_surat: format(new Date(), 'dd MMMM yyyy', { locale: localeId }),
+function getLeaveTypeLabel(leaveType: string): string {
+    return LEAVE_LABELS[leaveType as keyof typeof LEAVE_LABELS] || leaveType || '';
+}
+
+/**
+ * Format date to Indonesian format
+ */
+function formatDate(dateString: string | null | undefined): string {
+    if (!dateString) return '';
+    try {
+        return format(new Date(dateString), 'dd MMMM yyyy', { locale: localeId });
+    } catch {
+        return dateString || '';
+    }
+}
+
+/**
+ * Map submission data to template variables based on service type
+ * This function maps ALL available data to template variables
+ */
+export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serviceType: string): Record<string, string> {
+    const profile = submission.profiles;
+    const workUnit = profile?.work_units || submission.work_units;
+    const now = new Date();
+
+    // Base data - pegawai information (comprehensive)
+    const baseData: Record<string, string> = {
+        // === DATA PEGAWAI ===
+        nama_pegawai: profile?.name || '',
+        nip_pegawai: profile?.nip || '',
+        nip: profile?.nip || '',
+        jabatan_pegawai: profile?.jabatan || '-',
+        jabatan: profile?.jabatan || '-',
+        pangkat: profile?.pangkat_golongan || '-',
+        pangkat_golongan: profile?.pangkat_golongan || '-',
+        email: profile?.email || '',
+        phone: profile?.phone || '',
+        nomor_telepon: profile?.phone || '',
+        tempat_lahir: profile?.tempat_lahir || '',
+        tanggal_lahir: formatDate(profile?.tanggal_lahir),
+        jenis_kelamin: profile?.jenis_kelamin || '',
+        alamat: profile?.alamat || '',
+        tmt_pns: formatDate(profile?.tmt_pns),
+        tmt_pensiun: formatDate(profile?.tmt_pensiun),
+        
+        // === DATA UNIT KERJA ===
+        unit_kerja: workUnit?.name || '',
+        kode_unit: workUnit?.code || '',
+        
+        // === DATA TANGGAL ===
+        tanggal_surat: format(now, 'dd MMMM yyyy', { locale: localeId }),
+        tahun: format(now, 'yyyy'),
+        bulan: format(now, 'MMMM', { locale: localeId }),
+        hari: format(now, 'EEEE', { locale: localeId }),
+        tanggal: format(now, 'dd'),
     };
 
+    // Service-specific data
     switch (serviceType) {
         case 'cuti':
             if (submission.leave_details && submission.leave_details.length > 0) {
                 const leaveDetail = submission.leave_details[0];
                 return {
                     ...baseData,
-                    jenis_cuti: leaveDetail.leave_type || '',
-                    tanggal_mulai: leaveDetail.start_date
-                        ? format(new Date(leaveDetail.start_date), 'dd MMMM yyyy', { locale: localeId })
-                        : '',
-                    tanggal_selesai: leaveDetail.end_date
-                        ? format(new Date(leaveDetail.end_date), 'dd MMMM yyyy', { locale: localeId })
-                        : '',
-                    total_hari: leaveDetail.total_days?.toString() || '0',
-                    alasan_cuti: submission.description || '',
+                    // === DATA CUTI ===
+                    jenis_cuti: getLeaveTypeLabel(leaveDetail.leave_type),
+                    tanggal_mulai: formatDate(leaveDetail.start_date),
+                    tanggal_selesai: formatDate(leaveDetail.end_date),
+                    total_hari: String(leaveDetail.total_days || 0),
+                    alasan_cuti: leaveDetail.reason || submission.description || '',
+                    pegawai_pengganti: leaveDetail.substitute_employee || '-',
+                    kontak_darurat: leaveDetail.emergency_contact || '-',
                 };
             }
             return baseData;
@@ -204,33 +285,30 @@ export function mapSubmissionToTemplateData(submission: any, serviceType: string
         case 'kenaikan_pangkat':
             return {
                 ...baseData,
-                jabatan_lama: submission.current_position || '',
+                // === DATA KENAIKAN PANGKAT ===
+                jabatan_lama: submission.current_position || profile?.jabatan || '',
                 jabatan_baru: submission.proposed_position || '',
-                pangkat_lama: submission.current_rank || '',
+                pangkat_lama: submission.current_rank || profile?.pangkat_golongan || '',
                 pangkat_baru: submission.proposed_rank || '',
-                tanggal_sk: submission.effective_date
-                    ? format(new Date(submission.effective_date), 'dd MMMM yyyy', { locale: localeId })
-                    : '',
+                tanggal_sk: formatDate(submission.effective_date),
             };
 
         case 'pensiun':
             return {
                 ...baseData,
-                tanggal_pensiun: submission.retirement_date
-                    ? format(new Date(submission.retirement_date), 'dd MMMM yyyy', { locale: localeId })
-                    : '',
+                // === DATA PENSIUN ===
+                tanggal_pensiun: formatDate(submission.retirement_date || profile?.tmt_pensiun),
                 jenis_pensiun: submission.retirement_type || '',
-                masa_kerja: submission.years_of_service?.toString() || '',
+                masa_kerja: String(submission.years_of_service || ''),
             };
 
         case 'mutasi':
             return {
                 ...baseData,
-                unit_asal: submission.current_unit || '',
+                // === DATA MUTASI ===
+                unit_asal: workUnit?.name || submission.current_unit || '',
                 unit_tujuan: submission.target_unit || '',
-                tanggal_mutasi: submission.effective_date
-                    ? format(new Date(submission.effective_date), 'dd MMMM yyyy', { locale: localeId })
-                    : '',
+                tanggal_mutasi: formatDate(submission.effective_date),
                 alasan_mutasi: submission.description || '',
             };
 
@@ -249,7 +327,8 @@ export function formatSubmissionLabel(submission: any, serviceType: string): str
         case 'cuti':
             if (submission.leave_details && submission.leave_details.length > 0) {
                 const leaveDetail = submission.leave_details[0];
-                return `${leaveDetail.leave_type} - ${date} (${leaveDetail.total_days} hari)`;
+                const leaveLabel = getLeaveTypeLabel(leaveDetail.leave_type);
+                return `${leaveLabel} - ${date} (${leaveDetail.total_days} hari)`;
             }
             return `Cuti - ${date}`;
 
