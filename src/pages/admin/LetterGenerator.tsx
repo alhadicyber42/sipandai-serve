@@ -51,25 +51,55 @@ interface ProfileData {
     phone: string | null;
     tmt_pns: string | null;
     tmt_pensiun: string | null;
-    work_units?: { name: string } | null;
+    tempat_lahir?: string | null;
+    tanggal_lahir?: string | null;
+    jenis_kelamin?: string | null;
+    alamat?: string | null;
+    work_units?: { name: string; code?: string } | null;
 }
 
-// Map profile data to template variables
+// Helper to format date safely
+function formatDateSafe(dateString: string | null | undefined): string {
+    if (!dateString) return '';
+    try {
+        return format(new Date(dateString), 'dd MMMM yyyy', { locale: localeId });
+    } catch {
+        return dateString || '';
+    }
+}
+
+// Map profile data to template variables - comprehensive mapping
 function mapProfileToTemplateData(profile: ProfileData): Record<string, string> {
+    const now = new Date();
     return {
+        // === DATA PEGAWAI ===
         nama_pegawai: profile.name || '',
+        nip_pegawai: profile.nip || '',
         nip: profile.nip || '',
-        jabatan: profile.jabatan || '',
-        pangkat_golongan: profile.pangkat_golongan || '',
-        pangkat: profile.pangkat_golongan || '',
-        unit_kerja: profile.work_units?.name || '',
+        jabatan_pegawai: profile.jabatan || '-',
+        jabatan: profile.jabatan || '-',
+        pangkat_golongan: profile.pangkat_golongan || '-',
+        pangkat: profile.pangkat_golongan || '-',
         email: profile.email || '',
         phone: profile.phone || '',
-        tmt_pns: profile.tmt_pns ? format(new Date(profile.tmt_pns), 'dd MMMM yyyy', { locale: localeId }) : '',
-        tmt_pensiun: profile.tmt_pensiun ? format(new Date(profile.tmt_pensiun), 'dd MMMM yyyy', { locale: localeId }) : '',
-        tanggal_surat: format(new Date(), 'dd MMMM yyyy', { locale: localeId }),
-        tahun: format(new Date(), 'yyyy'),
-        bulan: format(new Date(), 'MMMM', { locale: localeId }),
+        nomor_telepon: profile.phone || '',
+        tempat_lahir: profile.tempat_lahir || '',
+        tanggal_lahir: formatDateSafe(profile.tanggal_lahir),
+        jenis_kelamin: profile.jenis_kelamin || '',
+        alamat: profile.alamat || '',
+        tmt_pns: formatDateSafe(profile.tmt_pns),
+        tmt_pensiun: formatDateSafe(profile.tmt_pensiun),
+        
+        // === DATA UNIT KERJA ===
+        unit_kerja: profile.work_units?.name || '',
+        kode_unit: profile.work_units?.code || '',
+        
+        // === DATA TANGGAL ===
+        tanggal_surat: format(now, 'dd MMMM yyyy', { locale: localeId }),
+        tahun: format(now, 'yyyy'),
+        bulan: format(now, 'MMMM', { locale: localeId }),
+        hari: format(now, 'EEEE', { locale: localeId }),
+        tanggal: format(now, 'dd'),
     };
 }
 
@@ -142,7 +172,7 @@ export default function LetterGenerator() {
                 setIsLoadingPegawai(true);
                 let query = supabase
                     .from('profiles')
-                    .select('id, name, nip, jabatan, pangkat_golongan, work_unit_id, email, phone, tmt_pns, tmt_pensiun, work_units(name)')
+                    .select('id, name, nip, jabatan, pangkat_golongan, work_unit_id, email, phone, tmt_pns, tmt_pensiun, tempat_lahir, tanggal_lahir, jenis_kelamin, alamat, work_units(name, code)')
                     .eq('role', 'user_unit')
                     .order('name');
 
