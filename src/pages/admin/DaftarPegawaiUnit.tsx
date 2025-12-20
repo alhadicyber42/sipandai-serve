@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Search, Filter, Eye } from "lucide-react";
+import { Users, Search, Filter, Eye, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableSkeleton } from "@/components/skeletons";
 import { NoDataState, SearchState } from "@/components/EmptyState";
@@ -45,6 +45,8 @@ interface WorkUnit {
   code: string;
 }
 
+const PAGE_SIZE = 100;
+
 export default function DaftarPegawaiUnit() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -53,26 +55,54 @@ export default function DaftarPegawaiUnit() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [workUnitFilter, setWorkUnitFilter] = useState<string>("all");
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  // Debounce search query
   useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Load work units
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [workUnitFilter]);
+
+  // Load work units once
+  useEffect(() => {
+    const loadWorkUnits = async () => {
       const { data: units } = await supabase
         .from("work_units")
         .select("*")
         .order("name");
-
       if (units) setWorkUnits(units);
+    };
+    loadWorkUnits();
+  }, []);
 
-      // Load employees based on user role
-      let query = supabase
+  // Load employees with pagination
+  const loadEmployees = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const from = (currentPage - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      // Build base query for counting
+      let countQuery = supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true });
+
+      // Build data query
+      let dataQuery = supabase
         .from("profiles")
         .select(`
           id,
@@ -82,41 +112,66 @@ export default function DaftarPegawaiUnit() {
           phone,
           work_unit_id,
           role,
-          work_units (
-            name
-          )
+          work_units (name)
         `)
-        .order("name");
+        .order("name")
+        .range(from, to);
 
-      // If user is admin_unit, only show users from their unit
-      if (user?.role === "admin_unit" && user?.work_unit_id) {
-        query = query.eq("work_unit_id", user.work_unit_id);
+      // Apply work unit filter for admin_unit
+      if (user.role === "admin_unit" && user.work_unit_id) {
+        countQuery = countQuery.eq("work_unit_id", user.work_unit_id);
+        dataQuery = dataQuery.eq("work_unit_id", user.work_unit_id);
       }
 
-      const { data: profiles } = await query;
+      // Apply work unit filter from dropdown
+      if (workUnitFilter !== "all") {
+        countQuery = countQuery.eq("work_unit_id", parseInt(workUnitFilter));
+        dataQuery = dataQuery.eq("work_unit_id", parseInt(workUnitFilter));
+      }
 
-      if (profiles) {
-        const employeeList: Employee[] = [];
+      // Apply search filter
+      if (debouncedSearch.length >= 2) {
+        const searchFilter = `name.ilike.%${debouncedSearch}%,nip.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`;
+        countQuery = countQuery.or(searchFilter);
+        dataQuery = dataQuery.or(searchFilter);
+      }
 
-        for (const profile of profiles) {
-          // Get user role from user_roles table, fallback to profiles.role
-          const { data: roleData, error: roleError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", profile.id)
-            .maybeSingle();
+      // Execute queries in parallel
+      const [countResult, dataResult] = await Promise.all([
+        countQuery,
+        dataQuery
+      ]);
 
-          employeeList.push({
-            id: profile.id,
-            name: profile.name,
-            nip: profile.nip,
-            phone: profile.phone,
-            work_unit_id: profile.work_unit_id,
-            work_unit_name: (profile.work_units as any)?.name || "-",
-            email: (profile as any).email || "-",
-            role: roleError ? (profile as any).role : (roleData?.role || (profile as any).role || "user_unit"),
-          });
-        }
+      if (countResult.error) {
+        throw countResult.error;
+      }
+
+      if (dataResult.error) {
+        throw dataResult.error;
+      }
+
+      setTotalCount(countResult.count || 0);
+
+      if (dataResult.data) {
+        // Get user roles in a single batch query
+        const userIds = dataResult.data.map(p => p.id);
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", userIds);
+
+        const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
+
+        const employeeList: Employee[] = dataResult.data.map((profile) => ({
+          id: profile.id,
+          name: profile.name,
+          nip: profile.nip,
+          phone: profile.phone,
+          work_unit_id: profile.work_unit_id,
+          work_unit_name: (profile.work_units as any)?.name || "-",
+          email: profile.email || "-",
+          role: rolesMap.get(profile.id) || profile.role || "user_unit",
+        }));
 
         setEmployees(employeeList);
       }
@@ -126,7 +181,11 @@ export default function DaftarPegawaiUnit() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, currentPage, workUnitFilter, debouncedSearch]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
 
   const getRoleName = (role: string) => {
     const roleNames: Record<string, string> = {
@@ -148,18 +207,43 @@ export default function DaftarPegawaiUnit() {
     }
   };
 
-  const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch =
-      emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.nip.includes(searchQuery) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-    const matchesWorkUnit =
-      workUnitFilter === "all" ||
-      emp.work_unit_id?.toString() === workUnitFilter;
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
-    return matchesSearch && matchesWorkUnit;
-  });
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   return (
     <DashboardLayout>
@@ -229,7 +313,7 @@ export default function DaftarPegawaiUnit() {
 
             {isLoading ? (
               <div className="py-4">
-                <TableSkeleton rows={5} />
+                <TableSkeleton rows={10} />
               </div>
             ) : (
               <ResponsiveTableWrapper>
@@ -246,7 +330,7 @@ export default function DaftarPegawaiUnit() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEmployees.length === 0 ? (
+                    {employees.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={7}
@@ -262,7 +346,7 @@ export default function DaftarPegawaiUnit() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredEmployees.map((emp) => (
+                      employees.map((emp) => (
                         <TableRow key={emp.id}>
                           <TableCell>
                             <div className="flex flex-col">
@@ -303,15 +387,86 @@ export default function DaftarPegawaiUnit() {
                 </Table>
               </ResponsiveTableWrapper>
             )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                <p className="text-sm text-muted-foreground order-2 sm:order-1">
+                  Menampilkan {((currentPage - 1) * PAGE_SIZE) + 1} - {Math.min(currentPage * PAGE_SIZE, totalCount)} dari {totalCount} pegawai
+                </p>
+                
+                <div className="flex items-center gap-1 order-1 sm:order-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1 || isLoading}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || isLoading}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers().map((page, index) => (
+                      typeof page === "number" ? (
+                        <Button
+                          key={index}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handlePageChange(page)}
+                          disabled={isLoading}
+                        >
+                          {page}
+                        </Button>
+                      ) : (
+                        <span key={index} className="px-2 text-muted-foreground">
+                          {page}
+                        </span>
+                      )
+                    ))}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || isLoading}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages || isLoading}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">
-            <strong>Total Pegawai:</strong> {filteredEmployees.length} orang
+            <strong>Total Pegawai:</strong> {totalCount} orang
+            {totalPages > 1 && ` • Halaman ${currentPage} dari ${totalPages}`}
           </p>
         </div>
       </div>
-    </DashboardLayout >
+    </DashboardLayout>
   );
 }
