@@ -67,11 +67,11 @@ export async function getApprovedSubmissions(
     serviceType: string,
     userId?: string
 ): Promise<ApprovedSubmission[]> {
+    // First, get services with approved status
     let query = supabase
         .from('services')
         .select(`
             *,
-            profiles!inner(id, name, nip),
             leave_details(*)
         `)
         .eq('service_type', serviceType as any)
@@ -81,14 +81,41 @@ export async function getApprovedSubmissions(
         query = query.eq('user_id', userId);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data: servicesData, error: servicesError } = await query.order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Error fetching approved submissions:', error);
+    if (servicesError) {
+        console.error('Error fetching approved submissions:', servicesError);
         return [];
     }
 
-    return (data || []) as any[];
+    if (!servicesData || servicesData.length === 0) {
+        return [];
+    }
+
+    // Get unique user IDs from services
+    const userIds = [...new Set(servicesData.map(s => s.user_id))];
+    
+    // Fetch profiles for these users
+    const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, nip')
+        .in('id', userIds);
+
+    if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return servicesData as any[];
+    }
+
+    // Create a map for quick lookup
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+    // Combine services with profiles
+    const result = servicesData.map(service => ({
+        ...service,
+        profiles: profilesMap.get(service.user_id) || null
+    }));
+
+    return result as any[];
 }
 
 /**
@@ -102,24 +129,46 @@ export async function searchSubmissionsByEmployee(
         return [];
     }
 
-    const { data, error } = await supabase
+    // First search profiles by name or NIP
+    const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, nip')
+        .or(`name.ilike.%${searchTerm}%,nip.ilike.%${searchTerm}%`)
+        .limit(50);
+
+    if (profilesError || !profilesData || profilesData.length === 0) {
+        return [];
+    }
+
+    const userIds = profilesData.map(p => p.id);
+    
+    // Fetch services for these users
+    const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select(`
             *,
-            profiles!inner(id, name, nip),
             leave_details(*)
         `)
         .eq('service_type', serviceType as any)
         .eq('status', 'approved_final')
-        .or(`profiles.name.ilike.%${searchTerm}%,profiles.nip.ilike.%${searchTerm}%`)
+        .in('user_id', userIds)
         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Error searching submissions:', error);
+    if (servicesError) {
+        console.error('Error searching submissions:', servicesError);
         return [];
     }
 
-    return (data || []) as any[];
+    // Create a map for quick lookup
+    const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+
+    // Combine services with profiles
+    const result = (servicesData || []).map(service => ({
+        ...service,
+        profiles: profilesMap.get(service.user_id) || null
+    }));
+
+    return result as any[];
 }
 
 /**
