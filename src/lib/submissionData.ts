@@ -36,6 +36,7 @@ export interface ApprovedSubmission {
     created_at: string;
     user_id: string;
     work_unit_id: number;
+    title?: string;
     description?: string;
     // Leave specific
     leave_details?: any[];
@@ -223,8 +224,17 @@ function formatDate(dateString: string | null | undefined): string {
 }
 
 /**
+ * Safely get a string value, returning empty string instead of undefined
+ */
+function safeString(value: any, fallback: string = ''): string {
+    if (value === null || value === undefined) return fallback;
+    return String(value);
+}
+
+/**
  * Map submission data to template variables based on service type
  * This function maps ALL available data to template variables
+ * IMPORTANT: All values must be strings, never undefined
  */
 export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serviceType: string): Record<string, string> {
     const profile = submission.profiles;
@@ -232,28 +242,29 @@ export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serv
     const now = new Date();
 
     // Base data - pegawai information (comprehensive)
+    // All values guaranteed to be strings (empty string if null/undefined)
     const baseData: Record<string, string> = {
         // === DATA PEGAWAI ===
-        nama_pegawai: profile?.name || '',
-        nip_pegawai: profile?.nip || '',
-        nip: profile?.nip || '',
-        jabatan_pegawai: profile?.jabatan || '-',
-        jabatan: profile?.jabatan || '-',
-        pangkat: profile?.pangkat_golongan || '-',
-        pangkat_golongan: profile?.pangkat_golongan || '-',
-        email: profile?.email || '',
-        phone: profile?.phone || '',
-        nomor_telepon: profile?.phone || '',
-        tempat_lahir: profile?.tempat_lahir || '',
-        tanggal_lahir: formatDate(profile?.tanggal_lahir),
-        jenis_kelamin: profile?.jenis_kelamin || '',
-        alamat: profile?.alamat || '',
-        tmt_pns: formatDate(profile?.tmt_pns),
-        tmt_pensiun: formatDate(profile?.tmt_pensiun),
+        nama_pegawai: safeString(profile?.name),
+        nip_pegawai: safeString(profile?.nip),
+        nip: safeString(profile?.nip),
+        jabatan_pegawai: safeString(profile?.jabatan, '-'),
+        jabatan: safeString(profile?.jabatan, '-'),
+        pangkat: safeString(profile?.pangkat_golongan, '-'),
+        pangkat_golongan: safeString(profile?.pangkat_golongan, '-'),
+        email: safeString(profile?.email),
+        phone: safeString(profile?.phone),
+        nomor_telepon: safeString(profile?.phone),
+        tempat_lahir: safeString(profile?.tempat_lahir),
+        tanggal_lahir: formatDate(profile?.tanggal_lahir) || '-',
+        jenis_kelamin: safeString(profile?.jenis_kelamin),
+        alamat: safeString(profile?.alamat),
+        tmt_pns: formatDate(profile?.tmt_pns) || '-',
+        tmt_pensiun: formatDate(profile?.tmt_pensiun) || '-',
         
         // === DATA UNIT KERJA ===
-        unit_kerja: workUnit?.name || '',
-        kode_unit: workUnit?.code || '',
+        unit_kerja: safeString(workUnit?.name),
+        kode_unit: safeString(workUnit?.code),
         
         // === DATA TANGGAL ===
         tanggal_surat: format(now, 'dd MMMM yyyy', { locale: localeId }),
@@ -261,55 +272,57 @@ export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serv
         bulan: format(now, 'MMMM', { locale: localeId }),
         hari: format(now, 'EEEE', { locale: localeId }),
         tanggal: format(now, 'dd'),
+        
+        // === DATA USULAN (common) ===
+        judul_usulan: safeString(submission.title),
+        deskripsi_usulan: safeString(submission.description),
+        tanggal_pengajuan: formatDate(submission.created_at) || '-',
     };
 
     // Service-specific data
     switch (serviceType) {
         case 'cuti':
-            if (submission.leave_details && submission.leave_details.length > 0) {
-                const leaveDetail = submission.leave_details[0];
-                return {
-                    ...baseData,
-                    // === DATA CUTI ===
-                    jenis_cuti: getLeaveTypeLabel(leaveDetail.leave_type),
-                    tanggal_mulai: formatDate(leaveDetail.start_date),
-                    tanggal_selesai: formatDate(leaveDetail.end_date),
-                    total_hari: String(leaveDetail.total_days || 0),
-                    alasan_cuti: leaveDetail.reason || submission.description || '',
-                    pegawai_pengganti: leaveDetail.substitute_employee || '-',
-                    kontak_darurat: leaveDetail.emergency_contact || '-',
-                };
-            }
-            return baseData;
+            const leaveDetail = submission.leave_details?.[0];
+            return {
+                ...baseData,
+                // === DATA CUTI ===
+                jenis_cuti: leaveDetail ? getLeaveTypeLabel(leaveDetail.leave_type) : '-',
+                tanggal_mulai: leaveDetail ? (formatDate(leaveDetail.start_date) || '-') : '-',
+                tanggal_selesai: leaveDetail ? (formatDate(leaveDetail.end_date) || '-') : '-',
+                total_hari: leaveDetail ? String(leaveDetail.total_days || 0) : '0',
+                alasan_cuti: safeString(leaveDetail?.reason || submission.description, '-'),
+                pegawai_pengganti: safeString(leaveDetail?.substitute_employee, '-'),
+                kontak_darurat: safeString(leaveDetail?.emergency_contact, '-'),
+            };
 
         case 'kenaikan_pangkat':
             return {
                 ...baseData,
                 // === DATA KENAIKAN PANGKAT ===
-                jabatan_lama: submission.current_position || profile?.jabatan || '',
-                jabatan_baru: submission.proposed_position || '',
-                pangkat_lama: submission.current_rank || profile?.pangkat_golongan || '',
-                pangkat_baru: submission.proposed_rank || '',
-                tanggal_sk: formatDate(submission.effective_date),
+                jabatan_lama: safeString(submission.current_position || profile?.jabatan, '-'),
+                jabatan_baru: safeString(submission.proposed_position, '-'),
+                pangkat_lama: safeString(submission.current_rank || profile?.pangkat_golongan, '-'),
+                pangkat_baru: safeString(submission.proposed_rank, '-'),
+                tanggal_sk: formatDate(submission.effective_date) || '-',
             };
 
         case 'pensiun':
             return {
                 ...baseData,
                 // === DATA PENSIUN ===
-                tanggal_pensiun: formatDate(submission.retirement_date || profile?.tmt_pensiun),
-                jenis_pensiun: submission.retirement_type || '',
-                masa_kerja: String(submission.years_of_service || ''),
+                tanggal_pensiun: formatDate(submission.retirement_date || profile?.tmt_pensiun) || '-',
+                jenis_pensiun: safeString(submission.retirement_type, '-'),
+                masa_kerja: safeString(submission.years_of_service, '-'),
             };
 
         case 'mutasi':
             return {
                 ...baseData,
                 // === DATA MUTASI ===
-                unit_asal: workUnit?.name || submission.current_unit || '',
-                unit_tujuan: submission.target_unit || '',
-                tanggal_mutasi: formatDate(submission.effective_date),
-                alasan_mutasi: submission.description || '',
+                unit_asal: safeString(workUnit?.name || submission.current_unit, '-'),
+                unit_tujuan: safeString(submission.target_unit, '-'),
+                tanggal_mutasi: formatDate(submission.effective_date) || '-',
+                alasan_mutasi: safeString(submission.description, '-'),
             };
 
         default:
