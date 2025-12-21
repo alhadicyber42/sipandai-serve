@@ -89,12 +89,13 @@ export async function getApprovedSubmissions(
     userId?: string
 ): Promise<ApprovedSubmission[]> {
     // First, get services with approved status
+    // Use explicit foreign key reference to avoid ambiguity (services has work_unit_id AND target_work_unit_id)
     let query = supabase
         .from('services')
         .select(`
             *,
             leave_details(*),
-            work_units(name, code)
+            work_units!services_work_unit_id_fkey(name, code)
         `)
         .eq('service_type', serviceType as any)
         .eq('status', 'approved_final');
@@ -175,12 +176,13 @@ export async function searchSubmissionsByEmployee(
     const userIds = profilesData.map(p => p.id);
     
     // Fetch services for these users
+    // Use explicit foreign key reference to avoid ambiguity
     const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select(`
             *,
             leave_details(*),
-            work_units(name, code)
+            work_units!services_work_unit_id_fkey(name, code)
         `)
         .eq('service_type', serviceType as any)
         .eq('status', 'approved_final')
