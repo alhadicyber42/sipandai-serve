@@ -332,9 +332,7 @@ export default function LandingPage() {
                                     Kementerian Ketenagakerjaan Republik Indonesia
                                 </p>
                             </div>
-                            <p className="text-xs md:text-sm text-muted-foreground">
-                                © 2024 Ditjen Binalavotas. All rights reserved.
-                            </p>
+                            <p className="text-xs md:text-sm text-muted-foreground">© 2025 Ditjen Binalavotas. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
