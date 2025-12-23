@@ -233,12 +233,24 @@ function safeString(value: any, fallback: string = ''): string {
     return String(value);
 }
 
+// Data atasan/pimpinan untuk penandatanganan surat
+export interface AtasanData {
+    nama_atasan: string;
+    nip_atasan: string;
+    jabatan_atasan: string;
+    pangkat_atasan?: string;
+}
+
 /**
  * Map submission data to template variables based on service type
  * This function maps ALL available data to template variables
  * IMPORTANT: All values must be strings, never undefined
  */
-export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serviceType: string): Record<string, string> {
+export function mapSubmissionToTemplateData(
+    submission: ApprovedSubmission, 
+    serviceType: string,
+    atasanData?: AtasanData
+): Record<string, string> {
     const profile = submission.profiles;
     const workUnit = profile?.work_units || submission.work_units;
     const now = new Date();
@@ -254,6 +266,7 @@ export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serv
         jabatan: safeString(profile?.jabatan, '-'),
         pangkat: safeString(profile?.pangkat_golongan, '-'),
         pangkat_golongan: safeString(profile?.pangkat_golongan, '-'),
+        golongan: safeString(profile?.pangkat_golongan, '-'),
         email: safeString(profile?.email),
         phone: safeString(profile?.phone),
         nomor_telepon: safeString(profile?.phone),
@@ -279,6 +292,12 @@ export function mapSubmissionToTemplateData(submission: ApprovedSubmission, serv
         judul_usulan: safeString(submission.title),
         deskripsi_usulan: safeString(submission.description),
         tanggal_pengajuan: formatDate(submission.created_at) || '-',
+
+        // === DATA ATASAN/PIMPINAN ===
+        nama_atasan: safeString(atasanData?.nama_atasan, '-'),
+        nip_atasan: safeString(atasanData?.nip_atasan, '-'),
+        jabatan_atasan: safeString(atasanData?.jabatan_atasan, '-'),
+        pangkat_atasan: safeString(atasanData?.pangkat_atasan, '-'),
     };
 
     // Service-specific data

@@ -373,6 +373,36 @@ export const TEMPLATE_VARIABLES: ExtendedTemplateVariable[] = [
         example: "Kepala Bagian Kepegawaian",
         category: "custom",
         isIndexed: true
+    },
+
+    // ============ DATA ATASAN/PIMPINAN ============
+    {
+        key: "nama_atasan",
+        label: "Nama Atasan",
+        description: "Nama pimpinan yang menandatangani surat",
+        example: "Dr. Bambang Suryadi, M.Si",
+        category: "custom"
+    },
+    {
+        key: "nip_atasan",
+        label: "NIP Atasan",
+        description: "NIP pimpinan yang menandatangani surat",
+        example: "196501011990011001",
+        category: "custom"
+    },
+    {
+        key: "jabatan_atasan",
+        label: "Jabatan Atasan",
+        description: "Jabatan pimpinan yang menandatangani surat",
+        example: "Kepala BBPVP Bekasi",
+        category: "custom"
+    },
+    {
+        key: "pangkat_atasan",
+        label: "Pangkat Atasan",
+        description: "Pangkat dan golongan pimpinan",
+        example: "Pembina Utama Muda / IV/c",
+        category: "custom"
     }
 ];
 
