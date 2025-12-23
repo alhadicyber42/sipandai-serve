@@ -24,7 +24,8 @@ import {
     mapSubmissionToTemplateData,
     formatSubmissionLabel,
     ApprovedSubmission,
-    EmployeeSearchResult
+    EmployeeSearchResult,
+    AtasanData
 } from "@/lib/submissionData";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,6 +59,16 @@ interface ProfileData {
     work_units?: { name: string; code?: string } | null;
 }
 
+// Pimpinan/Atasan data
+interface PimpinanData {
+    id: string;
+    name: string;
+    nip: string;
+    jabatan: string | null;
+    pangkat_golongan: string | null;
+    role: string;
+}
+
 // Helper to format date safely
 function formatDateSafe(dateString: string | null | undefined): string {
     if (!dateString) return '';
@@ -69,7 +80,7 @@ function formatDateSafe(dateString: string | null | undefined): string {
 }
 
 // Map profile data to template variables - comprehensive mapping
-function mapProfileToTemplateData(profile: ProfileData): Record<string, string> {
+function mapProfileToTemplateData(profile: ProfileData, atasanData?: AtasanData): Record<string, string> {
     const now = new Date();
     return {
         // === DATA PEGAWAI ===
@@ -80,6 +91,7 @@ function mapProfileToTemplateData(profile: ProfileData): Record<string, string> 
         jabatan: profile.jabatan || '-',
         pangkat_golongan: profile.pangkat_golongan || '-',
         pangkat: profile.pangkat_golongan || '-',
+        golongan: profile.pangkat_golongan || '-',
         email: profile.email || '',
         phone: profile.phone || '',
         nomor_telepon: profile.phone || '',
@@ -100,6 +112,12 @@ function mapProfileToTemplateData(profile: ProfileData): Record<string, string> 
         bulan: format(now, 'MMMM', { locale: localeId }),
         hari: format(now, 'EEEE', { locale: localeId }),
         tanggal: format(now, 'dd'),
+
+        // === DATA ATASAN/PIMPINAN ===
+        nama_atasan: atasanData?.nama_atasan || '-',
+        nip_atasan: atasanData?.nip_atasan || '-',
+        jabatan_atasan: atasanData?.jabatan_atasan || '-',
+        pangkat_atasan: atasanData?.pangkat_atasan || '-',
     };
 }
 
@@ -138,6 +156,11 @@ export default function LetterGenerator() {
 
     // Batch mode - Data Pegawai
     const [selectedPegawaiBatch, setSelectedPegawaiBatch] = useState<string[]>([]);
+
+    // ===== PIMPINAN (ATASAN) STATES =====
+    const [pimpinanList, setPimpinanList] = useState<PimpinanData[]>([]);
+    const [selectedPimpinan, setSelectedPimpinan] = useState<PimpinanData | null>(null);
+    const [isLoadingPimpinan, setIsLoadingPimpinan] = useState(false);
 
     // Load templates when category changes
     useEffect(() => {
@@ -189,6 +212,24 @@ export default function LetterGenerator() {
         }, 300);
         return () => clearTimeout(searchTimer);
     }, [dataSourceTab, pegawaiSearch]);
+
+    // Load Data Pimpinan (admin_unit and admin_pusat)
+    useEffect(() => {
+        const loadPimpinan = async () => {
+            setIsLoadingPimpinan(true);
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, name, nip, jabatan, pangkat_golongan, role')
+                .in('role', ['admin_unit', 'admin_pusat'])
+                .order('name');
+
+            if (!error && data) {
+                setPimpinanList(data as PimpinanData[]);
+            }
+            setIsLoadingPimpinan(false);
+        };
+        loadPimpinan();
+    }, []);
 
     // Filtered usulan list
     const filteredUsulanList = useMemo(() => {
@@ -265,6 +306,17 @@ export default function LetterGenerator() {
         }
     }, [pegawaiList, selectedPegawaiBatch.length]);
 
+    // Get atasan data from selected pimpinan
+    const getAtasanData = useCallback((): AtasanData | undefined => {
+        if (!selectedPimpinan) return undefined;
+        return {
+            nama_atasan: selectedPimpinan.name || '',
+            nip_atasan: selectedPimpinan.nip || '',
+            jabatan_atasan: selectedPimpinan.jabatan || '',
+            pangkat_atasan: selectedPimpinan.pangkat_golongan || '',
+        };
+    }, [selectedPimpinan]);
+
     // Generate Individual Letter - Data Usulan
     const handleGenerateUsulanIndividual = useCallback(() => {
         if (!selectedTemplateId) {
@@ -283,7 +335,8 @@ export default function LetterGenerator() {
         }
 
         try {
-            const data = mapSubmissionToTemplateData(selectedUsulan, usulanServiceType);
+            const atasanData = getAtasanData();
+            const data = mapSubmissionToTemplateData(selectedUsulan, usulanServiceType, atasanData);
             const employeeName = selectedUsulan.profiles?.name || 'Unknown';
             generateDocument(
                 template.file_content,
@@ -295,7 +348,7 @@ export default function LetterGenerator() {
             console.error(error);
             toast.error("Gagal membuat surat");
         }
-    }, [selectedTemplateId, selectedUsulan, templates, usulanServiceType]);
+    }, [selectedTemplateId, selectedUsulan, templates, usulanServiceType, getAtasanData]);
 
     // Generate Batch Letters - Data Usulan
     const handleGenerateUsulanBatch = useCallback(async () => {
@@ -317,9 +370,10 @@ export default function LetterGenerator() {
         try {
             const zip = new JSZip();
             const selectedItems = usulanList.filter(u => selectedUsulanBatch.includes(u.id));
+            const atasanData = getAtasanData();
 
             for (const item of selectedItems) {
-                const data = mapSubmissionToTemplateData(item, usulanServiceType);
+                const data = mapSubmissionToTemplateData(item, usulanServiceType, atasanData);
                 const Docxtemplater = (await import("docxtemplater")).default;
                 const PizZip = (await import("pizzip")).default;
 
@@ -348,7 +402,7 @@ export default function LetterGenerator() {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, selectedUsulanBatch, usulanList, templates, usulanServiceType]);
+    }, [selectedTemplateId, selectedUsulanBatch, usulanList, templates, usulanServiceType, getAtasanData]);
 
     // Generate Individual Letter - Data Pegawai
     const handleGeneratePegawaiIndividual = useCallback(() => {
@@ -368,7 +422,8 @@ export default function LetterGenerator() {
         }
 
         try {
-            const data = mapProfileToTemplateData(selectedPegawai);
+            const atasanData = getAtasanData();
+            const data = mapProfileToTemplateData(selectedPegawai, atasanData);
             generateDocument(
                 template.file_content,
                 data,
@@ -379,7 +434,7 @@ export default function LetterGenerator() {
             console.error(error);
             toast.error("Gagal membuat surat");
         }
-    }, [selectedTemplateId, selectedPegawai, templates, category]);
+    }, [selectedTemplateId, selectedPegawai, templates, category, getAtasanData]);
 
     // Generate Batch Letters - Data Pegawai
     const handleGeneratePegawaiBatch = useCallback(async () => {
@@ -401,9 +456,10 @@ export default function LetterGenerator() {
         try {
             const zip = new JSZip();
             const selectedItems = pegawaiList.filter(p => selectedPegawaiBatch.includes(p.id));
+            const atasanData = getAtasanData();
 
             for (const item of selectedItems) {
-                const data = mapProfileToTemplateData(item);
+                const data = mapProfileToTemplateData(item, atasanData);
                 const Docxtemplater = (await import("docxtemplater")).default;
                 const PizZip = (await import("pizzip")).default;
 
@@ -431,7 +487,7 @@ export default function LetterGenerator() {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, category]);
+    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, category, getAtasanData]);
 
     const getServiceTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
@@ -513,6 +569,44 @@ export default function LetterGenerator() {
                                                 )}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+                                </div>
+
+                                {/* Pimpinan Selection */}
+                                <div className="p-4 bg-muted/30 rounded-lg border">
+                                    <div className="space-y-2">
+                                        <Label>Pimpinan Penandatangan Surat</Label>
+                                        <Select 
+                                            value={selectedPimpinan?.id || ""} 
+                                            onValueChange={(val) => {
+                                                const pimpinan = pimpinanList.find(p => p.id === val);
+                                                setSelectedPimpinan(pimpinan || null);
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih pimpinan yang akan menandatangani surat" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {isLoadingPimpinan ? (
+                                                    <SelectItem value="loading" disabled>Memuat data...</SelectItem>
+                                                ) : pimpinanList.length === 0 ? (
+                                                    <SelectItem value="none" disabled>Belum ada data pimpinan</SelectItem>
+                                                ) : (
+                                                    pimpinanList.map(p => (
+                                                        <SelectItem key={p.id} value={p.id}>
+                                                            {p.name} - {p.jabatan || 'Jabatan tidak tersedia'} ({p.role === 'admin_pusat' ? 'Admin Pusat' : 'Admin Unit'})
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        {selectedPimpinan && (
+                                            <div className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border">
+                                                <div><strong>NIP:</strong> {selectedPimpinan.nip}</div>
+                                                <div><strong>Jabatan:</strong> {selectedPimpinan.jabatan || '-'}</div>
+                                                <div><strong>Pangkat:</strong> {selectedPimpinan.pangkat_golongan || '-'}</div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
