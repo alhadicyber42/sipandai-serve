@@ -130,7 +130,6 @@ export default function LetterGenerator() {
     const [generationMode, setGenerationMode] = useState<"individual" | "batch">("individual");
 
     // Template states
-    const [category, setCategory] = useState<LetterCategory | "">("");
     const [templates, setTemplates] = useState<LetterTemplate[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
@@ -158,22 +157,32 @@ export default function LetterGenerator() {
     const [selectedPegawaiBatch, setSelectedPegawaiBatch] = useState<string[]>([]);
 
     // ===== PIMPINAN (ATASAN) STATES =====
-    const [pimpinanList, setPimpinanList] = useState<PimpinanData[]>([]);
+    const [pimpinanSearch, setPimpinanSearch] = useState("");
+    const [pimpinanSearchResults, setPimpinanSearchResults] = useState<PimpinanData[]>([]);
     const [selectedPimpinan, setSelectedPimpinan] = useState<PimpinanData | null>(null);
     const [isLoadingPimpinan, setIsLoadingPimpinan] = useState(false);
+    const [showPimpinanDropdown, setShowPimpinanDropdown] = useState(false);
 
-    // Load templates when category changes
+    // Load all templates (not filtered by category)
     useEffect(() => {
         const loadTemplates = async () => {
-            if (user?.id && category) {
-                const loadedTemplates = await getTemplatesByCreator(user.id, category as LetterCategory);
-                setTemplates(loadedTemplates);
+            if (user?.id) {
+                // Load all templates for this user
+                const { data, error } = await supabase
+                    .from('letter_templates')
+                    .select('*')
+                    .eq('created_by', user.id)
+                    .order('template_name');
+                
+                if (!error && data) {
+                    setTemplates(data as LetterTemplate[]);
+                }
             } else {
                 setTemplates([]);
             }
         };
         loadTemplates();
-    }, [user, category]);
+    }, [user]);
 
     // Load Data Usulan
     useEffect(() => {
@@ -213,23 +222,30 @@ export default function LetterGenerator() {
         return () => clearTimeout(searchTimer);
     }, [dataSourceTab, pegawaiSearch]);
 
-    // Load Data Pimpinan (admin_unit and admin_pusat)
+    // Search Pimpinan by name or NIP
     useEffect(() => {
-        const loadPimpinan = async () => {
-            setIsLoadingPimpinan(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('id, name, nip, jabatan, pangkat_golongan, role')
-                .in('role', ['admin_unit', 'admin_pusat'])
-                .order('name');
+        const searchTimer = setTimeout(async () => {
+            if (pimpinanSearch.length >= 2) {
+                setIsLoadingPimpinan(true);
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('id, name, nip, jabatan, pangkat_golongan, role')
+                    .or(`name.ilike.%${pimpinanSearch}%,nip.ilike.%${pimpinanSearch}%`)
+                    .order('name')
+                    .limit(10);
 
-            if (!error && data) {
-                setPimpinanList(data as PimpinanData[]);
+                if (!error && data) {
+                    setPimpinanSearchResults(data as PimpinanData[]);
+                    setShowPimpinanDropdown(true);
+                }
+                setIsLoadingPimpinan(false);
+            } else {
+                setPimpinanSearchResults([]);
+                setShowPimpinanDropdown(false);
             }
-            setIsLoadingPimpinan(false);
-        };
-        loadPimpinan();
-    }, []);
+        }, 300);
+        return () => clearTimeout(searchTimer);
+    }, [pimpinanSearch]);
 
     // Filtered usulan list
     const filteredUsulanList = useMemo(() => {
@@ -240,12 +256,6 @@ export default function LetterGenerator() {
             u.profiles?.nip?.toLowerCase().includes(search)
         );
     }, [usulanList, usulanSearch]);
-
-    // Handle category change
-    const handleCategoryChange = useCallback((val: string) => {
-        setCategory(val as LetterCategory);
-        setSelectedTemplateId("");
-    }, []);
 
     // Handle data source tab change
     const handleDataSourceChange = useCallback((val: string) => {
@@ -424,17 +434,18 @@ export default function LetterGenerator() {
         try {
             const atasanData = getAtasanData();
             const data = mapProfileToTemplateData(selectedPegawai, atasanData);
+            const template_name = templates.find(t => t.id === selectedTemplateId)?.template_name || 'Surat';
             generateDocument(
                 template.file_content,
                 data,
-                `Surat_${category}_${selectedPegawai.name}.docx`
+                `${template_name}_${selectedPegawai.name}.docx`
             );
             toast.success("Surat berhasil dibuat");
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat");
         }
-    }, [selectedTemplateId, selectedPegawai, templates, category, getAtasanData]);
+    }, [selectedTemplateId, selectedPegawai, templates, getAtasanData]);
 
     // Generate Batch Letters - Data Pegawai
     const handleGeneratePegawaiBatch = useCallback(async () => {
@@ -457,6 +468,7 @@ export default function LetterGenerator() {
             const zip = new JSZip();
             const selectedItems = pegawaiList.filter(p => selectedPegawaiBatch.includes(p.id));
             const atasanData = getAtasanData();
+            const template_name = template.template_name || 'Surat';
 
             for (const item of selectedItems) {
                 const data = mapProfileToTemplateData(item, atasanData);
@@ -476,18 +488,18 @@ export default function LetterGenerator() {
                 });
 
                 const sanitizedName = item.name.replace(/[^a-z0-9]/gi, '_');
-                zip.file(`Surat_${category}_${sanitizedName}.docx`, blob);
+                zip.file(`${template_name}_${sanitizedName}.docx`, blob);
             }
 
             const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, `Batch_Surat_${category}_${new Date().getTime()}.zip`);
+            saveAs(zipBlob, `Batch_${template_name}_${new Date().getTime()}.zip`);
 
             toast.success(`Berhasil membuat ${selectedItems.length} surat`);
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, category, getAtasanData]);
+    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, getAtasanData]);
 
     const getServiceTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
@@ -536,35 +548,21 @@ export default function LetterGenerator() {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {/* Template Selection */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
-                                    <div className="space-y-2">
-                                        <Label>Kategori Surat</Label>
-                                        <Select value={category} onValueChange={handleCategoryChange}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Pilih kategori surat" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="cuti">Cuti</SelectItem>
-                                                <SelectItem value="kenaikan_pangkat">Kenaikan Pangkat</SelectItem>
-                                                <SelectItem value="pensiun">Pensiun</SelectItem>
-                                                <SelectItem value="mutasi">Mutasi</SelectItem>
-                                                <SelectItem value="lainnya">Lainnya</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
+                                <div className="p-4 bg-muted/30 rounded-lg border">
                                     <div className="space-y-2">
                                         <Label>Template Surat</Label>
-                                        <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId} disabled={!category}>
+                                        <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={category ? "Pilih template" : "Pilih kategori terlebih dahulu"} />
+                                                <SelectValue placeholder="Pilih template surat" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {templates.length === 0 ? (
                                                     <SelectItem value="none" disabled>Belum ada template</SelectItem>
                                                 ) : (
                                                     templates.map(t => (
-                                                        <SelectItem key={t.id} value={t.id}>{t.template_name}</SelectItem>
+                                                        <SelectItem key={t.id} value={t.id}>
+                                                            {t.template_name} ({t.category})
+                                                        </SelectItem>
                                                     ))
                                                 )}
                                             </SelectContent>
@@ -572,39 +570,74 @@ export default function LetterGenerator() {
                                     </div>
                                 </div>
 
-                                {/* Pimpinan Selection */}
+                                {/* Pimpinan Selection - Searchable */}
                                 <div className="p-4 bg-muted/30 rounded-lg border">
                                     <div className="space-y-2">
                                         <Label>Pimpinan Penandatangan Surat</Label>
-                                        <Select 
-                                            value={selectedPimpinan?.id || ""} 
-                                            onValueChange={(val) => {
-                                                const pimpinan = pimpinanList.find(p => p.id === val);
-                                                setSelectedPimpinan(pimpinan || null);
-                                            }}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Pilih pimpinan yang akan menandatangani surat" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {isLoadingPimpinan ? (
-                                                    <SelectItem value="loading" disabled>Memuat data...</SelectItem>
-                                                ) : pimpinanList.length === 0 ? (
-                                                    <SelectItem value="none" disabled>Belum ada data pimpinan</SelectItem>
-                                                ) : (
-                                                    pimpinanList.map(p => (
-                                                        <SelectItem key={p.id} value={p.id}>
-                                                            {p.name} - {p.jabatan || 'Jabatan tidak tersedia'} ({p.role === 'admin_pusat' ? 'Admin Pusat' : 'Admin Unit'})
-                                                        </SelectItem>
-                                                    ))
-                                                )}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                className="pl-9"
+                                                placeholder="Cari nama atau NIP pimpinan..."
+                                                value={pimpinanSearch}
+                                                onChange={(e) => {
+                                                    setPimpinanSearch(e.target.value);
+                                                    if (e.target.value.length < 2) {
+                                                        setSelectedPimpinan(null);
+                                                    }
+                                                }}
+                                                onFocus={() => {
+                                                    if (pimpinanSearchResults.length > 0) {
+                                                        setShowPimpinanDropdown(true);
+                                                    }
+                                                }}
+                                            />
+                                            {showPimpinanDropdown && pimpinanSearchResults.length > 0 && (
+                                                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                                                    {pimpinanSearchResults.map((p) => (
+                                                        <div
+                                                            key={p.id}
+                                                            className={`px-3 py-2 cursor-pointer hover:bg-muted ${selectedPimpinan?.id === p.id ? 'bg-primary/10' : ''}`}
+                                                            onClick={() => {
+                                                                setSelectedPimpinan(p);
+                                                                setPimpinanSearch(p.name);
+                                                                setShowPimpinanDropdown(false);
+                                                            }}
+                                                        >
+                                                            <div className="font-medium">{p.name}</div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                NIP: {p.nip} • {p.jabatan || 'Jabatan tidak tersedia'}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {isLoadingPimpinan && (
+                                                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg p-3 text-center text-muted-foreground">
+                                                    Mencari...
+                                                </div>
+                                            )}
+                                        </div>
                                         {selectedPimpinan && (
                                             <div className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border">
-                                                <div><strong>NIP:</strong> {selectedPimpinan.nip}</div>
-                                                <div><strong>Jabatan:</strong> {selectedPimpinan.jabatan || '-'}</div>
-                                                <div><strong>Pangkat:</strong> {selectedPimpinan.pangkat_golongan || '-'}</div>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div><strong>Nama:</strong> {selectedPimpinan.name}</div>
+                                                        <div><strong>NIP:</strong> {selectedPimpinan.nip}</div>
+                                                        <div><strong>Jabatan:</strong> {selectedPimpinan.jabatan || '-'}</div>
+                                                        <div><strong>Pangkat:</strong> {selectedPimpinan.pangkat_golongan || '-'}</div>
+                                                    </div>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setSelectedPimpinan(null);
+                                                            setPimpinanSearch("");
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
