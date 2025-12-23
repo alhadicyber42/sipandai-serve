@@ -329,7 +329,7 @@ export default function LandingPage() {
                                     Direktorat Jenderal Pembinaan Pelatihan Vokasi dan Produktivitas
                                 </p>
                                 <p className="text-xs md:text-sm text-muted-foreground">
-                                    Kementerian Perhubungan Republik Indonesia
+                                    Kementerian Ketenagakerjaan Republik Indonesia
                                 </p>
                             </div>
                             <p className="text-xs md:text-sm text-muted-foreground">
