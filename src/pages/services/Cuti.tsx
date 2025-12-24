@@ -435,8 +435,9 @@ export default function Cuti() {
     const formData = new FormData(e.currentTarget);
     const leaveType = formData.get("leave_type") as string;
     const reason = formData.get("reason") as string;
-    const substituteEmployee = formData.get("substitute_employee") as string;
-    const emergencyContact = formData.get("emergency_contact") as string;
+    const leaveQuotaYear = formData.get("leave_quota_year") as string;
+    const addressDuringLeave = formData.get("address_during_leave") as string;
+    const formDate = formData.get("form_date") as string;
 
     // Debug: Log document links before submit
     console.log("Document links before submit:", documentLinks);
@@ -507,9 +508,10 @@ export default function Cuti() {
       start_date: format(startDate, "yyyy-MM-dd"),
       end_date: format(endDate, "yyyy-MM-dd"),
       total_days: totalDays,
-      substitute_employee: substituteEmployee,
+      leave_quota_year: parseInt(leaveQuotaYear),
+      address_during_leave: addressDuringLeave,
+      form_date: formDate,
       reason,
-      emergency_contact: emergencyContact,
     });
 
     if (leaveError) {
@@ -899,16 +901,58 @@ export default function Cuti() {
                             </div>
                           )}
                           <div className="space-y-2">
-                            <Label htmlFor="substitute_employee">Pegawai Pengganti</Label>
-                            <Input id="substitute_employee" name="substitute_employee" placeholder="Nama pegawai pengganti" required />
+                            <Label htmlFor="leave_quota_year">Jatah Cuti Tahun <span className="text-destructive">*</span></Label>
+                            <Select name="leave_quota_year" required>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih tahun jatah cuti" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(() => {
+                                  const currentYear = new Date().getFullYear();
+                                  return [
+                                    <SelectItem key={currentYear - 1} value={String(currentYear - 1)}>
+                                      {currentYear - 1} (Saldo Cuti Tahun Sebelumnya)
+                                    </SelectItem>,
+                                    <SelectItem key={currentYear} value={String(currentYear)}>
+                                      {currentYear} (Jatah Cuti Tahun Berjalan)
+                                    </SelectItem>
+                                  ];
+                                })()}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              Pilih tahun jatah cuti yang akan digunakan untuk pengajuan ini
+                            </p>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="reason">Alasan Cuti</Label>
+                            <Label htmlFor="form_date">Tanggal Formulir Pengajuan <span className="text-destructive">*</span></Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  id="form_date"
+                                  className={cn("w-full justify-start text-left font-normal h-10")}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {format(new Date(), "PPP", { locale: localeId })}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar mode="single" selected={new Date()} disabled initialFocus className="pointer-events-auto" />
+                              </PopoverContent>
+                            </Popover>
+                            <input type="hidden" name="form_date" value={format(new Date(), "yyyy-MM-dd")} />
+                            <p className="text-xs text-muted-foreground">
+                              Tanggal formulir otomatis terisi dengan tanggal hari ini
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="reason">Alasan Cuti <span className="text-destructive">*</span></Label>
                             <Textarea id="reason" name="reason" placeholder="Jelaskan alasan permohonan cuti..." rows={3} required />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="emergency_contact">Kontak Darurat</Label>
-                            <Input id="emergency_contact" name="emergency_contact" placeholder="Nomor telepon yang dapat dihubungi" required />
+                            <Label htmlFor="address_during_leave">Alamat Selama Cuti <span className="text-destructive">*</span></Label>
+                            <Textarea id="address_during_leave" name="address_during_leave" placeholder="Alamat tempat tinggal selama cuti..." rows={2} required />
                           </div>
 
                           <div className="space-y-2">
