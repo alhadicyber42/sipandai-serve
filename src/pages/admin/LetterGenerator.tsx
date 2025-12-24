@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TemplateManagement from "./TemplateManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database, Search, BookOpen, Eye } from "lucide-react";
+import { FileText, Settings, User, Plus, Trash2, Users, ClipboardList, Database, Search, BookOpen, Eye, FolderArchive, FileCheck } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,10 @@ import {
     EmployeeSearchResult,
     AtasanData
 } from "@/lib/submissionData";
+import {
+    mapBatchSubmissionsToTemplateData,
+    mapBatchProfilesToTemplateData,
+} from "@/lib/batchTemplateHelpers";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -162,6 +166,10 @@ export default function LetterGenerator() {
     const [selectedPimpinan, setSelectedPimpinan] = useState<PimpinanData | null>(null);
     const [isLoadingPimpinan, setIsLoadingPimpinan] = useState(false);
     const [showPimpinanDropdown, setShowPimpinanDropdown] = useState(false);
+
+    // ===== BATCH OUTPUT MODE =====
+    // "zip" = multiple files in ZIP, "single" = single document with indexed variables
+    const [batchOutputMode, setBatchOutputMode] = useState<"zip" | "single">("zip");
 
     // Load all templates (not filtered by category)
     useEffect(() => {
@@ -378,15 +386,18 @@ export default function LetterGenerator() {
         }
 
         try {
-            const zip = new JSZip();
             const selectedItems = usulanList.filter(u => selectedUsulanBatch.includes(u.id));
             const atasanData = getAtasanData();
+            const template_name = template.template_name || 'Surat';
 
-            for (const item of selectedItems) {
-                const data = mapSubmissionToTemplateData(item, usulanServiceType, atasanData);
+            // Single document mode - combine all data with indexed variables
+            if (batchOutputMode === "single") {
                 const Docxtemplater = (await import("docxtemplater")).default;
                 const PizZip = (await import("pizzip")).default;
 
+                // Map all submissions to indexed variables
+                const data = mapBatchSubmissionsToTemplateData(selectedItems, usulanServiceType, atasanData);
+                
                 const zipFile = new PizZip(atob(template.file_content));
                 const doc = new Docxtemplater(zipFile, {
                     paragraphLoop: true,
@@ -399,20 +410,44 @@ export default function LetterGenerator() {
                     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 });
 
-                const employeeName = item.profiles?.name || 'Unknown';
-                const sanitizedName = employeeName.replace(/[^a-z0-9]/gi, '_');
-                zip.file(`Surat_${usulanServiceType}_${sanitizedName}.docx`, blob);
+                saveAs(blob, `${template_name}_Batch_${selectedItems.length}_data.docx`);
+                toast.success(`Berhasil membuat surat batch dengan ${selectedItems.length} data`);
+            } 
+            // ZIP mode - multiple separate files
+            else {
+                const zip = new JSZip();
+
+                for (const item of selectedItems) {
+                    const data = mapSubmissionToTemplateData(item, usulanServiceType, atasanData);
+                    const Docxtemplater = (await import("docxtemplater")).default;
+                    const PizZip = (await import("pizzip")).default;
+
+                    const zipFile = new PizZip(atob(template.file_content));
+                    const doc = new Docxtemplater(zipFile, {
+                        paragraphLoop: true,
+                        linebreaks: true,
+                    });
+
+                    doc.render(data);
+                    const blob = doc.getZip().generate({
+                        type: "blob",
+                        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    });
+
+                    const employeeName = item.profiles?.name || 'Unknown';
+                    const sanitizedName = employeeName.replace(/[^a-z0-9]/gi, '_');
+                    zip.file(`${template_name}_${sanitizedName}.docx`, blob);
+                }
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                saveAs(zipBlob, `Batch_${template_name}_${new Date().getTime()}.zip`);
+                toast.success(`Berhasil membuat ${selectedItems.length} surat`);
             }
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, `Batch_Surat_${usulanServiceType}_${new Date().getTime()}.zip`);
-
-            toast.success(`Berhasil membuat ${selectedItems.length} surat`);
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, selectedUsulanBatch, usulanList, templates, usulanServiceType, getAtasanData]);
+    }, [selectedTemplateId, selectedUsulanBatch, usulanList, templates, usulanServiceType, getAtasanData, batchOutputMode]);
 
     // Generate Individual Letter - Data Pegawai
     const handleGeneratePegawaiIndividual = useCallback(() => {
@@ -465,16 +500,18 @@ export default function LetterGenerator() {
         }
 
         try {
-            const zip = new JSZip();
             const selectedItems = pegawaiList.filter(p => selectedPegawaiBatch.includes(p.id));
             const atasanData = getAtasanData();
             const template_name = template.template_name || 'Surat';
 
-            for (const item of selectedItems) {
-                const data = mapProfileToTemplateData(item, atasanData);
+            // Single document mode - combine all data with indexed variables
+            if (batchOutputMode === "single") {
                 const Docxtemplater = (await import("docxtemplater")).default;
                 const PizZip = (await import("pizzip")).default;
 
+                // Map all profiles to indexed variables
+                const data = mapBatchProfilesToTemplateData(selectedItems, atasanData);
+                
                 const zipFile = new PizZip(atob(template.file_content));
                 const doc = new Docxtemplater(zipFile, {
                     paragraphLoop: true,
@@ -487,19 +524,43 @@ export default function LetterGenerator() {
                     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 });
 
-                const sanitizedName = item.name.replace(/[^a-z0-9]/gi, '_');
-                zip.file(`${template_name}_${sanitizedName}.docx`, blob);
+                saveAs(blob, `${template_name}_Batch_${selectedItems.length}_pegawai.docx`);
+                toast.success(`Berhasil membuat surat batch dengan ${selectedItems.length} data pegawai`);
             }
+            // ZIP mode - multiple separate files
+            else {
+                const zip = new JSZip();
 
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, `Batch_${template_name}_${new Date().getTime()}.zip`);
+                for (const item of selectedItems) {
+                    const data = mapProfileToTemplateData(item, atasanData);
+                    const Docxtemplater = (await import("docxtemplater")).default;
+                    const PizZip = (await import("pizzip")).default;
 
-            toast.success(`Berhasil membuat ${selectedItems.length} surat`);
+                    const zipFile = new PizZip(atob(template.file_content));
+                    const doc = new Docxtemplater(zipFile, {
+                        paragraphLoop: true,
+                        linebreaks: true,
+                    });
+
+                    doc.render(data);
+                    const blob = doc.getZip().generate({
+                        type: "blob",
+                        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    });
+
+                    const sanitizedName = item.name.replace(/[^a-z0-9]/gi, '_');
+                    zip.file(`${template_name}_${sanitizedName}.docx`, blob);
+                }
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                saveAs(zipBlob, `Batch_${template_name}_${new Date().getTime()}.zip`);
+                toast.success(`Berhasil membuat ${selectedItems.length} surat`);
+            }
         } catch (error) {
             console.error(error);
             toast.error("Gagal membuat surat batch");
         }
-    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, getAtasanData]);
+    }, [selectedTemplateId, selectedPegawaiBatch, pegawaiList, templates, getAtasanData, batchOutputMode]);
 
     const getServiceTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
@@ -819,10 +880,46 @@ export default function LetterGenerator() {
                                                     )}
 
                                                     {selectedUsulanBatch.length > 0 && (
-                                                        <Button onClick={handleGenerateUsulanBatch} className="w-full" disabled={!selectedTemplateId}>
-                                                            <FileText className="h-4 w-4 mr-2" />
-                                                            Buat {selectedUsulanBatch.length} Surat (ZIP)
-                                                        </Button>
+                                                        <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium">Format Output</Label>
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={batchOutputMode === "zip" ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => setBatchOutputMode("zip")}
+                                                                        className="flex-1"
+                                                                    >
+                                                                        <FolderArchive className="h-4 w-4 mr-1" />
+                                                                        Banyak File (ZIP)
+                                                                    </Button>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={batchOutputMode === "single" ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => setBatchOutputMode("single")}
+                                                                        className="flex-1"
+                                                                    >
+                                                                        <FileCheck className="h-4 w-4 mr-1" />
+                                                                        1 Dokumen
+                                                                    </Button>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {batchOutputMode === "zip" 
+                                                                        ? "Setiap data menjadi 1 file terpisah dalam ZIP"
+                                                                        : "Semua data digabung dalam 1 dokumen dengan variabel bertingkat (misal: {nama_pegawai_1}, {nama_pegawai_2})"
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            <Button onClick={handleGenerateUsulanBatch} className="w-full" disabled={!selectedTemplateId}>
+                                                                <FileText className="h-4 w-4 mr-2" />
+                                                                {batchOutputMode === "zip" 
+                                                                    ? `Buat ${selectedUsulanBatch.length} Surat (ZIP)`
+                                                                    : `Buat Surat Batch (${selectedUsulanBatch.length} data)`
+                                                                }
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </TabsContent>
                                             </Tabs>
@@ -973,10 +1070,46 @@ export default function LetterGenerator() {
                                                     )}
 
                                                     {selectedPegawaiBatch.length > 0 && (
-                                                        <Button onClick={handleGeneratePegawaiBatch} className="w-full" disabled={!selectedTemplateId}>
-                                                            <FileText className="h-4 w-4 mr-2" />
-                                                            Buat {selectedPegawaiBatch.length} Surat (ZIP)
-                                                        </Button>
+                                                        <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-sm font-medium">Format Output</Label>
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={batchOutputMode === "zip" ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => setBatchOutputMode("zip")}
+                                                                        className="flex-1"
+                                                                    >
+                                                                        <FolderArchive className="h-4 w-4 mr-1" />
+                                                                        Banyak File (ZIP)
+                                                                    </Button>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={batchOutputMode === "single" ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => setBatchOutputMode("single")}
+                                                                        className="flex-1"
+                                                                    >
+                                                                        <FileCheck className="h-4 w-4 mr-1" />
+                                                                        1 Dokumen
+                                                                    </Button>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {batchOutputMode === "zip" 
+                                                                        ? "Setiap data menjadi 1 file terpisah dalam ZIP"
+                                                                        : "Semua data digabung dalam 1 dokumen dengan variabel bertingkat (misal: {nama_pegawai_1}, {nama_pegawai_2})"
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            <Button onClick={handleGeneratePegawaiBatch} className="w-full" disabled={!selectedTemplateId}>
+                                                                <FileText className="h-4 w-4 mr-2" />
+                                                                {batchOutputMode === "zip" 
+                                                                    ? `Buat ${selectedPegawaiBatch.length} Surat (ZIP)`
+                                                                    : `Buat Surat Batch (${selectedPegawaiBatch.length} data)`
+                                                                }
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </TabsContent>
                                             </Tabs>
