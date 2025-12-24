@@ -259,6 +259,7 @@ export function mapSubmissionToTemplateData(
     // All values guaranteed to be strings (empty string if null/undefined)
     const baseData: Record<string, string> = {
         // === DATA PEGAWAI ===
+        nama: safeString(profile?.name),
         nama_pegawai: safeString(profile?.name),
         nip_pegawai: safeString(profile?.nip),
         nip: safeString(profile?.nip),
@@ -312,6 +313,11 @@ export function mapSubmissionToTemplateData(
                 tanggal_selesai: leaveDetail ? (formatDate(leaveDetail.end_date) || '-') : '-',
                 total_hari: leaveDetail ? String(leaveDetail.total_days || 0) : '0',
                 alasan_cuti: safeString(leaveDetail?.reason || submission.description, '-'),
+                // New fields
+                jatah_cuti_tahun: leaveDetail?.leave_quota_year ? String(leaveDetail.leave_quota_year) : '-',
+                alamat_selama_cuti: safeString(leaveDetail?.address_during_leave, '-'),
+                tanggal_formulir_pengajuan: leaveDetail?.form_date ? formatDate(leaveDetail.form_date) : formatDate(submission.created_at) || '-',
+                // Legacy fields (keep for backward compatibility)
                 pegawai_pengganti: safeString(leaveDetail?.substitute_employee, '-'),
                 kontak_darurat: safeString(leaveDetail?.emergency_contact, '-'),
             };

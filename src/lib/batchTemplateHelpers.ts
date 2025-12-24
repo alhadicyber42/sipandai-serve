@@ -144,11 +144,23 @@ export function mapSubmissionToIndexedData(
             indexedData[`tanggal_selesai_cuti_${index}`] = leaveDetail.end_date
                 ? format(new Date(leaveDetail.end_date), "d MMMM yyyy", { locale: localeId })
                 : "-";
+            
+            // New fields for batch templates
+            indexedData[`jatah_cuti_tahun_${index}`] = leaveDetail.leave_quota_year 
+                ? String(leaveDetail.leave_quota_year) 
+                : "-";
+            indexedData[`alamat_selama_cuti_${index}`] = leaveDetail.address_during_leave || "-";
+            indexedData[`tanggal_formulir_pengajuan_${index}`] = leaveDetail.form_date
+                ? format(new Date(leaveDetail.form_date), "d MMMM yyyy", { locale: localeId })
+                : "-";
         } else {
             indexedData[`lama_cuti_${index}`] = "-";
             indexedData[`tanggal_cuti_${index}`] = "-";
             indexedData[`tanggal_mulai_cuti_${index}`] = "-";
             indexedData[`tanggal_selesai_cuti_${index}`] = "-";
+            indexedData[`jatah_cuti_tahun_${index}`] = "-";
+            indexedData[`alamat_selama_cuti_${index}`] = "-";
+            indexedData[`tanggal_formulir_pengajuan_${index}`] = "-";
         }
     }
     
@@ -235,6 +247,7 @@ function mapProfileToIndexedData(profile: ProfileData, index: number): Record<st
     };
     
     return {
+        [`nama_${index}`]: profile.name || "-",
         [`nama_pegawai_${index}`]: profile.name || "-",
         [`nip_pegawai_${index}`]: profile.nip || "-",
         [`nip_${index}`]: profile.nip || "-",

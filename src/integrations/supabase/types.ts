@@ -651,10 +651,13 @@ export type Database = {
       }
       leave_details: {
         Row: {
+          address_during_leave: string | null
           created_at: string
           emergency_contact: string | null
           end_date: string
+          form_date: string | null
           id: string
+          leave_quota_year: number | null
           leave_type: Database["public"]["Enums"]["leave_type"]
           reason: string
           service_id: string
@@ -663,10 +666,13 @@ export type Database = {
           total_days: number
         }
         Insert: {
+          address_during_leave?: string | null
           created_at?: string
           emergency_contact?: string | null
           end_date: string
+          form_date?: string | null
           id?: string
+          leave_quota_year?: number | null
           leave_type: Database["public"]["Enums"]["leave_type"]
           reason: string
           service_id: string
@@ -675,10 +681,13 @@ export type Database = {
           total_days: number
         }
         Update: {
+          address_during_leave?: string | null
           created_at?: string
           emergency_contact?: string | null
           end_date?: string
+          form_date?: string | null
           id?: string
+          leave_quota_year?: number | null
           leave_type?: Database["public"]["Enums"]["leave_type"]
           reason?: string
           service_id?: string

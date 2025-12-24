@@ -24,9 +24,17 @@ export interface ExtendedTemplateVariable {
 export const TEMPLATE_VARIABLES: ExtendedTemplateVariable[] = [
     // ============ DATA PEGAWAI ============
     {
+        key: "nama",
+        label: "Nama",
+        description: "Nama lengkap pegawai",
+        example: "Ahmad Suryadi, S.Kom",
+        category: "pegawai",
+        isIndexed: true
+    },
+    {
         key: "nama_pegawai",
         label: "Nama Pegawai",
-        description: "Nama lengkap pegawai",
+        description: "Nama lengkap pegawai (alias)",
         example: "Ahmad Suryadi, S.Kom",
         category: "pegawai",
         isIndexed: true
@@ -153,19 +161,64 @@ export const TEMPLATE_VARIABLES: ExtendedTemplateVariable[] = [
     },
     {
         key: "pegawai_pengganti",
-        label: "Pegawai Pengganti",
-        description: "Nama pegawai yang menggantikan selama cuti",
+        label: "Pegawai Pengganti (Legacy)",
+        description: "Nama pegawai yang menggantikan selama cuti (field lama)",
         example: "Budi Santoso, S.T.",
         category: "cuti",
         serviceTypes: ["cuti"]
     },
     {
         key: "kontak_darurat",
-        label: "Kontak Darurat",
-        description: "Nomor kontak yang dapat dihubungi selama cuti",
+        label: "Kontak Darurat (Legacy)",
+        description: "Nomor kontak yang dapat dihubungi selama cuti (field lama)",
         example: "081234567890",
         category: "cuti",
         serviceTypes: ["cuti"]
+    },
+    {
+        key: "jatah_cuti_tahun",
+        label: "Jatah Cuti Tahun",
+        description: "Tahun jatah cuti yang digunakan",
+        example: "2025",
+        category: "cuti",
+        serviceTypes: ["cuti"],
+        isIndexed: true
+    },
+    {
+        key: "alamat_selama_cuti",
+        label: "Alamat Selama Cuti",
+        description: "Alamat tempat tinggal selama cuti",
+        example: "Jl. Merdeka No. 123, Jakarta Pusat",
+        category: "cuti",
+        serviceTypes: ["cuti"],
+        isIndexed: true
+    },
+    {
+        key: "tanggal_formulir_pengajuan",
+        label: "Tanggal Formulir Pengajuan",
+        description: "Tanggal pengajuan formulir cuti",
+        example: "23 Desember 2025",
+        category: "cuti",
+        serviceTypes: ["cuti"],
+        isIndexed: true
+    },
+    {
+        key: "lama_cuti",
+        label: "Lama Cuti (Format)",
+        description: "Durasi cuti dalam format lengkap",
+        example: "selama 2 (dua) hari kerja",
+        category: "cuti",
+        serviceTypes: ["cuti"],
+        isIndexed: true
+    },
+    {
+        key: "tanggal_cuti",
+        label: "Tanggal Cuti (Range)",
+        description: "Rentang tanggal cuti",
+        example: "23 s.d. 24 Desember 2025",
+        category: "cuti",
+        serviceTypes: ["cuti"],
+        isIndexed: true
     },
 
     // ============ DATA KENAIKAN PANGKAT ============
