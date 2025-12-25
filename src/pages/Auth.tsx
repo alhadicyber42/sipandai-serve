@@ -17,34 +17,77 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 // Zod Schemas
 const loginSchema = z.object({
-  email: z.string().email("Email tidak valid"),
+  email: z.string()
+    .min(1, "Email diperlukan")
+    .email("Format email tidak valid")
+    .max(255, "Email maksimal 255 karakter"),
   password: z.string().min(1, "Password diperlukan"),
 });
 
 const employmentHistorySchema = z.object({
-  jabatan: z.string().min(1, "Jabatan diperlukan"),
+  jabatan: z.string().min(1, "Jabatan diperlukan").max(100, "Jabatan maksimal 100 karakter"),
   tmt: z.string().min(1, "TMT diperlukan"),
 });
 
 const mutationHistorySchema = z.object({
-  jenis_mutasi: z.string().min(1, "Jenis mutasi diperlukan"),
+  jenis_mutasi: z.string().min(1, "Jenis mutasi diperlukan").max(100, "Jenis mutasi maksimal 100 karakter"),
   tmt: z.string().min(1, "TMT diperlukan"),
 });
 
+// Helper untuk validasi NIP (18 digit) atau NIK (16 digit)
+const nipNikValidation = z.string()
+  .optional()
+  .refine((val) => {
+    if (!val || val.trim() === "") return true;
+    const cleaned = val.replace(/\s/g, "");
+    return /^\d{16}$/.test(cleaned) || /^\d{18}$/.test(cleaned);
+  }, {
+    message: "NIP harus 18 digit atau NIK harus 16 digit (hanya angka)",
+  });
+
+// Helper untuk validasi nomor telepon Indonesia
+const phoneValidation = z.string()
+  .optional()
+  .refine((val) => {
+    if (!val || val.trim() === "") return true;
+    const cleaned = val.replace(/[\s\-]/g, "");
+    return /^(08|\+62|62)\d{8,12}$/.test(cleaned);
+  }, {
+    message: "Format nomor telepon tidak valid (contoh: 08123456789)",
+  });
+
+// Helper untuk validasi password yang kuat
+const strongPasswordValidation = z.string()
+  .min(8, "Password minimal 8 karakter")
+  .max(72, "Password maksimal 72 karakter")
+  .regex(/[a-z]/, "Password harus mengandung huruf kecil")
+  .regex(/[A-Z]/, "Password harus mengandung huruf besar")
+  .regex(/[0-9]/, "Password harus mengandung angka");
+
 const registerSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email("Email tidak valid"),
-  nip: z.string().optional(),
-  phone: z.string().optional(),
+  name: z.string()
+    .min(1, "Nama lengkap diperlukan")
+    .min(3, "Nama minimal 3 karakter")
+    .max(100, "Nama maksimal 100 karakter")
+    .regex(/^[a-zA-Z\s'.,-]+$/, "Nama hanya boleh mengandung huruf dan karakter umum"),
+  email: z.string()
+    .min(1, "Email diperlukan")
+    .email("Format email tidak valid")
+    .max(255, "Email maksimal 255 karakter")
+    .refine((val) => !val.includes("+"), {
+      message: "Email tidak boleh mengandung karakter '+'",
+    }),
+  nip: nipNikValidation,
+  phone: phoneValidation,
   work_unit: z.string().optional(),
-  jabatan: z.string().optional(),
+  jabatan: z.string().max(100, "Jabatan maksimal 100 karakter").optional(),
   pangkat_golongan: z.string().optional(),
   tmt_pns: z.string().optional(),
   tmt_pensiun: z.string().optional(),
   kriteria_asn: z.string().optional(),
   riwayat_jabatan: z.array(employmentHistorySchema).optional(),
   riwayat_mutasi: z.array(mutationHistorySchema).optional(),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  password: strongPasswordValidation,
   confirmPassword: z.string().min(1, "Konfirmasi password diperlukan"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Password tidak cocok",
@@ -178,8 +221,8 @@ const validateStep = async (step: number): Promise<boolean> => {
 
     switch (step) {
       case 1:
-        // Only email is required in step 1
-        fieldsToValidate = ["email"];
+        // Name and email are required in step 1
+        fieldsToValidate = ["name", "email", "nip", "phone"];
         break;
       case 2:
         // All fields in step 2 are optional (for non-PNS users)
@@ -195,6 +238,26 @@ const validateStep = async (step: number): Promise<boolean> => {
     const result = await registerForm.trigger(fieldsToValidate);
     return result;
   };
+
+  // Password strength indicator
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { score: 0, label: "", color: "" };
+    
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+    if (score <= 2) return { score: 1, label: "Lemah", color: "bg-red-500" };
+    if (score <= 4) return { score: 2, label: "Sedang", color: "bg-yellow-500" };
+    return { score: 3, label: "Kuat", color: "bg-green-500" };
+  };
+
+  const passwordValue = registerForm.watch("password") || "";
+  const passwordStrength = getPasswordStrength(passwordValue);
 
   const handleNext = async () => {
     const isValid = await validateStep(registerStep);
@@ -704,12 +767,39 @@ const validateStep = async (step: number): Promise<boolean> => {
                     <Input
                       id="register-password"
                       type="password"
-                      placeholder="Min. 6 karakter"
+                      placeholder="Min. 8 karakter, huruf besar, kecil & angka"
                       className="pl-9 border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("password")}
                     />
                   </div>
+                  {/* Password Strength Indicator */}
+                  {passwordValue && (
+                    <div className="space-y-1">
+                      <div className="flex gap-1">
+                        {[1, 2, 3].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1.5 flex-1 rounded-full transition-all ${
+                              passwordStrength.score >= level
+                                ? passwordStrength.color
+                                : "bg-muted"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className={`text-xs font-medium ${
+                        passwordStrength.score === 1 ? "text-red-500" :
+                        passwordStrength.score === 2 ? "text-yellow-600" :
+                        "text-green-600"
+                      }`}>
+                        Kekuatan: {passwordStrength.label}
+                      </p>
+                    </div>
+                  )}
                   {registerForm.formState.errors.password && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.password.message}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Password harus mengandung: huruf besar, huruf kecil, dan angka
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-confirm" className="text-sm font-semibold">Konfirmasi Password</Label>
@@ -743,12 +833,24 @@ const validateStep = async (step: number): Promise<boolean> => {
                     <p className="font-semibold">{registerForm.watch("email") || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">NIP</p>
+                    <p className="text-muted-foreground">NIP/NIK</p>
                     <p className="font-semibold">{registerForm.watch("nip") || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">No. Telepon</p>
+                    <p className="font-semibold">{registerForm.watch("phone") || "-"}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Jabatan</p>
                     <p className="font-semibold">{registerForm.watch("jabatan") || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Unit Kerja</p>
+                    <p className="font-semibold">
+                      {registerForm.watch("work_unit") 
+                        ? WORK_UNITS.find(u => u.id.toString() === registerForm.watch("work_unit"))?.name || "-"
+                        : "-"}
+                    </p>
                   </div>
                 </div>
               </div>
