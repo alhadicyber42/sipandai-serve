@@ -117,8 +117,10 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                             </Button>
                         )}
                         <Button
+                            type="button"
                             onClick={onNext}
                             disabled={isLoading}
+                            isLoading={isLoading}
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 font-bold"
                         >
                             {nextButtonText}
