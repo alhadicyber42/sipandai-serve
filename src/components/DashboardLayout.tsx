@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, CalendarX, Briefcase, Bell, HelpCircle } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, Users, Settings, LogOut, ChevronDown, Menu, X, Building2, TrendingUp, User, Trophy, Megaphone, CalendarX, Briefcase, Bell, HelpCircle, CalendarDays } from "lucide-react";
 import { AIChatbot } from "@/components/AIChatbot";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -208,6 +208,10 @@ export const DashboardLayout = ({
         path: "/admin/buat-surat",
         label: "Buat Surat",
         icon: FileText
+      }, {
+        path: "/admin/kalender-libur",
+        label: "Kalender Hari Libur",
+        icon: CalendarDays
       }, {
         path: "/pengumuman",
         label: "Kelola Pengumuman",
