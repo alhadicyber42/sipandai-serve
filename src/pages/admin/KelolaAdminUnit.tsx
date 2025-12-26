@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +29,21 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Search, UserCog, Filter } from "lucide-react";
+import { Users, Search, UserCog, Filter, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableSkeleton, StatCardSkeleton } from "@/components/skeletons";
 import { NoDataState, SearchState } from "@/components/EmptyState";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface UserWithRole {
   id: string;
@@ -53,87 +62,170 @@ interface WorkUnit {
   code: string;
 }
 
+interface Stats {
+  total: number;
+  admin_pusat: number;
+  admin_unit: number;
+  user_unit: number;
+}
+
+const ITEMS_PER_PAGE = 50;
+
 export default function KelolaAdminUnit() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, admin_pusat: 0, admin_unit: 0, user_unit: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [workUnitFilter, setWorkUnitFilter] = useState<string>("all");
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [newRole, setNewRole] = useState<string>("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
+  // Load work units once
   useEffect(() => {
     if (user?.role === "admin_pusat") {
-      loadData();
+      loadWorkUnits();
+      loadStats();
     }
   }, [user]);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  // Load users when filters or page changes
+  useEffect(() => {
+    if (user?.role === "admin_pusat") {
+      loadUsers();
+    }
+  }, [user, debouncedSearch, roleFilter, workUnitFilter, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, roleFilter, workUnitFilter]);
+
+  const loadWorkUnits = async () => {
     try {
-      // Load work units
       const { data: units } = await supabase
         .from("work_units")
-        .select("*")
+        .select("id, name, code")
         .order("name");
-
       if (units) setWorkUnits(units);
+    } catch (error) {
+      console.error("Error loading work units:", error);
+    }
+  };
 
-      // Load all users with their profiles and roles
-      const { data: profiles } = await supabase
+  const loadStats = async () => {
+    setIsStatsLoading(true);
+    try {
+      // Get counts by role using separate queries for accuracy
+      const [totalRes, adminPusatRes, adminUnitRes, userUnitRes] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_pusat"),
+        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_unit"),
+        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "user_unit"),
+      ]);
+
+      setStats({
+        total: totalRes.count || 0,
+        admin_pusat: adminPusatRes.count || 0,
+        admin_unit: adminUnitRes.count || 0,
+        user_unit: userUnitRes.count || 0,
+      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  };
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Build query for profiles with pagination
+      let query = supabase
         .from("profiles")
         .select(`
           id,
           name,
           nip,
+          email,
           phone,
           work_unit_id,
           role,
-          work_units (
-            name
-          )
-        `)
-        .order("name");
+          work_units (name)
+        `, { count: "exact" });
 
-      if (profiles) {
-        const userList: UserWithRole[] = [];
+      // Apply filters
+      if (debouncedSearch) {
+        query = query.or(`name.ilike.%${debouncedSearch}%,nip.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`);
+      }
 
-        for (const profile of profiles) {
-          // Get user email from metadata since admin API requires service role
-          // We'll use a simpler approach by creating an edge function later
-          // For now, we get from profiles which should have all data
+      if (roleFilter !== "all") {
+        query = query.eq("role", roleFilter as "admin_pusat" | "admin_unit" | "user_unit");
+      }
 
-          // Get user role from user_roles table, fallback to profiles.role
-          const { data: roleData, error: roleError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", profile.id)
-            .maybeSingle();
+      if (workUnitFilter !== "all") {
+        query = query.eq("work_unit_id", parseInt(workUnitFilter));
+      }
 
-          userList.push({
-            id: profile.id,
-            name: profile.name,
-            nip: profile.nip,
-            phone: profile.phone,
-            work_unit_id: profile.work_unit_id,
-            work_unit_name: (profile.work_units as any)?.name || "-",
-            email: "-", // Will be populated via edge function in future
-            role: roleError ? (profile as any).role : (roleData?.role || (profile as any).role || "user_unit"),
-          });
-        }
+      // Apply pagination
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data: profiles, count, error } = await query
+        .order("name")
+        .range(from, to);
+
+      if (error) throw error;
+
+      setTotalCount(count || 0);
+
+      if (profiles && profiles.length > 0) {
+        // Batch fetch all roles in one query
+        const userIds = profiles.map(p => p.id);
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", userIds);
+
+        // Create a map of user_id to role
+        const rolesMap = new Map<string, string>();
+        rolesData?.forEach(r => {
+          rolesMap.set(r.user_id, r.role);
+        });
+
+        const userList: UserWithRole[] = profiles.map(profile => ({
+          id: profile.id,
+          name: profile.name,
+          nip: profile.nip,
+          phone: profile.phone,
+          work_unit_id: profile.work_unit_id,
+          work_unit_name: (profile.work_units as any)?.name || "-",
+          email: profile.email || "-",
+          role: rolesMap.get(profile.id) || (profile as any).role || "user_unit",
+        }));
 
         setUsers(userList);
+      } else {
+        setUsers([]);
       }
     } catch (error: any) {
-      console.error("Error loading data:", error);
-      toast.error("Gagal memuat data");
+      console.error("Error loading users:", error);
+      toast.error("Gagal memuat data pengguna");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [debouncedSearch, roleFilter, workUnitFilter, currentPage]);
 
   const handleOpenRoleDialog = (user: UserWithRole) => {
     setSelectedUser(user);
@@ -170,7 +262,8 @@ export default function KelolaAdminUnit() {
 
       toast.success(`Role berhasil diubah menjadi ${getRoleName(newRole)}`);
       setIsRoleDialogOpen(false);
-      loadData();
+      loadUsers();
+      loadStats();
     } catch (error: any) {
       console.error("Error changing role:", error);
       toast.error("Gagal mengubah role");
@@ -199,26 +292,30 @@ export default function KelolaAdminUnit() {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.nip.includes(searchQuery) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesWorkUnit =
-      workUnitFilter === "all" ||
-      user.work_unit_id?.toString() === workUnitFilter;
-
-    return matchesSearch && matchesRole && matchesWorkUnit;
-  });
-
-  // Statistics
-  const stats = {
-    total: users.length,
-    admin_pusat: users.filter((u) => u.role === "admin_pusat").length,
-    admin_unit: users.filter((u) => u.role === "admin_unit").length,
-    user_unit: users.filter((u) => u.role === "user_unit").length,
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push(-1); // ellipsis
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push(-2);
+        pages.push(totalPages);
+      }
+    }
+    return pages;
   };
 
   if (user?.role !== "admin_pusat") {
@@ -258,7 +355,7 @@ export default function KelolaAdminUnit() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {isLoading ? (
+          {isStatsLoading ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -306,6 +403,11 @@ export default function KelolaAdminUnit() {
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               Daftar Semua Pengguna
+              {!isLoading && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({totalCount} pengguna)
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -358,76 +460,148 @@ export default function KelolaAdminUnit() {
                 <TableSkeleton rows={5} />
               </div>
             ) : (
-              <ResponsiveTableWrapper>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>NIP</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Telepon</TableHead>
-                      <TableHead>Unit Kerja</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length === 0 ? (
+              <>
+                <ResponsiveTableWrapper>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="p-0 border-none"
-                        >
-                          <div className="py-12">
-                            {searchQuery || roleFilter !== "all" || workUnitFilter !== "all" ? (
-                              <SearchState message="Tidak ada pengguna yang sesuai dengan filter pencarian" />
-                            ) : (
-                              <NoDataState message="Belum ada data pengguna" />
-                            )}
-                          </div>
-                        </TableCell>
+                        <TableHead>Nama</TableHead>
+                        <TableHead className="hidden md:table-cell">NIP</TableHead>
+                        <TableHead className="hidden lg:table-cell">Email</TableHead>
+                        <TableHead className="hidden xl:table-cell">Telepon</TableHead>
+                        <TableHead className="hidden sm:table-cell">Unit Kerja</TableHead>
+                        <TableHead className="hidden sm:table-cell">Role</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm sm:text-base">{user.name}</span>
-                              <span className="text-xs text-muted-foreground md:hidden">{user.nip}</span>
-                              <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1 mt-0.5">{user.work_unit_name}</span>
-                              <div className="mt-1 sm:hidden">
-                                <Badge variant={getRoleBadgeVariant(user.role)} className="text-[10px] px-1.5 py-0 h-5">
-                                  {getRoleName(user.role)}
-                                </Badge>
-                              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {users.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="p-0 border-none"
+                          >
+                            <div className="py-12">
+                              {searchQuery || roleFilter !== "all" || workUnitFilter !== "all" ? (
+                                <SearchState message="Tidak ada pengguna yang sesuai dengan filter pencarian" />
+                              ) : (
+                                <NoDataState message="Belum ada data pengguna" />
+                              )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">{user.nip}</TableCell>
-                          <TableCell className="hidden lg:table-cell">{user.email}</TableCell>
-                          <TableCell className="hidden xl:table-cell">{user.phone || "-"}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{user.work_unit_name}</TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            <Badge variant={getRoleBadgeVariant(user.role)}>
-                              {getRoleName(user.role)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenRoleDialog(user)}
-                              className="gap-2 h-8 px-2 md:h-9 md:px-4"
-                            >
-                              <UserCog className="h-4 w-4" />
-                              <span className="hidden md:inline">Ubah Role</span>
-                            </Button>
-                          </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </ResponsiveTableWrapper>
+                      ) : (
+                        users.map((u) => (
+                          <TableRow key={u.id}>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-sm sm:text-base">{u.name}</span>
+                                <span className="text-xs text-muted-foreground md:hidden">{u.nip}</span>
+                                <span className="text-[10px] text-muted-foreground sm:hidden line-clamp-1 mt-0.5">{u.work_unit_name}</span>
+                                <div className="mt-1 sm:hidden">
+                                  <Badge variant={getRoleBadgeVariant(u.role)} className="text-[10px] px-1.5 py-0 h-5">
+                                    {getRoleName(u.role)}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">{u.nip}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{u.email}</TableCell>
+                            <TableCell className="hidden xl:table-cell">{u.phone || "-"}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{u.work_unit_name}</TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <Badge variant={getRoleBadgeVariant(u.role)}>
+                                {getRoleName(u.role)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenRoleDialog(u)}
+                                className="gap-2 h-8 px-2 md:h-9 md:px-4"
+                              >
+                                <UserCog className="h-4 w-4" />
+                                <span className="hidden md:inline">Ubah Role</span>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTableWrapper>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} dari {totalCount} pengguna
+                    </p>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCurrentPage(1)}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronsLeft className="h-4 w-4" />
+                          </Button>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {getPageNumbers().map((page, index) => (
+                          <PaginationItem key={index} className="hidden sm:inline-flex">
+                            {page < 0 ? (
+                              <span className="px-2">...</span>
+                            ) : (
+                              <PaginationLink
+                                onClick={() => setCurrentPage(page)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            )}
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem className="sm:hidden">
+                          <span className="px-2 text-sm">
+                            {currentPage} / {totalPages}
+                          </span>
+                        </PaginationItem>
+
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCurrentPage(totalPages)}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronsRight className="h-4 w-4" />
+                          </Button>
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -484,6 +658,6 @@ export default function KelolaAdminUnit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout >
+    </DashboardLayout>
   );
 }
