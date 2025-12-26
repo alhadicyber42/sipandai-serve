@@ -17,8 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck, Check, X, ExternalLink, FileText, PauseCircle } from "lucide-react";
+import { Plus, CalendarIcon, Link as LinkIcon, Trash2, AlertCircle, Clock, CalendarX, Info, CalendarCheck, Check, X, ExternalLink, FileText, PauseCircle, Loader2 } from "lucide-react";
 import { format, differenceInDays, getYear } from "date-fns";
+import { calculateWorkingDays, getDaysBreakdown } from "@/lib/holiday-utils";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { LEAVE_LABELS } from "@/lib/constants";
@@ -50,6 +51,16 @@ export default function Cuti() {
   const [currentLink, setCurrentLink] = useState("");
   const [editingDocuments, setEditingDocuments] = useState<Array<{name: string; url: string; verification_status?: string; verification_note?: string}>>([]);
   const [savingDocuments, setSavingDocuments] = useState<Set<number>>(new Set());
+  
+  // Working days calculation state
+  const [workingDaysInfo, setWorkingDaysInfo] = useState<{
+    totalDays: number;
+    workingDays: number;
+    weekendDays: number;
+    holidayDays: number;
+    holidays: Array<{ name: string; date: string }>;
+  } | null>(null);
+  const [isCalculatingDays, setIsCalculatingDays] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState<string>("");
 
   // Deferral State
@@ -93,6 +104,29 @@ export default function Cuti() {
       loadAdminDeferrals();
     }
   }, [user]);
+
+  // Calculate working days when dates change
+  useEffect(() => {
+    const calculateDays = async () => {
+      if (!startDate || !endDate) {
+        setWorkingDaysInfo(null);
+        return;
+      }
+
+      setIsCalculatingDays(true);
+      try {
+        const breakdown = await getDaysBreakdown(startDate, endDate);
+        setWorkingDaysInfo(breakdown);
+      } catch (error) {
+        console.error("Error calculating working days:", error);
+        setWorkingDaysInfo(null);
+      } finally {
+        setIsCalculatingDays(false);
+      }
+    };
+
+    calculateDays();
+  }, [startDate, endDate]);
 
   const loadServices = async () => {
     if (!user) return;
@@ -449,16 +483,33 @@ export default function Cuti() {
       return;
     }
 
-    const totalDays = differenceInDays(endDate, startDate) + 1;
+    // Wait for working days calculation if still loading
+    if (isCalculatingDays) {
+      toast.error("Mohon tunggu perhitungan hari kerja selesai");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Use working days for annual leave, total calendar days for other types
+    const totalCalendarDays = differenceInDays(endDate, startDate) + 1;
+    const workingDays = workingDaysInfo?.workingDays ?? totalCalendarDays;
+    
+    // For cuti tahunan, use working days (excludes weekends and holidays)
+    const effectiveDays = leaveType === 'tahunan' ? workingDays : totalCalendarDays;
 
     // Validation Logic
     if (leaveType === 'tahunan') {
-      if (totalDays > leaveStats.remaining) {
-        toast.error(`Saldo cuti tidak mencukupi. Sisa saldo: ${leaveStats.remaining} hari`);
+      if (effectiveDays > leaveStats.remaining) {
+        toast.error(`Saldo cuti tidak mencukupi. Sisa saldo: ${leaveStats.remaining} hari kerja`);
         setIsSubmitting(false);
         return;
       }
-    } else if (leaveType === 'sakit' && totalDays > 1 && documentLinks.length === 0) {
+      if (effectiveDays === 0) {
+        toast.error("Tanggal yang dipilih tidak memiliki hari kerja (semua hari libur/weekend)");
+        setIsSubmitting(false);
+        return;
+      }
+    } else if (leaveType === 'sakit' && totalCalendarDays > 1 && documentLinks.length === 0) {
       toast.error("Cuti sakit lebih dari 1 hari wajib melampirkan surat keterangan dokter");
       setIsSubmitting(false);
       return;
@@ -489,7 +540,7 @@ export default function Cuti() {
         service_type: "cuti",
         status: "submitted",
         title,
-        description: `${leaveLabel} - ${totalDays} hari`,
+        description: `${leaveLabel} - ${effectiveDays} hari kerja`,
         documents: formattedDocuments,
       })
       .select()
@@ -507,7 +558,7 @@ export default function Cuti() {
       leave_type: leaveType as any,
       start_date: format(startDate, "yyyy-MM-dd"),
       end_date: format(endDate, "yyyy-MM-dd"),
-      total_days: totalDays,
+      total_days: effectiveDays,
       leave_quota_year: parseInt(leaveQuotaYear),
       address_during_leave: addressDuringLeave,
       form_date: formDate,
@@ -896,8 +947,30 @@ export default function Cuti() {
                             </div>
                           </div>
                           {startDate && endDate && (
-                            <div className="p-3 bg-primary/10 rounded-lg">
-                              <p className="text-sm font-medium">Total: {differenceInDays(endDate, startDate) + 1} hari</p>
+                            <div className="p-3 bg-primary/10 rounded-lg space-y-1">
+                              {isCalculatingDays ? (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span>Menghitung hari kerja...</span>
+                                </div>
+                              ) : workingDaysInfo ? (
+                                <>
+                                  <p className="text-sm font-medium text-primary">
+                                    Hari Kerja: {workingDaysInfo.workingDays} hari (yang memotong saldo cuti)
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Total {workingDaysInfo.totalDays} hari ({workingDaysInfo.weekendDays} hari weekend
+                                    {workingDaysInfo.holidayDays > 0 && `, ${workingDaysInfo.holidayDays} hari libur nasional`})
+                                  </p>
+                                  {workingDaysInfo.holidays.length > 0 && (
+                                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                                      Libur: {workingDaysInfo.holidays.map(h => h.name).join(", ")}
+                                    </p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-sm font-medium">Total: {differenceInDays(endDate, startDate) + 1} hari</p>
+                              )}
                             </div>
                           )}
                           <div className="space-y-2">
