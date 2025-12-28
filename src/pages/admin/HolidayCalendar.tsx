@@ -1,50 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { format, getYear, startOfYear, endOfYear, isWeekend, eachDayOfInterval } from "date-fns";
+import { format, getYear, startOfYear, endOfYear, isWeekend, eachDayOfInterval, startOfMonth, endOfMonth, getDay, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { Plus, CalendarIcon, Trash2, Edit, Calendar as CalendarLucide, Info, AlertCircle } from "lucide-react";
-import { 
-  Holiday, 
-  getHolidaysForYear, 
-  createHoliday, 
-  updateHoliday, 
-  deleteHoliday 
-} from "@/lib/holiday-utils";
+import { Edit, Save, X, Info, Lock, Unlock, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Holiday, getHolidaysForYear } from "@/lib/holiday-utils";
 
 export default function HolidayCalendar() {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
-  const [deletingHoliday, setDeletingHoliday] = useState<Holiday | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form state
-  const [holidayDate, setHolidayDate] = useState<Date | undefined>();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Selected dates in edit mode (dates that will be holidays)
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  
+  // For naming holiday dialog
+  const [namingDialogOpen, setNamingDialogOpen] = useState(false);
+  const [pendingDate, setPendingDate] = useState<string | null>(null);
   const [holidayName, setHolidayName] = useState("");
-  const [holidayDescription, setHolidayDescription] = useState("");
 
-  // Available years for selection (current year ± 2)
   const currentYear = new Date().getFullYear();
   const availableYears = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+
+  const monthNames = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+
+  const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
   useEffect(() => {
     loadHolidays();
@@ -54,127 +48,160 @@ export default function HolidayCalendar() {
     setIsLoading(true);
     const data = await getHolidaysForYear(selectedYear);
     setHolidays(data);
+    // Initialize selected dates from existing holidays
+    setSelectedDates(new Set(data.map(h => h.date)));
     setIsLoading(false);
   };
 
-  const resetForm = () => {
-    setHolidayDate(undefined);
-    setHolidayName("");
-    setHolidayDescription("");
-    setEditingHoliday(null);
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
+    const yearEnd = endOfYear(new Date(selectedYear, 0, 1));
+    const allDaysInYear = eachDayOfInterval({ start: yearStart, end: yearEnd });
+    
+    const weekendCount = allDaysInYear.filter(d => isWeekend(d)).length;
+    const nationalHolidayCount = holidays.length;
+    const totalNonWorkingDays = weekendCount + nationalHolidayCount;
+    const workingDays = allDaysInYear.length - totalNonWorkingDays;
+
+    return { weekendCount, nationalHolidayCount, totalNonWorkingDays, workingDays };
+  }, [selectedYear, holidays]);
+
+  // Get calendar data for a month
+  const getMonthCalendar = (monthIndex: number) => {
+    const firstDay = startOfMonth(new Date(selectedYear, monthIndex, 1));
+    const lastDay = endOfMonth(new Date(selectedYear, monthIndex, 1));
+    const days = eachDayOfInterval({ start: firstDay, end: lastDay });
+    
+    // Get the day of week for the first day (0 = Sunday)
+    const startDayOfWeek = getDay(firstDay);
+    
+    // Create empty slots for days before the first day
+    const emptySlots = Array(startDayOfWeek).fill(null);
+    
+    return { days, emptySlots };
   };
 
-  const handleOpenDialog = (holiday?: Holiday) => {
-    if (holiday) {
-      setEditingHoliday(holiday);
-      setHolidayDate(new Date(holiday.date));
-      setHolidayName(holiday.name);
-      setHolidayDescription(holiday.description || "");
+  const handleDateClick = (date: Date) => {
+    if (!isEditMode) return;
+    if (isWeekend(date)) return; // Ignore weekends
+    
+    const dateStr = format(date, "yyyy-MM-dd");
+    
+    if (selectedDates.has(dateStr)) {
+      // Remove holiday
+      const newSet = new Set(selectedDates);
+      newSet.delete(dateStr);
+      setSelectedDates(newSet);
     } else {
-      resetForm();
+      // Add holiday - open naming dialog
+      setPendingDate(dateStr);
+      setHolidayName("");
+      setNamingDialogOpen(true);
     }
-    setIsDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    resetForm();
+  const handleConfirmHolidayName = () => {
+    if (!pendingDate || !holidayName.trim()) {
+      toast.error("Nama hari libur wajib diisi");
+      return;
+    }
+    
+    const newSet = new Set(selectedDates);
+    newSet.add(pendingDate);
+    setSelectedDates(newSet);
+    
+    // Store name temporarily (we'll save it when saving all)
+    setHolidayNames(prev => ({ ...prev, [pendingDate]: holidayName.trim() }));
+    
+    setNamingDialogOpen(false);
+    setPendingDate(null);
+    setHolidayName("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Temporary storage for holiday names
+  const [holidayNames, setHolidayNames] = useState<Record<string, string>>({});
 
-    if (!holidayDate || !holidayName.trim()) {
-      toast.error("Tanggal dan nama hari libur wajib diisi");
-      return;
-    }
+  // Initialize holiday names from existing holidays
+  useEffect(() => {
+    const names: Record<string, string> = {};
+    holidays.forEach(h => {
+      names[h.date] = h.name;
+    });
+    setHolidayNames(names);
+  }, [holidays]);
 
-    if (isWeekend(holidayDate)) {
-      toast.error("Sabtu dan Minggu otomatis dianggap libur, tidak perlu ditambahkan");
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
     try {
-      if (editingHoliday) {
-        const { error } = await updateHoliday(editingHoliday.id, {
-          date: format(holidayDate, "yyyy-MM-dd"),
-          name: holidayName.trim(),
-          description: holidayDescription.trim() || null
-        });
-
-        if (error) throw error;
-        toast.success("Hari libur berhasil diperbarui");
-      } else {
-        const { error } = await createHoliday(
-          holidayDate,
-          holidayName.trim(),
-          holidayDescription.trim() || null,
-          false,
-          user!.id
-        );
-
-        if (error) throw error;
-        toast.success("Hari libur berhasil ditambahkan");
+      // Get existing holidays for the year
+      const existingDates = new Set(holidays.map(h => h.date));
+      
+      // Dates to add (in selectedDates but not in existingDates)
+      const datesToAdd = Array.from(selectedDates).filter(d => !existingDates.has(d));
+      
+      // Dates to remove (in existingDates but not in selectedDates)
+      const datesToRemove = holidays.filter(h => !selectedDates.has(h.date)).map(h => h.id);
+      
+      // Delete removed holidays
+      if (datesToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("holidays")
+          .delete()
+          .in("id", datesToRemove);
+        
+        if (deleteError) throw deleteError;
       }
-
-      handleCloseDialog();
+      
+      // Add new holidays
+      if (datesToAdd.length > 0) {
+        const newHolidays = datesToAdd.map(dateStr => ({
+          date: dateStr,
+          name: holidayNames[dateStr] || `Hari Libur ${format(new Date(dateStr), "d MMMM", { locale: localeId })}`,
+          created_by: user.id,
+          is_recurring: false
+        }));
+        
+        const { error: insertError } = await supabase
+          .from("holidays")
+          .insert(newHolidays);
+        
+        if (insertError) throw insertError;
+      }
+      
+      toast.success("Kalender hari libur berhasil disimpan");
+      setIsEditMode(false);
       loadHolidays();
     } catch (error: any) {
-      if (error.message?.includes("duplicate key") || error.message?.includes("unique")) {
-        toast.error("Tanggal tersebut sudah terdaftar sebagai hari libur");
-      } else {
-        toast.error(editingHoliday ? "Gagal memperbarui hari libur" : "Gagal menambahkan hari libur");
-      }
+      console.error("Error saving holidays:", error);
+      toast.error("Gagal menyimpan kalender hari libur");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!deletingHoliday) return;
-
-    try {
-      const { error } = await deleteHoliday(deletingHoliday.id);
-      if (error) throw error;
-      toast.success("Hari libur berhasil dihapus");
-      loadHolidays();
-    } catch (error) {
-      toast.error("Gagal menghapus hari libur");
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setDeletingHoliday(null);
-    }
+  const handleCancelEdit = () => {
+    // Reset to original holidays
+    setSelectedDates(new Set(holidays.map(h => h.date)));
+    const names: Record<string, string> = {};
+    holidays.forEach(h => {
+      names[h.date] = h.name;
+    });
+    setHolidayNames(names);
+    setIsEditMode(false);
   };
 
-  // Get holiday dates as a Set for quick lookup
-  const holidayDatesSet = new Set(holidays.map(h => h.date));
-
-  // Calculate statistics
-  const yearStart = startOfYear(new Date(selectedYear, 0, 1));
-  const yearEnd = endOfYear(new Date(selectedYear, 0, 1));
-  const allDaysInYear = eachDayOfInterval({ start: yearStart, end: yearEnd });
-  
-  const weekendCount = allDaysInYear.filter(d => isWeekend(d)).length;
-  const nationalHolidayCount = holidays.length;
-  const totalNonWorkingDays = weekendCount + nationalHolidayCount;
-  const workingDays = allDaysInYear.length - totalNonWorkingDays;
-
-  // Group holidays by month
-  const holidaysByMonth: Record<number, Holiday[]> = {};
-  holidays.forEach(h => {
-    const month = new Date(h.date).getMonth();
-    if (!holidaysByMonth[month]) {
-      holidaysByMonth[month] = [];
-    }
-    holidaysByMonth[month].push(h);
-  });
-
-  const monthNames = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-  ];
+  const getDateStatus = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const isHoliday = selectedDates.has(dateStr);
+    const isWeekendDay = isWeekend(date);
+    const holidayInfo = holidays.find(h => h.date === dateStr);
+    const tempName = holidayNames[dateStr];
+    
+    return { isHoliday, isWeekendDay, holidayInfo, tempName };
+  };
 
   // Access control
   if (user?.role !== "admin_pusat") {
@@ -203,6 +230,7 @@ export default function HolidayCalendar() {
             <Select
               value={selectedYear.toString()}
               onValueChange={(v) => setSelectedYear(parseInt(v))}
+              disabled={isEditMode}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
@@ -216,27 +244,63 @@ export default function HolidayCalendar() {
               </SelectContent>
             </Select>
 
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Libur
-            </Button>
+            {isEditMode ? (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
+                  <X className="h-4 w-4 mr-2" />
+                  Batal
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Simpan
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setIsEditMode(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Kalender
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Info Alert */}
-        <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
-          <CardContent className="flex items-start gap-3 p-4">
-            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="font-medium text-blue-900 dark:text-blue-100">
-                Catatan Penting
-              </p>
-              <p className="text-blue-800 dark:text-blue-200 mt-1">
-                Sabtu dan Minggu otomatis dianggap sebagai hari libur dan tidak perlu ditambahkan. 
-                Tambahkan hanya hari libur nasional di sini. Sistem akan secara otomatis menghitung 
-                jumlah hari kerja yang digunakan saat pegawai mengajukan cuti.
-              </p>
-            </div>
+        {/* Mode Indicator */}
+        <Card className={cn(
+          "border transition-colors",
+          isEditMode 
+            ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20" 
+            : "border-green-500 bg-green-50/50 dark:bg-green-950/20"
+        )}>
+          <CardContent className="flex items-center gap-3 p-4">
+            {isEditMode ? (
+              <>
+                <Unlock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-900 dark:text-amber-100">
+                    Mode Edit Aktif
+                  </p>
+                  <p className="text-amber-800 dark:text-amber-200">
+                    Klik tanggal untuk menandai atau menghapus hari libur. Sabtu dan Minggu otomatis dianggap libur.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <Lock className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="text-sm">
+                  <p className="font-medium text-green-900 dark:text-green-100">
+                    Kalender Terkunci
+                  </p>
+                  <p className="text-green-800 dark:text-green-200">
+                    Klik tombol "Edit Kalender" untuk mengubah hari libur.
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -244,270 +308,156 @@ export default function HolidayCalendar() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">{nationalHolidayCount}</div>
+              <div className="text-2xl font-bold text-primary">{stats.nationalHolidayCount}</div>
               <p className="text-sm text-muted-foreground">Hari Libur Nasional</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-orange-600">{weekendCount}</div>
+              <div className="text-2xl font-bold text-orange-600">{stats.weekendCount}</div>
               <p className="text-sm text-muted-foreground">Hari Sabtu & Minggu</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{totalNonWorkingDays}</div>
+              <div className="text-2xl font-bold text-red-600">{stats.totalNonWorkingDays}</div>
               <p className="text-sm text-muted-foreground">Total Hari Libur</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{workingDays}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.workingDays}</div>
               <p className="text-sm text-muted-foreground">Hari Kerja</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar Preview */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-lg">Kalender {selectedYear}</CardTitle>
-              <CardDescription>Klik tanggal untuk menambahkan hari libur</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={undefined}
-                onSelect={(date) => {
-                  if (date && !isWeekend(date)) {
-                    const dateStr = format(date, "yyyy-MM-dd");
-                    const existingHoliday = holidays.find(h => h.date === dateStr);
-                    if (existingHoliday) {
-                      handleOpenDialog(existingHoliday);
-                    } else {
-                      setHolidayDate(date);
-                      handleOpenDialog();
-                    }
-                  }
-                }}
-                defaultMonth={new Date(selectedYear, 0, 1)}
-                className="pointer-events-auto"
-                modifiers={{
-                  holiday: holidays.map(h => new Date(h.date)),
-                  weekend: (date) => isWeekend(date)
-                }}
-                modifiersStyles={{
-                  holiday: { backgroundColor: "hsl(var(--destructive))", color: "white", borderRadius: "50%" },
-                  weekend: { backgroundColor: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }
-                }}
-                disabled={(date) => getYear(date) !== selectedYear}
-              />
-
-              <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-destructive"></div>
-                  <span>Hari Libur Nasional</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-muted"></div>
-                  <span>Sabtu/Minggu</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Holiday List */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Daftar Hari Libur Nasional {selectedYear}</CardTitle>
-              <CardDescription>
-                {isLoading ? "Memuat..." : `${holidays.length} hari libur terdaftar`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex items-center justify-center h-48">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : holidays.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-center">
-                  <CalendarLucide className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Belum ada hari libur untuk tahun {selectedYear}</p>
-                  <Button variant="outline" className="mt-4" onClick={() => handleOpenDialog()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah Hari Libur Pertama
-                  </Button>
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="space-y-6">
-                    {monthNames.map((monthName, monthIndex) => {
-                      const monthHolidays = holidaysByMonth[monthIndex];
-                      if (!monthHolidays || monthHolidays.length === 0) return null;
-
-                      return (
-                        <div key={monthIndex}>
-                          <h3 className="font-semibold text-sm text-muted-foreground mb-2">
-                            {monthName}
-                          </h3>
-                          <div className="space-y-2">
-                            {monthHolidays.map((holiday) => (
-                              <div
-                                key={holiday.id}
-                                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary">
-                                    <span className="text-lg font-bold">
-                                      {format(new Date(holiday.date), "d")}
-                                    </span>
-                                    <span className="text-[10px] uppercase">
-                                      {format(new Date(holiday.date), "EEE", { locale: localeId })}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">{holiday.name}</p>
-                                    {holiday.description && (
-                                      <p className="text-sm text-muted-foreground">
-                                        {holiday.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleOpenDialog(holiday)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => {
-                                      setDeletingHoliday(holiday);
-                                      setIsDeleteDialogOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-muted border"></div>
+            <span className="text-muted-foreground">Sabtu/Minggu (Otomatis Libur)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-destructive"></div>
+            <span className="text-muted-foreground">Hari Libur Nasional</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-background border"></div>
+            <span className="text-muted-foreground">Hari Kerja</span>
+          </div>
         </div>
 
-        {/* Add/Edit Holiday Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+        {/* 12 Month Calendar Grid */}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {monthNames.map((monthName, monthIndex) => {
+              const { days, emptySlots } = getMonthCalendar(monthIndex);
+              
+              return (
+                <Card key={monthIndex} className="overflow-hidden">
+                  <CardHeader className="py-3 px-4 bg-muted/50">
+                    <CardTitle className="text-sm font-semibold text-center">
+                      {monthName} {selectedYear}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-0.5 mb-1">
+                      {dayNames.map((day, i) => (
+                        <div
+                          key={day}
+                          className={cn(
+                            "text-center text-xs font-medium py-1",
+                            i === 0 || i === 6 ? "text-muted-foreground" : "text-foreground"
+                          )}
+                        >
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Calendar grid */}
+                    <div className="grid grid-cols-7 gap-0.5">
+                      {/* Empty slots before first day */}
+                      {emptySlots.map((_, i) => (
+                        <div key={`empty-${i}`} className="aspect-square" />
+                      ))}
+                      
+                      {/* Days */}
+                      {days.map((date) => {
+                        const { isHoliday, isWeekendDay, holidayInfo, tempName } = getDateStatus(date);
+                        const dayNumber = date.getDate();
+                        
+                        return (
+                          <button
+                            key={date.toISOString()}
+                            onClick={() => handleDateClick(date)}
+                            disabled={!isEditMode || isWeekendDay}
+                            title={
+                              isWeekendDay 
+                                ? "Sabtu/Minggu (Otomatis Libur)" 
+                                : isHoliday 
+                                  ? (holidayInfo?.name || tempName || "Hari Libur")
+                                  : format(date, "d MMMM yyyy", { locale: localeId })
+                            }
+                            className={cn(
+                              "aspect-square flex items-center justify-center text-xs rounded transition-all",
+                              isWeekendDay && "bg-muted text-muted-foreground cursor-default",
+                              isHoliday && !isWeekendDay && "bg-destructive text-destructive-foreground font-semibold",
+                              !isHoliday && !isWeekendDay && "hover:bg-accent",
+                              isEditMode && !isWeekendDay && "cursor-pointer hover:ring-2 hover:ring-primary/50",
+                              !isEditMode && "cursor-default"
+                            )}
+                          >
+                            {dayNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Holiday Name Dialog */}
+        <Dialog open={namingDialogOpen} onOpenChange={setNamingDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingHoliday ? "Edit Hari Libur" : "Tambah Hari Libur Baru"}
-              </DialogTitle>
+              <DialogTitle>Nama Hari Libur</DialogTitle>
+              <DialogDescription>
+                {pendingDate && format(new Date(pendingDate), "EEEE, d MMMM yyyy", { locale: localeId })}
+              </DialogDescription>
             </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tanggal</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !holidayDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {holidayDate
-                        ? format(holidayDate, "EEEE, d MMMM yyyy", { locale: localeId })
-                        : "Pilih tanggal"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={holidayDate}
-                      onSelect={(date) => {
-                        if (date && isWeekend(date)) {
-                          toast.error("Sabtu dan Minggu otomatis libur, pilih tanggal lain");
-                          return;
-                        }
-                        setHolidayDate(date);
-                      }}
-                      initialFocus
-                      className="pointer-events-auto"
-                      disabled={(date) => isWeekend(date)}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name">Nama Hari Libur</Label>
-                <Input
-                  id="name"
-                  value={holidayName}
-                  onChange={(e) => setHolidayName(e.target.value)}
-                  placeholder="Contoh: Hari Kemerdekaan RI"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Keterangan (opsional)</Label>
-                <Textarea
-                  id="description"
-                  value={holidayDescription}
-                  onChange={(e) => setHolidayDescription(e.target.value)}
-                  placeholder="Keterangan tambahan..."
-                  rows={2}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Batal
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Menyimpan..." : editingHoliday ? "Simpan Perubahan" : "Tambah"}
-                </Button>
-              </DialogFooter>
-            </form>
+            <div className="py-4">
+              <Input
+                placeholder="Contoh: Hari Kemerdekaan RI"
+                value={holidayName}
+                onChange={(e) => setHolidayName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleConfirmHolidayName();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNamingDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleConfirmHolidayName}>
+                Tambahkan
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Hapus Hari Libur?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Anda akan menghapus <strong>{deletingHoliday?.name}</strong> dari daftar hari libur.
-                Tindakan ini tidak dapat dibatalkan.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Hapus
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </DashboardLayout>
   );
