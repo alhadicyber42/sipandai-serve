@@ -28,9 +28,17 @@ export const DashboardLayout = ({
     logout();
     navigate("/auth");
   };
-  const toggleMenu = (menu: string) => {
-    setOpenMenus(prev => prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]);
+
+  const setMenuOpen = (menuId: string, open: boolean) => {
+    if (!menuId) return;
+    setOpenMenus((prev) => {
+      const has = prev.includes(menuId);
+      if (open && !has) return [...prev, menuId];
+      if (!open && has) return prev.filter((m) => m !== menuId);
+      return prev;
+    });
   };
+
   const isActive = (path: string) => location.pathname === path;
 
   // Menu items based on role - grouped by functionality
