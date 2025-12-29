@@ -76,11 +76,6 @@ export const DashboardLayout = ({
           path: "/employee-of-the-month",
           label: "Employee of The Year",
           icon: Trophy
-        },
-        {
-          path: "/profile",
-          label: "Profil",
-          icon: User
         }
       ];
     }
@@ -132,11 +127,6 @@ export const DashboardLayout = ({
             { path: "/pengumuman", label: "Kelola Pengumuman" },
             { path: "/admin/faq", label: "Kelola FAQ" }
           ]
-        },
-        {
-          path: "/profile",
-          label: "Profil",
-          icon: User
         }
       ];
     }
@@ -198,11 +188,6 @@ export const DashboardLayout = ({
             { path: "/pengumuman", label: "Kelola Pengumuman" },
             { path: "/admin/faq", label: "Kelola FAQ" }
           ]
-        },
-        {
-          path: "/profile",
-          label: "Profil",
-          icon: User
         }
       ];
     }
@@ -265,22 +250,31 @@ export const DashboardLayout = ({
           </div>
         </div>
 
-        {/* User Info */}
+        {/* User Info - aligned left like menu items */}
         <div className="p-3 sm:p-4 border-b border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 sm:w-11 sm:h-11 border-2 border-white/20 shadow-md flex-shrink-0">
+          <Link 
+            to="/profile" 
+            onClick={() => setIsSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 touch-target w-full",
+              isActive("/profile") 
+                ? "bg-gradient-to-r from-indigo-600/80 to-blue-600/80 text-white font-medium shadow-md" 
+                : "text-white/70 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <Avatar className="w-8 h-8 border-2 border-white/20 shadow-md flex-shrink-0">
               <AvatarImage src={user?.avatar_url || undefined} alt={user?.name} />
-              <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-blue-500 text-white text-sm font-bold">
-                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className="h-5 w-5" />}
+              <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-blue-500 text-white text-xs font-bold">
+                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className="h-4 w-4" />}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate text-white">{user?.name}</p>
+              <p className="font-medium text-sm truncate">{user?.name}</p>
               <p className="text-xs text-white/60 truncate">
                 {user?.role === "admin_pusat" ? "Administrator Pusat" : user?.role === "admin_unit" ? "Admin Unit" : "Pegawai"}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Navigation */}
