@@ -99,6 +99,12 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const PANGKAT_GOLONGAN_OPTIONS = [
   {
+    label: "Lainnya",
+    options: [
+      "Tidak Ada",
+    ],
+  },
+  {
     label: "Golongan I (Juru)",
     options: [
       "Juru Muda (I/a)",
@@ -133,6 +139,19 @@ const PANGKAT_GOLONGAN_OPTIONS = [
       "Pembina Utama Muda (IV/c)",
       "Pembina Utama Madya (IV/d)",
       "Pembina Utama (IV/e)",
+    ],
+  },
+  {
+    label: "PPPK",
+    options: [
+      "I",
+      "IV",
+      "V",
+      "VI",
+      "VII",
+      "IX",
+      "X",
+      "XI",
     ],
   },
 ];
@@ -216,21 +235,19 @@ export default function Auth() {
     setIsLoading(false);
   };
 
-const validateStep = async (step: number): Promise<boolean> => {
+  const validateStep = async (step: number): Promise<boolean> => {
     let fieldsToValidate: (keyof RegisterFormValues)[] = [];
 
     switch (step) {
       case 1:
-        // Name and email are required in step 1
-        fieldsToValidate = ["name", "email", "nip", "phone"];
+        // Name, email, and NIP are required in step 1 (phone is now optional)
+        fieldsToValidate = ["name", "email", "nip"];
         break;
       case 2:
         // All fields in step 2 are optional (for non-PNS users)
         return true;
       case 3:
-        // Riwayat is optional, always valid
-        return true;
-      case 4:
+        // Password step
         fieldsToValidate = ["password", "confirmPassword"];
         break;
     }
@@ -242,7 +259,7 @@ const validateStep = async (step: number): Promise<boolean> => {
   // Password strength indicator
   const getPasswordStrength = (password: string) => {
     if (!password) return { score: 0, label: "", color: "" };
-    
+
     let score = 0;
     if (password.length >= 8) score++;
     if (password.length >= 12) score++;
@@ -267,7 +284,7 @@ const validateStep = async (step: number): Promise<boolean> => {
       return;
     }
 
-    if (registerStep < 4) {
+    if (registerStep < 3) {
       setRegisterStep(registerStep + 1);
     } else {
       // Submit form
@@ -313,8 +330,7 @@ const validateStep = async (step: number): Promise<boolean> => {
     switch (registerStep) {
       case 1: return "Data Pribadi";
       case 2: return "Data Kepegawaian";
-      case 3: return "Riwayat (Opsional)";
-      case 4: return "Keamanan & Review";
+      case 3: return "Keamanan & Review";
       default: return "";
     }
   };
@@ -323,8 +339,7 @@ const validateStep = async (step: number): Promise<boolean> => {
     switch (registerStep) {
       case 1: return "Masukkan informasi pribadi Anda";
       case 2: return "Lengkapi data kepegawaian Anda";
-      case 3: return "Tambahkan riwayat jabatan dan mutasi (opsional)";
-      case 4: return "Buat password dan review data Anda";
+      case 3: return "Buat password dan review data Anda";
       default: return "";
     }
   };
@@ -439,13 +454,13 @@ const validateStep = async (step: number): Promise<boolean> => {
       ) : (
         <MultiStepForm
           currentStep={registerStep}
-          totalSteps={4}
+          totalSteps={3}
           title={getStepTitle()}
           description={getStepDescription()}
           onBack={handleBack}
           onNext={handleNext}
           onClose={() => setActiveTab("login")}
-          nextButtonText={registerStep === 4 ? "Daftar Sekarang" : "Lanjut"}
+          nextButtonText={registerStep === 3 ? "Daftar Sekarang" : "Lanjut"}
           isLoading={isLoading}
           size="lg"
           className="w-full my-4 md:my-8 relative z-10"
@@ -503,7 +518,7 @@ const validateStep = async (step: number): Promise<boolean> => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-phone" className="text-xs md:text-sm font-semibold">No. Telepon</Label>
+                  <Label htmlFor="register-phone" className="text-xs md:text-sm font-semibold">No. Telepon (Opsional)</Label>
                   <div className="relative group">
                     <Phone className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
@@ -587,7 +602,7 @@ const validateStep = async (step: number): Promise<boolean> => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-tmt-pns" className="text-xs md:text-sm font-semibold">TMT PNS</Label>
+                  <Label htmlFor="register-tmt-pns" className="text-xs md:text-sm font-semibold">TMT PNS (Opsional)</Label>
                   <div className="relative group">
                     <Calendar className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
@@ -601,7 +616,7 @@ const validateStep = async (step: number): Promise<boolean> => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-tmt-pensiun" className="text-xs md:text-sm font-semibold">TMT Pensiun</Label>
+                  <Label htmlFor="register-tmt-pensiun" className="text-xs md:text-sm font-semibold">TMT Pensiun (Opsional)</Label>
                   <div className="relative group">
                     <Calendar className="absolute left-2.5 md:left-3 top-2.5 md:top-3 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
@@ -637,127 +652,9 @@ const validateStep = async (step: number): Promise<boolean> => {
             </div>
           )}
 
-          {/* Step 3: Riwayat */}
+
+          {/* Step 3: Keamanan & Review */}
           {registerStep === 3 && (
-            <div className="space-y-8">
-              {/* Riwayat Jabatan */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    <Briefcase className="h-5 w-5 text-blue-600" />
-                    Riwayat Jabatan
-                  </h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendJabatan({ jabatan: "", tmt: "" })}
-                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {jabatanFields.map((field, index) => (
-                    <div key={field.id} className="flex flex-col md:flex-row gap-3 md:gap-4 items-end p-3 md:p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                      <div className="flex-1 w-full space-y-2">
-                        <Label className="text-sm font-semibold">Nama Jabatan</Label>
-                        <Input
-                          placeholder="Nama Jabatan"
-                          className="border-2 focus:border-blue-600 transition-all"
-                          {...registerForm.register(`riwayat_jabatan.${index}.jabatan`)}
-                        />
-                      </div>
-                      <div className="flex-1 w-full space-y-2">
-                        <Label className="text-sm font-semibold">TMT Jabatan</Label>
-                        <Input
-                          type="date"
-                          className="border-2 focus:border-blue-600 transition-all"
-                          {...registerForm.register(`riwayat_jabatan.${index}.tmt`)}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 self-end md:self-auto"
-                        onClick={() => removeJabatan(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {jabatanFields.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-xl bg-muted/20">
-                      Belum ada riwayat jabatan ditambahkan
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Riwayat Mutasi */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    <GitCompare className="h-5 w-5 text-blue-600" />
-                    Riwayat Mutasi
-                  </h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendMutasi({ jenis_mutasi: "", tmt: "" })}
-                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tambah
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {mutasiFields.map((field, index) => (
-                    <div key={field.id} className="flex flex-col md:flex-row gap-3 md:gap-4 items-end p-3 md:p-4 border-2 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                      <div className="flex-1 w-full space-y-2">
-                        <Label className="text-sm font-semibold">Jenis Mutasi / Unit Kerja</Label>
-                        <Input
-                          placeholder="Contoh: Mutasi ke Dinas X"
-                          className="border-2 focus:border-blue-600 transition-all"
-                          {...registerForm.register(`riwayat_mutasi.${index}.jenis_mutasi`)}
-                        />
-                      </div>
-                      <div className="flex-1 w-full space-y-2">
-                        <Label className="text-sm font-semibold">TMT Mutasi</Label>
-                        <Input
-                          type="date"
-                          className="border-2 focus:border-blue-600 transition-all"
-                          {...registerForm.register(`riwayat_mutasi.${index}.tmt`)}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 self-end md:self-auto"
-                        onClick={() => removeMutasi(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {mutasiFields.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded-xl bg-muted/20">
-                      Belum ada riwayat mutasi ditambahkan
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Keamanan & Review */}
-          {registerStep === 4 && (
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -779,19 +676,17 @@ const validateStep = async (step: number): Promise<boolean> => {
                         {[1, 2, 3].map((level) => (
                           <div
                             key={level}
-                            className={`h-1.5 flex-1 rounded-full transition-all ${
-                              passwordStrength.score >= level
-                                ? passwordStrength.color
-                                : "bg-muted"
-                            }`}
+                            className={`h-1.5 flex-1 rounded-full transition-all ${passwordStrength.score >= level
+                              ? passwordStrength.color
+                              : "bg-muted"
+                              }`}
                           />
                         ))}
                       </div>
-                      <p className={`text-xs font-medium ${
-                        passwordStrength.score === 1 ? "text-red-500" :
+                      <p className={`text-xs font-medium ${passwordStrength.score === 1 ? "text-red-500" :
                         passwordStrength.score === 2 ? "text-yellow-600" :
-                        "text-green-600"
-                      }`}>
+                          "text-green-600"
+                        }`}>
                         Kekuatan: {passwordStrength.label}
                       </p>
                     </div>
@@ -847,7 +742,7 @@ const validateStep = async (step: number): Promise<boolean> => {
                   <div>
                     <p className="text-muted-foreground">Unit Kerja</p>
                     <p className="font-semibold">
-                      {registerForm.watch("work_unit") 
+                      {registerForm.watch("work_unit")
                         ? WORK_UNITS.find(u => u.id.toString() === registerForm.watch("work_unit"))?.name || "-"
                         : "-"}
                     </p>

@@ -19,6 +19,10 @@ import { DocumentField } from "@/components/DocumentField";
 
 const PANGKAT_GOLONGAN_OPTIONS = [
   {
+    label: "Lainnya",
+    options: ["Tidak Ada"],
+  },
+  {
     label: "Golongan I (Juru)",
     options: ["Juru Muda (I/a)", "Juru Muda Tingkat I (I/b)", "Juru (I/c)", "Juru Tingkat I (I/d)"],
   },
@@ -33,6 +37,10 @@ const PANGKAT_GOLONGAN_OPTIONS = [
   {
     label: "Golongan IV (Pembina)",
     options: ["Pembina (IV/a)", "Pembina Tingkat I (IV/b)", "Pembina Utama Muda (IV/c)", "Pembina Utama Madya (IV/d)", "Pembina Utama (IV/e)"],
+  },
+  {
+    label: "PPPK",
+    options: ["I", "IV", "V", "VI", "VII", "IX", "X", "XI"],
   },
 ];
 
@@ -68,7 +76,7 @@ export default function Profile() {
         console.warn('Could not remove avatar from localStorage:', e);
       }
     }
-    
+
     // Refresh user context with new avatar
     console.log('Avatar changed, refreshing profile with new URL:', url);
     await refreshProfile();
@@ -583,14 +591,14 @@ export default function Profile() {
                       <InfoItem label="Email" value={user.email} icon={<Mail className="h-4 w-4" />} />
                       <InfoItem label="NIP / NIK" value={user.nip || "-"} icon={<IdCard className="h-4 w-4" />} />
                       <InfoItem label="No. Telepon" value={user.phone || "-"} icon={<Phone className="h-4 w-4" />} />
-                      <InfoItem 
-                        label="Tempat, Tanggal Lahir" 
+                      <InfoItem
+                        label="Tempat, Tanggal Lahir"
                         value={
-                          user.tempat_lahir || user.tanggal_lahir 
+                          user.tempat_lahir || user.tanggal_lahir
                             ? `${user.tempat_lahir || "-"}, ${user.tanggal_lahir ? format(new Date(user.tanggal_lahir), "dd MMMM yyyy") : "-"}`
                             : "-"
-                        } 
-                        icon={<Calendar className="h-4 w-4" />} 
+                        }
+                        icon={<Calendar className="h-4 w-4" />}
                       />
                       <InfoItem label="Alamat" value={user.alamat_lengkap || "-"} icon={<MapPin className="h-4 w-4" />} />
                     </CardContent>
@@ -604,7 +612,7 @@ export default function Profile() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       <InfoItem label="Unit Kerja" value={workUnit?.name || "-"} icon={<Building2 className="h-4 w-4" />} />
+                      <InfoItem label="Unit Kerja" value={workUnit?.name || "-"} icon={<Building2 className="h-4 w-4" />} />
                       <InfoItem label="Jabatan Saat Ini" value={user.jabatan || "-"} icon={<Briefcase className="h-4 w-4" />} />
                       <InfoItem label="Pangkat/Golongan" value={user.pangkat_golongan || "-"} icon={<Shield className="h-4 w-4" />} />
                       <InfoItem label="Kriteria ASN" value={user.kriteria_asn || "-"} icon={<IdCard className="h-4 w-4" />} />
