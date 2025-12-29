@@ -207,7 +207,7 @@ export const DashboardLayout = ({
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-background to-muted/20">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground border-b border-primary/20 shadow-md glass">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-[60] bg-primary text-primary-foreground border-b border-primary/20 shadow-md glass">
         <div className="flex items-center justify-between p-3 sm:p-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -218,8 +218,11 @@ export const DashboardLayout = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-              className="text-primary-foreground hover:bg-primary-glow/20 touch-target btn-press"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSidebarOpen(!isSidebarOpen);
+              }} 
+              className="text-primary-foreground hover:bg-primary-glow/20 touch-target btn-press relative z-[70]"
               aria-label={isSidebarOpen ? "Tutup menu" : "Buka menu"}
             >
               {isSidebarOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
