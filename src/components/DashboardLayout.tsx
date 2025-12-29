@@ -33,199 +33,172 @@ export const DashboardLayout = ({
   };
   const isActive = (path: string) => location.pathname === path;
 
-  // Menu items based on role
+  // Menu items based on role - grouped by functionality
   const getMenuItems = () => {
     const role = user?.role;
+    
     if (role === "user_unit") {
-      return [{
-        path: "/dashboard",
-        label: "Dashboard",
-        icon: LayoutDashboard
-      }, {
-        label: "Layanan Saya",
-        icon: FileText,
-        id: "layanan",
-        submenu: [{
-          path: "/layanan/kenaikan-pangkat",
-          label: "Kenaikan Pangkat"
-        }, {
-          path: "/layanan/mutasi",
-          label: "Mutasi Pegawai"
-        }, {
-          path: "/layanan/pensiun",
-          label: "Pensiun"
-        }, {
-          path: "/layanan/cuti",
-          label: "Cuti Pegawai"
-        }]
-      }, {
-        label: "Konsultasi",
-        icon: MessageSquare,
-        id: "konsultasi",
-        submenu: [{
-          path: "/konsultasi/baru",
-          label: "Buat Konsultasi Baru"
-        }, {
-          path: "/konsultasi/riwayat",
-          label: "Riwayat Konsultasi"
-        }]
-      }, {
-        path: "/employee-of-the-month",
-        label: "Employee of The Year",
-        icon: Trophy
-      }, {
-        path: "/profile",
-        label: "Profil",
-        icon: User
-      }];
+      return [
+        {
+          path: "/dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard
+        },
+        {
+          label: "Layanan Saya",
+          icon: FileText,
+          id: "layanan",
+          submenu: [
+            { path: "/layanan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
+            { path: "/layanan/mutasi", label: "Mutasi Pegawai" },
+            { path: "/layanan/pensiun", label: "Pensiun" },
+            { path: "/layanan/cuti", label: "Cuti Pegawai" }
+          ]
+        },
+        {
+          label: "Konsultasi",
+          icon: MessageSquare,
+          id: "konsultasi",
+          submenu: [
+            { path: "/konsultasi/baru", label: "Buat Konsultasi Baru" },
+            { path: "/konsultasi/riwayat", label: "Riwayat Konsultasi" }
+          ]
+        },
+        {
+          path: "/employee-of-the-month",
+          label: "Employee of The Year",
+          icon: Trophy
+        },
+        {
+          path: "/profile",
+          label: "Profil",
+          icon: User
+        }
+      ];
     }
+    
     if (role === "admin_unit") {
-      return [{
-        path: "/dashboard",
-        label: "Dashboard",
-        icon: LayoutDashboard
-      }, {
-        label: "Usulan Masuk",
-        icon: FileText,
-        id: "usulan",
-        submenu: [{
-          path: "/usulan/kenaikan-pangkat",
-          label: "Kenaikan Pangkat"
-        }, {
-          path: "/usulan/mutasi",
-          label: "Mutasi Pegawai"
-        }, {
-          path: "/usulan/pensiun",
-          label: "Pensiun"
-        }, {
-          path: "/usulan/cuti",
-          label: "Cuti Pegawai"
-        }]
-      }, {
-        label: "Konsultasi Unit",
-        icon: MessageSquare,
-        id: "konsultasi",
-        submenu: [{
-          path: "/konsultasi/masuk",
-          label: "Konsultasi Masuk"
-        }, {
-          path: "/konsultasi/riwayat-unit",
-          label: "Riwayat Konsultasi"
-        }]
-      }, {
-        path: "/admin/daftar-pegawai",
-        label: "Daftar Pegawai Unit",
-        icon: Users
-      }, {
-        path: "/admin/formasi-jabatan",
-        label: "Formasi Jabatan",
-        icon: Briefcase
-      }, {
-        path: "/admin/reminder-pensiun",
-        label: "Reminder Pensiun",
-        icon: Bell
-      }, {
-        path: "/admin/buat-surat",
-        label: "Buat Surat",
-        icon: FileText
-      }, {
-        path: "/admin/employee-ratings",
-        label: "Employee of The Year",
-        icon: Trophy
-      }, {
-        path: "/pengumuman",
-        label: "Kelola Pengumuman",
-        icon: Megaphone
-      }, {
-        path: "/admin/faq",
-        label: "Kelola FAQ",
-        icon: HelpCircle
-      }, {
-        path: "/profile",
-        label: "Profil",
-        icon: User
-      }];
+      return [
+        {
+          path: "/dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard
+        },
+        {
+          label: "Usulan Masuk",
+          icon: FileText,
+          id: "usulan",
+          submenu: [
+            { path: "/usulan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
+            { path: "/usulan/mutasi", label: "Mutasi Pegawai" },
+            { path: "/usulan/pensiun", label: "Pensiun" },
+            { path: "/usulan/cuti", label: "Cuti Pegawai" }
+          ]
+        },
+        {
+          label: "Konsultasi Unit",
+          icon: MessageSquare,
+          id: "konsultasi",
+          submenu: [
+            { path: "/konsultasi/masuk", label: "Konsultasi Masuk" },
+            { path: "/konsultasi/riwayat-unit", label: "Riwayat Konsultasi" }
+          ]
+        },
+        {
+          label: "Kelola Pegawai",
+          icon: Users,
+          id: "pegawai",
+          submenu: [
+            { path: "/admin/daftar-pegawai", label: "Daftar Pegawai Unit" },
+            { path: "/admin/formasi-jabatan", label: "Formasi Jabatan" },
+            { path: "/admin/reminder-pensiun", label: "Reminder Pensiun" }
+          ]
+        },
+        {
+          label: "Lainnya",
+          icon: Settings,
+          id: "lainnya",
+          submenu: [
+            { path: "/admin/buat-surat", label: "Buat Surat" },
+            { path: "/admin/employee-ratings", label: "Employee of The Year" },
+            { path: "/pengumuman", label: "Kelola Pengumuman" },
+            { path: "/admin/faq", label: "Kelola FAQ" }
+          ]
+        },
+        {
+          path: "/profile",
+          label: "Profil",
+          icon: User
+        }
+      ];
     }
+    
     if (role === "admin_pusat") {
-      return [{
-        path: "/dashboard",
-        label: "Dashboard",
-        icon: LayoutDashboard
-      }, {
-        label: "Semua Usulan",
-        icon: FileText,
-        id: "usulan",
-        submenu: [{
-          path: "/usulan/kenaikan-pangkat",
-          label: "Kenaikan Pangkat"
-        }, {
-          path: "/usulan/mutasi",
-          label: "Mutasi Pegawai"
-        }, {
-          path: "/usulan/pensiun",
-          label: "Pensiun"
-        }, {
-          path: "/usulan/cuti",
-          label: "Cuti Pegawai"
-        }]
-      }, {
-        label: "Konsultasi",
-        icon: MessageSquare,
-        id: "konsultasi",
-        submenu: [{
-          path: "/konsultasi/semua",
-          label: "Konsultasi Masuk"
-        }]
-      }, {
-        path: "/admin/kelola-admin",
-        label: "Kelola Admin Unit",
-        icon: Users
-      }, {
-        path: "/admin/kelola-unit",
-        label: "Kelola Unit Kerja",
-        icon: Building2
-      }, {
-        path: "/admin/daftar-pegawai",
-        label: "Daftar Pegawai Unit",
-        icon: Users
-      }, {
-        path: "/admin/formasi-jabatan",
-        label: "Formasi Jabatan",
-        icon: Briefcase
-      }, {
-        path: "/admin/reminder-pensiun",
-        label: "Reminder Pensiun",
-        icon: Bell
-      }, {
-        path: "/admin/employee-ratings",
-        label: "Employee of The Year",
-        icon: Trophy
-      }, {
-        path: "/admin/penangguhan-cuti",
-        label: "Penangguhan Cuti",
-        icon: CalendarX
-      }, {
-        path: "/admin/buat-surat",
-        label: "Buat Surat",
-        icon: FileText
-      }, {
-        path: "/admin/kalender-libur",
-        label: "Kalender Hari Libur",
-        icon: CalendarDays
-      }, {
-        path: "/pengumuman",
-        label: "Kelola Pengumuman",
-        icon: Megaphone
-      }, {
-        path: "/admin/faq",
-        label: "Kelola FAQ",
-        icon: HelpCircle
-      }, {
-        path: "/profile",
-        label: "Profil",
-        icon: User
-      }];
+      return [
+        {
+          path: "/dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard
+        },
+        {
+          label: "Semua Usulan",
+          icon: FileText,
+          id: "usulan",
+          submenu: [
+            { path: "/usulan/kenaikan-pangkat", label: "Kenaikan Pangkat" },
+            { path: "/usulan/mutasi", label: "Mutasi Pegawai" },
+            { path: "/usulan/pensiun", label: "Pensiun" },
+            { path: "/usulan/cuti", label: "Cuti Pegawai" }
+          ]
+        },
+        {
+          label: "Konsultasi",
+          icon: MessageSquare,
+          id: "konsultasi",
+          submenu: [
+            { path: "/konsultasi/semua", label: "Konsultasi Masuk" }
+          ]
+        },
+        {
+          label: "Kelola Organisasi",
+          icon: Building2,
+          id: "organisasi",
+          submenu: [
+            { path: "/admin/kelola-admin", label: "Kelola Admin Unit" },
+            { path: "/admin/kelola-unit", label: "Kelola Unit Kerja" }
+          ]
+        },
+        {
+          label: "Kelola Pegawai",
+          icon: Users,
+          id: "pegawai",
+          submenu: [
+            { path: "/admin/daftar-pegawai", label: "Daftar Pegawai Unit" },
+            { path: "/admin/formasi-jabatan", label: "Formasi Jabatan" },
+            { path: "/admin/reminder-pensiun", label: "Reminder Pensiun" },
+            { path: "/admin/employee-ratings", label: "Employee of The Year" }
+          ]
+        },
+        {
+          label: "Pengaturan",
+          icon: Settings,
+          id: "pengaturan",
+          submenu: [
+            { path: "/admin/penangguhan-cuti", label: "Penangguhan Cuti" },
+            { path: "/admin/kalender-libur", label: "Kalender Hari Libur" },
+            { path: "/admin/buat-surat", label: "Buat Surat" },
+            { path: "/pengumuman", label: "Kelola Pengumuman" },
+            { path: "/admin/faq", label: "Kelola FAQ" }
+          ]
+        },
+        {
+          path: "/profile",
+          label: "Profil",
+          icon: User
+        }
+      ];
     }
+    
     return [];
   };
 
