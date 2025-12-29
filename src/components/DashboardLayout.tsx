@@ -289,7 +289,7 @@ export const DashboardLayout = ({
             <Collapsible 
               key={item.id} 
               open={openMenus.includes(item.id || "")} 
-              onOpenChange={() => toggleMenu(item.id || "")}
+              onOpenChange={(open) => setMenuOpen(item.id || "", open)}
             >
               <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 group touch-target">
                 <div className="flex items-center gap-3">
