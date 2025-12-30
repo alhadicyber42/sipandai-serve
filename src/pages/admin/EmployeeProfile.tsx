@@ -538,23 +538,30 @@ export default function EmployeeProfile() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {employee.riwayat_jabatan.map((jabatan: any, index: number) => (
-                        <div key={index} className="flex gap-3 p-3 rounded-lg bg-muted/50 border">
-                          <div className="p-2 bg-primary/10 rounded-lg h-fit flex-shrink-0">
-                            <Briefcase className="h-4 w-4 text-primary" />
+                      {employee.riwayat_jabatan.map((jabatan: any, index: number) => {
+                        const tmtJabatan = jabatan.tmt_jabatan ? new Date(jabatan.tmt_jabatan) : null;
+                        const tmtSelesai = jabatan.tmt_selesai ? new Date(jabatan.tmt_selesai) : null;
+                        const isValidTmtJabatan = tmtJabatan && !isNaN(tmtJabatan.getTime());
+                        const isValidTmtSelesai = tmtSelesai && !isNaN(tmtSelesai.getTime());
+                        
+                        return (
+                          <div key={index} className="flex gap-3 p-3 rounded-lg bg-muted/50 border">
+                            <div className="p-2 bg-primary/10 rounded-lg h-fit flex-shrink-0">
+                              <Briefcase className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm md:text-base">{jabatan.nama_jabatan || "-"}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                                {jabatan.unit_kerja || "-"}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {isValidTmtJabatan ? format(tmtJabatan, "dd MMM yyyy", { locale: localeId }) : "-"} 
+                                {isValidTmtSelesai && ` - ${format(tmtSelesai, "dd MMM yyyy", { locale: localeId })}`}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm md:text-base">{jabatan.nama_jabatan}</p>
-                            <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                              {jabatan.unit_kerja}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {format(new Date(jabatan.tmt_jabatan), "dd MMM yyyy", { locale: localeId })} 
-                              {jabatan.tmt_selesai && ` - ${format(new Date(jabatan.tmt_selesai), "dd MMM yyyy", { locale: localeId })}`}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -571,22 +578,27 @@ export default function EmployeeProfile() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {employee.riwayat_mutasi.map((mutasi: any, index: number) => (
-                        <div key={index} className="flex gap-3 p-3 rounded-lg bg-muted/50 border">
-                          <div className="p-2 bg-primary/10 rounded-lg h-fit flex-shrink-0">
-                            <GitCompare className="h-4 w-4 text-primary" />
+                      {employee.riwayat_mutasi.map((mutasi: any, index: number) => {
+                        const tmtMutasi = mutasi.tmt_mutasi ? new Date(mutasi.tmt_mutasi) : null;
+                        const isValidTmtMutasi = tmtMutasi && !isNaN(tmtMutasi.getTime());
+                        
+                        return (
+                          <div key={index} className="flex gap-3 p-3 rounded-lg bg-muted/50 border">
+                            <div className="p-2 bg-primary/10 rounded-lg h-fit flex-shrink-0">
+                              <GitCompare className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm md:text-base">{mutasi.unit_asal || "-"} → {mutasi.unit_tujuan || "-"}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                                {mutasi.alasan_mutasi || "-"}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                TMT: {isValidTmtMutasi ? format(tmtMutasi, "dd MMM yyyy", { locale: localeId }) : "-"}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm md:text-base">{mutasi.unit_asal} → {mutasi.unit_tujuan}</p>
-                            <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                              {mutasi.alasan_mutasi}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              TMT: {format(new Date(mutasi.tmt_mutasi), "dd MMM yyyy", { locale: localeId })}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
