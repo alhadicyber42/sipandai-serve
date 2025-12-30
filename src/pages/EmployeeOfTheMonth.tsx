@@ -47,7 +47,8 @@ export default function EmployeeOfTheMonth() {
     const [slideshowTestimonialsNonASN, setSlideshowTestimonialsNonASN] = useState<TestimonialItem[]>([]);
     const [yearlyLeaderboard, setYearlyLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     const [ratedEmployeeIds, setRatedEmployeeIds] = useState<Set<string>>(new Set());
-    const [hasRatedThisPeriod, setHasRatedThisPeriod] = useState(false);
+    const [hasRatedASN, setHasRatedASN] = useState(false);
+    const [hasRatedNonASN, setHasRatedNonASN] = useState(false);
     
     // Designated winners state
     const [monthlyWinners, setMonthlyWinners] = useState<DesignatedWinner[]>([]);
@@ -173,10 +174,26 @@ export default function EmployeeOfTheMonth() {
             .eq("rater_id", user.id)
             .eq("rating_period", currentPeriod);
 
-        if (myRatings) {
+        if (myRatings && myRatings.length > 0) {
             setRatedEmployeeIds(new Set(myRatings.map(r => r.rated_employee_id)));
-            // Check if user has rated anyone this period (only 1 rating allowed per period)
-            setHasRatedThisPeriod(myRatings.length > 0);
+            
+            // Get categories of rated employees to track quota per category
+            const ratedEmployeeIds = myRatings.map(r => r.rated_employee_id);
+            const { data: ratedProfiles } = await supabase
+                .from("profiles")
+                .select("id, kriteria_asn")
+                .in("id", ratedEmployeeIds);
+            
+            if (ratedProfiles) {
+                const hasASN = ratedProfiles.some(p => p.kriteria_asn !== "Non ASN");
+                const hasNonASN = ratedProfiles.some(p => p.kriteria_asn === "Non ASN");
+                setHasRatedASN(hasASN);
+                setHasRatedNonASN(hasNonASN);
+            }
+        } else {
+            setRatedEmployeeIds(new Set());
+            setHasRatedASN(false);
+            setHasRatedNonASN(false);
         }
     };
 
@@ -1054,12 +1071,21 @@ export default function EmployeeOfTheMonth() {
                                 )}
 
                                 {/* Info about rating limit */}
-                                {hasRatedThisPeriod ? (
+                                {hasRatedASN && hasRatedNonASN ? (
                                     <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
                                         <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
                                             <span className="text-amber-500">⚠️</span>
                                             <span>
-                                                <strong>Kuota penilaian Anda sudah terpakai.</strong> Setiap pegawai hanya dapat memberikan 1 penilaian per periode bulan.
+                                                <strong>Kuota penilaian Anda sudah terpakai.</strong> Anda sudah menilai 1 pegawai ASN dan 1 pegawai Non ASN untuk periode ini.
+                                            </span>
+                                        </p>
+                                    </div>
+                                ) : (hasRatedASN || hasRatedNonASN) ? (
+                                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                                            <span className="text-blue-500">ℹ️</span>
+                                            <span>
+                                                Anda masih memiliki <strong>1 kuota penilaian</strong> untuk kategori <strong>{hasRatedASN ? "Non ASN" : "ASN"}</strong>.
                                             </span>
                                         </p>
                                     </div>
@@ -1068,7 +1094,7 @@ export default function EmployeeOfTheMonth() {
                                         <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
                                             <span className="text-blue-500">ℹ️</span>
                                             <span>
-                                                Anda memiliki <strong>1 kuota penilaian</strong> untuk periode bulan ini. Pilih satu pegawai yang menurut Anda paling layak menjadi Employee of the Year.
+                                                Anda memiliki <strong>2 kuota penilaian</strong>: 1 untuk ASN dan 1 untuk Non ASN.
                                             </span>
                                         </p>
                                     </div>
@@ -1114,7 +1140,9 @@ export default function EmployeeOfTheMonth() {
                                                                 .map((employee, index) => {
                                                                     const isRated = ratedEmployeeIds.has(employee.id);
                                                                     const isSelf = employee.id === user?.id;
-                                                                    const canRate = !isSelf && !hasRatedThisPeriod;
+                                                                    const isNonASN = employee.kriteria_asn === "Non ASN";
+                                                                    const categoryQuotaUsed = isNonASN ? hasRatedNonASN : hasRatedASN;
+                                                                    const canRate = !isSelf && !categoryQuotaUsed;
 
                                                                     return (
                                                                         <TableRow key={employee.id}>
@@ -1149,9 +1177,9 @@ export default function EmployeeOfTheMonth() {
                                                                                     <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
                                                                                         ✓ Sudah Dinilai
                                                                                     </Badge>
-                                                                                ) : hasRatedThisPeriod ? (
+                                                                                ) : categoryQuotaUsed ? (
                                                                                     <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
-                                                                                        Kuota Habis
+                                                                                        Kuota {isNonASN ? "Non ASN" : "ASN"} Habis
                                                                                     </Badge>
                                                                                 ) : !periodStatus.canRate || !periodStatus.isUnitParticipating ? (
                                                                                     <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">

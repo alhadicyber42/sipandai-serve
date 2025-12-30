@@ -171,21 +171,47 @@ export default function EmployeeRating() {
     }, [periodStatus.isLoading, periodStatus.canRate, periodStatus.phase]);
 
     const checkRatingQuota = async () => {
-        if (!user) return;
+        if (!user || !employeeId) return;
+        
+        // First, get the employee's category (ASN/Non ASN)
+        const { data: employeeData } = await supabase
+            .from("profiles")
+            .select("kriteria_asn")
+            .eq("id", employeeId)
+            .single();
+        
+        if (!employeeData) return;
+        
+        const employeeCategory = employeeData.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
         
         const now = new Date();
         const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-        // Check if user has already rated anyone this period
-        const { data: existingRatings, error } = await supabase
+        // Check if user has already rated an employee of the SAME category this period
+        const { data: existingRatings } = await supabase
             .from("employee_ratings")
             .select("id, rated_employee_id")
             .eq("rater_id", user.id)
             .eq("rating_period", currentPeriod);
 
         if (existingRatings && existingRatings.length > 0) {
-            toast.error("Anda sudah menggunakan kuota penilaian untuk periode bulan ini. Setiap pegawai hanya dapat memberikan 1 penilaian per periode.");
-            navigate("/employee-of-the-month");
+            // Get the categories of already rated employees
+            const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
+            const { data: ratedProfiles } = await supabase
+                .from("profiles")
+                .select("id, kriteria_asn")
+                .in("id", ratedEmployeeIds);
+            
+            // Check if user has already rated someone of the same category
+            const hasRatedSameCategory = ratedProfiles?.some(p => {
+                const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
+                return category === employeeCategory;
+            });
+            
+            if (hasRatedSameCategory) {
+                toast.error(`Anda sudah memberikan penilaian untuk kategori ${employeeCategory} pada periode ini. Setiap pegawai dapat memberikan 1 penilaian untuk ASN dan 1 penilaian untuk Non ASN per periode.`);
+                navigate("/employee-of-the-month");
+            }
         }
     };
 
@@ -266,18 +292,35 @@ export default function EmployeeRating() {
 
             const maxPossiblePoints = activeCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
 
-            // Check if user has already used their rating quota this period (any employee)
+            // Determine the category of the employee being rated
+            const ratedCategory = isNonASN ? "Non ASN" : "ASN";
+            
+            // Check if user has already rated an employee of the SAME category this period
             const { data: existingRatings } = await supabase
                 .from("employee_ratings")
-                .select("id")
+                .select("id, rated_employee_id")
                 .eq("rater_id", user.id)
                 .eq("rating_period", ratingPeriod);
 
             if (existingRatings && existingRatings.length > 0) {
-                toast.error("Anda sudah menggunakan kuota penilaian untuk periode ini. Setiap pegawai hanya dapat memberikan 1 penilaian per bulan.");
-                setIsSubmitting(false);
-                navigate("/employee-of-the-month");
-                return;
+                // Get the categories of already rated employees
+                const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
+                const { data: ratedProfiles } = await supabase
+                    .from("profiles")
+                    .select("id, kriteria_asn")
+                    .in("id", ratedEmployeeIds);
+                
+                const hasRatedSameCategory = ratedProfiles?.some(p => {
+                    const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
+                    return category === ratedCategory;
+                });
+                
+                if (hasRatedSameCategory) {
+                    toast.error(`Anda sudah memberikan penilaian untuk kategori ${ratedCategory} pada periode ini.`);
+                    setIsSubmitting(false);
+                    navigate("/employee-of-the-month");
+                    return;
+                }
             }
 
             // Save to database
