@@ -473,12 +473,41 @@ export default function Cuti() {
     const addressDuringLeave = formData.get("address_during_leave") as string;
     const formDate = formData.get("form_date") as string;
 
-    // Debug: Log document links before submit
-    console.log("Document links before submit:", documentLinks);
-    console.log("Number of documents:", documentLinks.length);
+    // Zod validation for form fields
+    const leaveFormSchema = z.object({
+      leave_type: z.string().min(1, "Pilih jenis cuti"),
+      reason: z.string()
+        .min(5, "Alasan cuti minimal 5 karakter")
+        .max(500, "Alasan cuti maksimal 500 karakter"),
+      leave_quota_year: z.string().min(1, "Pilih tahun kuota"),
+      address_during_leave: z.string().max(500, "Alamat maksimal 500 karakter").optional(),
+      form_date: z.string().optional(),
+    });
+
+    const validationResult = leaveFormSchema.safeParse({
+      leave_type: leaveType,
+      reason,
+      leave_quota_year: leaveQuotaYear,
+      address_during_leave: addressDuringLeave,
+      form_date: formDate,
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
+      setIsSubmitting(false);
+      return;
+    }
 
     if (!startDate || !endDate) {
       toast.error("Pilih tanggal mulai dan selesai");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate date range
+    if (endDate < startDate) {
+      toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai");
       setIsSubmitting(false);
       return;
     }
@@ -585,8 +614,31 @@ export default function Cuti() {
     e.preventDefault();
     if (!user) return;
 
-    if (!deferralYear || !deferralDays || !deferralDoc || !deferralReason) {
-      toast.error("Mohon lengkapi semua field");
+    // Zod validation for deferral form
+    const deferralSchema = z.object({
+      deferral_year: z.string().min(1, "Pilih tahun"),
+      days_deferred: z.string()
+        .min(1, "Masukkan jumlah hari")
+        .refine((val) => {
+          const num = parseInt(val);
+          return !isNaN(num) && num >= 1 && num <= 12;
+        }, "Jumlah hari harus antara 1-12"),
+      approval_document: z.string()
+        .min(1, "Masukkan link dokumen persetujuan")
+        .url("Format URL tidak valid"),
+      reason: z.string().min(1, "Pilih alasan penangguhan"),
+    });
+
+    const validationResult = deferralSchema.safeParse({
+      deferral_year: deferralYear,
+      days_deferred: deferralDays,
+      approval_document: deferralDoc,
+      reason: deferralReason,
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -596,12 +648,6 @@ export default function Cuti() {
     // Validasi jumlah hari tidak melebihi sisa cuti
     if (days > leaveStats.remaining) {
       toast.error(`Jumlah hari tidak boleh melebihi sisa cuti (${leaveStats.remaining} hari)`);
-      return;
-    }
-
-    // Validasi jumlah hari minimal 1
-    if (days < 1) {
-      toast.error("Jumlah hari minimal 1");
       return;
     }
 

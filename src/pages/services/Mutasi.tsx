@@ -18,6 +18,8 @@ import { TRANSFER_CATEGORIES, type TransferCategory } from "@/lib/transfer-categ
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
 import { StatCardSkeleton } from "@/components/skeletons";
+import { z } from "zod";
+import { secureDocumentUrlValidation } from "@/lib/validation-schemas";
 
 export default function Mutasi() {
     const { user, updateProfile } = useAuth();
@@ -139,13 +141,22 @@ export default function Mutasi() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!targetUnitId) {
-            toast.error("Pilih unit kerja tujuan terlebih dahulu");
-            return;
-        }
+        // Zod validation schema for transfer form
+        const transferSchema = z.object({
+            target_unit_id: z.string().min(1, "Pilih unit kerja tujuan"),
+            target_formation_id: z.string().min(1, "Pilih formasi jabatan tujuan"),
+            category: z.string().min(1, "Pilih kategori mutasi"),
+        });
 
-        if (!targetFormationId) {
-            toast.error("Pilih formasi jabatan tujuan terlebih dahulu");
+        const validationResult = transferSchema.safeParse({
+            target_unit_id: targetUnitId,
+            target_formation_id: targetFormationId,
+            category: selectedCategory?.id || "",
+        });
+
+        if (!validationResult.success) {
+            const firstError = validationResult.error.errors[0];
+            toast.error(firstError.message);
             return;
         }
 
@@ -154,7 +165,7 @@ export default function Mutasi() {
             return;
         }
 
-        // Validate all documents are filled
+        // Validate all documents are filled and have valid URLs
         const missingDocs = selectedCategory.documents.filter(
             (doc) => !documentLinks[doc.name] || documentLinks[doc.name].trim() === ""
         );
@@ -162,6 +173,18 @@ export default function Mutasi() {
         if (missingDocs.length > 0) {
             toast.error(`Mohon lengkapi semua dokumen persyaratan (${missingDocs.length} dokumen belum dilengkapi)`);
             return;
+        }
+
+        // Validate URL format for all documents
+        for (const doc of selectedCategory.documents) {
+            const url = documentLinks[doc.name];
+            if (url) {
+                const urlValidation = secureDocumentUrlValidation.safeParse(url);
+                if (!urlValidation.success) {
+                    toast.error(`Format URL untuk "${doc.name}" tidak valid. Pastikan menggunakan HTTPS.`);
+                    return;
+                }
+            }
         }
 
         setIsSubmitting(true);
