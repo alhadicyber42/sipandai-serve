@@ -13,9 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { WORK_UNITS, REQUIRED_DOCUMENTS } from "@/lib/constants";
 import { User, Mail, Phone, IdCard, Building2, Shield, Briefcase, Calendar, Edit2, Save, X, Plus, Trash2, GitCompare, FileText, Search, MapPin, GraduationCap, Award, ClipboardCheck } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { DocumentField } from "@/components/DocumentField";
+import { profileSchema, ProfileFormValues, nameValidation, nipNikValidation, phoneValidation, createTextValidation, dateValidation } from "@/lib/validation-schemas";
+import { z } from "zod";
 
 const PANGKAT_GOLONGAN_OPTIONS = [
   {
@@ -85,8 +88,65 @@ export default function Profile() {
 
   const workUnit = WORK_UNITS.find((u) => u.id === user?.work_unit_id);
 
+  // Form with Zod validation
   const form = useForm<AuthUser>({
+    resolver: zodResolver(
+      z.object({
+        name: nameValidation,
+        nip: nipNikValidation,
+        phone: phoneValidation,
+        tempat_lahir: createTextValidation(0, 100, "Tempat lahir").optional().nullable(),
+        tanggal_lahir: dateValidation.nullable(),
+        alamat_lengkap: createTextValidation(0, 500, "Alamat").optional().nullable(),
+        jenis_kelamin: z.string().optional().nullable(),
+        agama: z.string().max(50, "Agama maksimal 50 karakter").optional().nullable(),
+        status_perkawinan: z.string().max(50, "Status perkawinan maksimal 50 karakter").optional().nullable(),
+        pendidikan_terakhir: z.string().max(100, "Pendidikan terakhir maksimal 100 karakter").optional().nullable(),
+        work_unit_id: z.number().optional().nullable(),
+        jabatan: createTextValidation(0, 100, "Jabatan").optional().nullable(),
+        pangkat_golongan: z.string().max(100).optional().nullable(),
+        tmt_pns: dateValidation.nullable(),
+        tmt_pensiun: dateValidation.nullable(),
+        kriteria_asn: z.string().optional().nullable(),
+        masa_kerja_tahun: z.number().min(0).max(50).optional().nullable(),
+        masa_kerja_bulan: z.number().min(0).max(11).optional().nullable(),
+        nomor_hp: phoneValidation.nullable(),
+        nomor_wa: phoneValidation.nullable(),
+        email_alternatif: z.string().email("Format email tidak valid").max(255).optional().nullable().or(z.literal("")),
+        riwayat_jabatan: z.array(z.object({
+          nama_jabatan: z.string().optional(),
+          unit_kerja: z.string().optional(),
+          tmt_jabatan: z.string().optional(),
+          tmt_selesai: z.string().optional(),
+        })).optional(),
+        riwayat_mutasi: z.array(z.object({
+          unit_asal: z.string().optional(),
+          unit_tujuan: z.string().optional(),
+          alasan_mutasi: z.string().optional(),
+          tmt_mutasi: z.string().optional(),
+        })).optional(),
+        riwayat_pendidikan: z.array(z.object({
+          jenjang: z.string().optional(),
+          institusi: z.string().optional(),
+          jurusan: z.string().optional(),
+          tahun_lulus: z.string().optional(),
+        })).optional(),
+        riwayat_diklat: z.array(z.object({
+          nama_diklat: z.string().optional(),
+          penyelenggara: z.string().optional(),
+          tahun: z.string().optional(),
+          durasi: z.string().optional(),
+        })).optional(),
+        riwayat_uji_kompetensi: z.array(z.object({
+          nama_uji: z.string().optional(),
+          penyelenggara: z.string().optional(),
+          hasil: z.string().optional(),
+          tahun: z.string().optional(),
+        })).optional(),
+      }).passthrough()
+    ),
     defaultValues: user || {},
+    mode: "onBlur",
   });
 
   const { fields: jabatanFields, append: appendJabatan, remove: removeJabatan } = useFieldArray({
@@ -228,6 +288,9 @@ export default function Profile() {
                       <div className="space-y-2">
                         <Label>Nama Lengkap</Label>
                         <Input {...form.register("name")} />
+                        {form.formState.errors.name && (
+                          <p className="text-xs text-destructive">{form.formState.errors.name.message as string}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Email</Label>
@@ -237,22 +300,37 @@ export default function Profile() {
                         <Label>NIP / NIK</Label>
                         <p className="text-xs text-muted-foreground -mt-1">ASN: NIP | Non-ASN: NIK</p>
                         <Input {...form.register("nip")} placeholder="Masukkan NIP atau NIK" />
+                        {form.formState.errors.nip && (
+                          <p className="text-xs text-destructive">{form.formState.errors.nip.message as string}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>No. Telepon</Label>
-                        <Input {...form.register("phone")} />
+                        <Input {...form.register("phone")} placeholder="08xxxxxxxxxx" />
+                        {form.formState.errors.phone && (
+                          <p className="text-xs text-destructive">{form.formState.errors.phone.message as string}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Tempat Lahir</Label>
                         <Input {...form.register("tempat_lahir")} placeholder="Contoh: Jakarta" />
+                        {form.formState.errors.tempat_lahir && (
+                          <p className="text-xs text-destructive">{form.formState.errors.tempat_lahir.message as string}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Tanggal Lahir</Label>
                         <Input type="date" {...form.register("tanggal_lahir")} />
+                        {form.formState.errors.tanggal_lahir && (
+                          <p className="text-xs text-destructive">{form.formState.errors.tanggal_lahir.message as string}</p>
+                        )}
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <Label>Alamat Lengkap</Label>
                         <Textarea {...form.register("alamat_lengkap")} placeholder="Masukkan alamat lengkap..." rows={3} />
+                        {form.formState.errors.alamat_lengkap && (
+                          <p className="text-xs text-destructive">{form.formState.errors.alamat_lengkap.message as string}</p>
+                        )}
                       </div>
                     </div>
 
