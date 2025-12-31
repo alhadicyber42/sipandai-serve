@@ -16,7 +16,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { WORK_UNITS } from "@/lib/constants";
-import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X, Lock, AlertCircle, CalendarClock } from "lucide-react";
+import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X, Lock, AlertCircle, CalendarClock, BarChart3 } from "lucide-react";
+import { EomAnalyticsTab } from "@/components/EomAnalyticsTab";
 import confetti from "canvas-confetti";
 import { TestimonialCarousel, Testimonial } from "@/components/ui/testimonial-carousel";
 import { TestimonialSlideshow, TestimonialItem } from "@/components/TestimonialSlideshow";
@@ -990,7 +991,7 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminUnit ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminPusat ? 'grid-cols-4' : isAdminUnit ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         <TabsTrigger
                             value="employees"
                             className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
@@ -1025,6 +1026,16 @@ export default function EmployeeOfTheMonth() {
                             <span className="hidden md:inline">Employee of The Year</span>
                             <span className="md:hidden">Tahunan</span>
                         </TabsTrigger>
+                        {isAdminPusat && (
+                            <TabsTrigger
+                                value="analytics"
+                                className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white py-2 sm:py-3"
+                            >
+                                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Analytics</span>
+                                <span className="sm:hidden">Stats</span>
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     {/* Employees List Tab */}
@@ -1770,6 +1781,13 @@ export default function EmployeeOfTheMonth() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* Analytics Tab - Admin Pusat Only */}
+                    {isAdminPusat && (
+                        <TabsContent value="analytics" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
+                            <EomAnalyticsTab />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
 
