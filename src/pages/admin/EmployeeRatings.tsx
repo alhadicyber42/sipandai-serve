@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2, Gavel, X, FileText, Lock, CalendarClock } from "lucide-react";
+import { Trophy, Star, Search, Eye, Calendar, Award, User, ClipboardCheck, AlertCircle, CheckCircle2, Crown, Building2, Gavel, X, FileText, Lock, CalendarClock, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUnitEvaluationForm } from "@/components/AdminUnitEvaluationForm";
 import { AdminPusatEvaluationForm } from "@/components/AdminPusatEvaluationForm";
 import { WinnerRecapTab } from "@/components/WinnerRecapTab";
 import { EomSettingsTab } from "@/components/EomSettingsTab";
+import { EomAnalyticsTab } from "@/components/EomAnalyticsTab";
 import { WORK_UNITS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useEomPeriodStatus } from "@/hooks/useEomPeriodStatus";
@@ -436,7 +437,7 @@ export default function AdminEmployeeRatings() {
                 {/* Main Tabs for Admin Pusat */}
                 {isAdminPusat ? (
                     <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 mb-4">
+                        <TabsList className="grid w-full grid-cols-4 mb-4">
                             <TabsTrigger value="penilaian" className="gap-2">
                                 <ClipboardCheck className="h-4 w-4" />
                                 Penilaian
@@ -449,6 +450,10 @@ export default function AdminEmployeeRatings() {
                                 <Calendar className="h-4 w-4" />
                                 Pengaturan
                             </TabsTrigger>
+                            <TabsTrigger value="analytics" className="gap-2">
+                                <BarChart3 className="h-4 w-4" />
+                                Analitik
+                            </TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="rekap">
@@ -457,6 +462,10 @@ export default function AdminEmployeeRatings() {
                         
                         <TabsContent value="pengaturan">
                             <EomSettingsTab />
+                        </TabsContent>
+                        
+                        <TabsContent value="analytics">
+                            <EomAnalyticsTab />
                         </TabsContent>
                         
                         <TabsContent value="penilaian" className="space-y-6">
