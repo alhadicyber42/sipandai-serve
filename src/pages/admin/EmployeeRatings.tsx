@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,6 +21,8 @@ import { EomAnalyticsTab } from "@/components/EomAnalyticsTab";
 import { WORK_UNITS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useEomPeriodStatus } from "@/hooks/useEomPeriodStatus";
+import { usePagination } from "@/hooks/usePagination";
+import { TablePagination } from "@/components/TablePagination";
 interface Rating {
   id: string;
   rater_id: string;

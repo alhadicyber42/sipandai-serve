@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Crown, Calendar, Star, Award, Medal, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WORK_UNITS } from "@/lib/constants";
+import { usePagination } from "@/hooks/usePagination";
+import { TablePagination } from "@/components/TablePagination";
 
 interface DesignatedWinner {
   id: string;
@@ -192,6 +194,160 @@ export function WinnerRecapTab() {
     return months[parseInt(month) - 1];
   };
 
+  // Paginated Candidates Table Component
+  const PaginatedCandidatesTable = ({ candidates }: { candidates: YearlyCandidate[] }) => {
+    const pagination = usePagination(candidates, { initialPageSize: 10 });
+
+    const getRankStyle = (r: number) => {
+      if (r === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
+      if (r === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
+      if (r === 3) return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
+      return 'bg-muted text-muted-foreground';
+    };
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16 text-center">#</TableHead>
+              <TableHead>Pegawai</TableHead>
+              <TableHead className="text-center">Menang Bulanan</TableHead>
+              <TableHead className="text-center hidden sm:table-cell">Total Poin</TableHead>
+              <TableHead className="text-center hidden md:table-cell">Rata-rata</TableHead>
+              <TableHead className="hidden lg:table-cell">Bulan Menang</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pagination.paginatedData.map((candidate, index) => {
+              const rank = (pagination.currentPage - 1) * pagination.pageSize + index + 1;
+              
+              return (
+                <TableRow key={candidate.employeeId}>
+                  <TableCell className="text-center">
+                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${getRankStyle(rank)}`}>
+                      {rank}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={candidate.employeeAvatar} />
+                        <AvatarFallback>{candidate.employeeName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{candidate.employeeName}</p>
+                        <p className="text-xs text-muted-foreground">{candidate.employeeWorkUnit}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
+                      <Medal className="h-3 w-3 mr-1" />
+                      {candidate.monthlyWinCount}x
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center hidden sm:table-cell">
+                    <span className="font-bold text-purple-600">{candidate.totalPoints}</span>
+                  </TableCell>
+                  <TableCell className="text-center hidden md:table-cell">
+                    <span className="text-muted-foreground">{candidate.avgPoints}</span>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {candidate.months.map(m => (
+                        <Badge key={m} variant="secondary" className="text-xs">
+                          {formatShortMonth(m)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        {candidates.length > 10 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            pageSize={pagination.pageSize}
+            onPageChange={pagination.setCurrentPage}
+            onPageSizeChange={pagination.setPageSize}
+            pageSizeOptions={[5, 10, 20]}
+            showPageSizeSelector={true}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Paginated Monthly Winners Grid Component
+  const PaginatedWinnersGrid = ({ winners }: { winners: WinnerWithDetails[] }) => {
+    const pagination = usePagination(winners, { initialPageSize: 9 });
+
+    return (
+      <div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {pagination.paginatedData.map(winner => (
+            <Card key={winner.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-3">
+                <div className="flex items-center gap-2 text-white">
+                  <Trophy className="h-4 w-4" />
+                  <span className="font-semibold text-sm">
+                    {formatPeriod(winner.period)}
+                  </span>
+                </div>
+              </div>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border-2 border-yellow-400">
+                    <AvatarImage src={winner.employee_avatar} />
+                    <AvatarFallback className="bg-yellow-100 text-yellow-700 font-bold">
+                      {winner.employee_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">{winner.employee_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {winner.employee_jabatan || winner.employee_work_unit}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <Badge variant="secondary">
+                    {winner.employee_category}
+                  </Badge>
+                  <div className="flex items-center gap-1 text-yellow-600">
+                    <Star className="h-4 w-4 fill-yellow-400" />
+                    <span className="font-bold">{winner.final_points}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {winners.length > 9 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            pageSize={pagination.pageSize}
+            onPageChange={pagination.setCurrentPage}
+            onPageSizeChange={pagination.setPageSize}
+            pageSizeOptions={[6, 9, 12, 18]}
+            showPageSizeSelector={true}
+          />
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -283,74 +439,7 @@ export function WinnerRecapTab() {
                       <p>Belum ada pemenang bulanan untuk kategori {category} di tahun {selectedYear}</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-16 text-center">#</TableHead>
-                            <TableHead>Pegawai</TableHead>
-                            <TableHead className="text-center">Menang Bulanan</TableHead>
-                            <TableHead className="text-center hidden sm:table-cell">Total Poin</TableHead>
-                            <TableHead className="text-center hidden md:table-cell">Rata-rata</TableHead>
-                            <TableHead className="hidden lg:table-cell">Bulan Menang</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {candidates.map((candidate, index) => {
-                            const rank = index + 1;
-                            const getRankStyle = (r: number) => {
-                              if (r === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
-                              if (r === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
-                              if (r === 3) return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
-                              return 'bg-muted text-muted-foreground';
-                            };
-                            
-                            return (
-                              <TableRow key={candidate.employeeId}>
-                                <TableCell className="text-center">
-                                  <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${getRankStyle(rank)}`}>
-                                    {rank}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10">
-                                      <AvatarImage src={candidate.employeeAvatar} />
-                                      <AvatarFallback>{candidate.employeeName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <p className="font-medium">{candidate.employeeName}</p>
-                                      <p className="text-xs text-muted-foreground">{candidate.employeeWorkUnit}</p>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
-                                    <Medal className="h-3 w-3 mr-1" />
-                                    {candidate.monthlyWinCount}x
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center hidden sm:table-cell">
-                                  <span className="font-bold text-purple-600">{candidate.totalPoints}</span>
-                                </TableCell>
-                                <TableCell className="text-center hidden md:table-cell">
-                                  <span className="text-muted-foreground">{candidate.avgPoints}</span>
-                                </TableCell>
-                                <TableCell className="hidden lg:table-cell">
-                                  <div className="flex flex-wrap gap-1">
-                                    {candidate.months.map(m => (
-                                      <Badge key={m} variant="secondary" className="text-xs">
-                                        {formatShortMonth(m)}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <PaginatedCandidatesTable candidates={candidates} />
                   )}
                 </TabsContent>
               );
@@ -392,45 +481,7 @@ export function WinnerRecapTab() {
                       <p>Belum ada pemenang {category} di tahun {selectedYear}</p>
                     </div>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {winners.map(winner => (
-                        <Card key={winner.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-3">
-                            <div className="flex items-center gap-2 text-white">
-                              <Trophy className="h-4 w-4" />
-                              <span className="font-semibold text-sm">
-                                {formatPeriod(winner.period)}
-                              </span>
-                            </div>
-                          </div>
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-12 w-12 border-2 border-yellow-400">
-                                <AvatarImage src={winner.employee_avatar} />
-                                <AvatarFallback className="bg-yellow-100 text-yellow-700 font-bold">
-                                  {winner.employee_name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold truncate">{winner.employee_name}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {winner.employee_jabatan || winner.employee_work_unit}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                              <Badge variant="secondary">
-                                {winner.employee_category}
-                              </Badge>
-                              <div className="flex items-center gap-1 text-yellow-600">
-                                <Star className="h-4 w-4 fill-yellow-400" />
-                                <span className="font-bold">{winner.final_points}</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                    <PaginatedWinnersGrid winners={winners} />
                   )}
                 </TabsContent>
               );
