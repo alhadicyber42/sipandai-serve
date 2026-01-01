@@ -10,6 +10,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarChart3, Users, CheckCircle2, XCircle, Building2, TrendingUp, Loader2 } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { TablePagination } from "@/components/TablePagination";
 
 interface UnitAnalytics {
   unitId: number;
@@ -195,6 +197,96 @@ export function EomAnalyticsTab() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  // Paginated Employee Table Component
+  const PaginatedEmployeeTable = ({ 
+    employees, 
+    type, 
+    getInitials 
+  }: { 
+    employees: EmployeeRatingStatus[]; 
+    type: 'rated' | 'not_rated';
+    getInitials: (name: string) => string;
+  }) => {
+    const pagination = usePagination(employees, { initialPageSize: 10 });
+
+    return (
+      <div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pegawai</TableHead>
+              <TableHead>NIP</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>{type === 'rated' ? 'Status Penilaian' : 'Status'}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pagination.paginatedData.map((emp) => (
+              <TableRow key={emp.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={emp.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(emp.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{emp.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{emp.nip}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={
+                    emp.kriteria_asn === "Non ASN" 
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                  }>
+                    {emp.kriteria_asn || "ASN"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {type === 'rated' ? (
+                    <div className="flex gap-1">
+                      {emp.ratedASN && (
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                          ✓ ASN
+                        </Badge>
+                      )}
+                      {emp.ratedNonASN && (
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                          ✓ Non ASN
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Belum Menilai
+                    </Badge>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {employees.length > 10 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            pageSize={pagination.pageSize}
+            onPageChange={pagination.setCurrentPage}
+            onPageSizeChange={pagination.setPageSize}
+            pageSizeOptions={[5, 10, 20]}
+            showPageSizeSelector={true}
+          />
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -370,49 +462,11 @@ export function EomAnalyticsTab() {
                               <p className="text-sm">Semua pegawai sudah melakukan penilaian!</p>
                             </div>
                           ) : (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Pegawai</TableHead>
-                                  <TableHead>NIP</TableHead>
-                                  <TableHead>Kategori</TableHead>
-                                  <TableHead>Status</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {unit.notRatedEmployees.map((emp) => (
-                                  <TableRow key={emp.id}>
-                                    <TableCell>
-                                      <div className="flex items-center gap-2">
-                                        <Avatar className="h-8 w-8">
-                                          <AvatarImage src={emp.avatar_url || undefined} />
-                                          <AvatarFallback className="text-xs">
-                                            {getInitials(emp.name)}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{emp.name}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">{emp.nip}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className={
-                                        emp.kriteria_asn === "Non ASN" 
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                          : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                      }>
-                                        {emp.kriteria_asn || "ASN"}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                                        <XCircle className="h-3 w-3 mr-1" />
-                                        Belum Menilai
-                                      </Badge>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                            <PaginatedEmployeeTable 
+                              employees={unit.notRatedEmployees} 
+                              type="not_rated" 
+                              getInitials={getInitials}
+                            />
                           )}
                         </TabsContent>
 
@@ -423,57 +477,11 @@ export function EomAnalyticsTab() {
                               <p className="text-sm">Belum ada pegawai yang melakukan penilaian</p>
                             </div>
                           ) : (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Pegawai</TableHead>
-                                  <TableHead>NIP</TableHead>
-                                  <TableHead>Kategori</TableHead>
-                                  <TableHead>Status Penilaian</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {unit.ratedEmployees.map((emp) => (
-                                  <TableRow key={emp.id}>
-                                    <TableCell>
-                                      <div className="flex items-center gap-2">
-                                        <Avatar className="h-8 w-8">
-                                          <AvatarImage src={emp.avatar_url || undefined} />
-                                          <AvatarFallback className="text-xs">
-                                            {getInitials(emp.name)}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{emp.name}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">{emp.nip}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className={
-                                        emp.kriteria_asn === "Non ASN" 
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                          : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                      }>
-                                        {emp.kriteria_asn || "ASN"}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex gap-1">
-                                        {emp.ratedASN && (
-                                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
-                                            ✓ ASN
-                                          </Badge>
-                                        )}
-                                        {emp.ratedNonASN && (
-                                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                                            ✓ Non ASN
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                            <PaginatedEmployeeTable 
+                              employees={unit.ratedEmployees} 
+                              type="rated" 
+                              getInitials={getInitials}
+                            />
                           )}
                         </TabsContent>
                       </Tabs>
