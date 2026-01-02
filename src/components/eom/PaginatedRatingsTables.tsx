@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Star, Eye, Calendar, Building2, User, Crown, CheckCircle2, Trophy, Gavel, X, Lock } from "lucide-react";
+import { Star, Eye, Calendar, Building2, User, Crown, CheckCircle2, Trophy, Lock, AlertCircle, ClipboardCheck } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
 
@@ -210,13 +210,158 @@ export function PaginatedRatingsTable({
   );
 }
 
-// Paginated Aggregated Ratings Table for "Penilaian Final" section
+// Paginated Admin Unit Table for unit evaluation
+interface PaginatedAdminUnitTableProps {
+  data: AggregatedRating[];
+  onOpenEvaluationForm: (item: AggregatedRating) => void;
+}
+
+export function PaginatedAdminUnitTable({
+  data,
+  onOpenEvaluationForm,
+}: PaginatedAdminUnitTableProps) {
+  const getUnitFinalPoints = (r: AggregatedRating) => {
+    if (r.hasUnitEvaluation && r.unitEvaluation) return r.unitEvaluation.final_total_points;
+    return r.totalPoints;
+  };
+
+  const sortedData = useMemo(() => 
+    [...data].sort((a, b) => getUnitFinalPoints(b) - getUnitFinalPoints(a)),
+    [data]
+  );
+
+  const pagination = usePagination(sortedData, { initialPageSize: 10 });
+
+  const getRankStyle = (r: number) => {
+    if (r === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
+    if (r === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
+    if (r === 3) return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
+    return 'bg-muted text-muted-foreground';
+  };
+
+  if (sortedData.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Belum ada penilaian
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-4 w-16 text-center">#</TableHead>
+              <TableHead>Pegawai</TableHead>
+              <TableHead className="hidden md:table-cell">Periode</TableHead>
+              <TableHead className="text-center">Poin Awal</TableHead>
+              <TableHead className="text-center hidden sm:table-cell">Poin Akhir</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-right pr-4">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pagination.paginatedData.map((item, index) => {
+              const globalIndex = sortedData.findIndex(d => d.employeeId === item.employeeId && d.ratingPeriod === item.ratingPeriod);
+              
+              return (
+                <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
+                  <TableCell className="pl-4 text-center">
+                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${getRankStyle(globalIndex + 1)}`}>
+                      {globalIndex + 1}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{item.employeeName}</div>
+                    <div className="md:hidden text-xs text-muted-foreground mt-1">
+                      {formatPeriod(item.ratingPeriod)} • {item.ratingCount} penilaian
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="outline">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatPeriod(item.ratingPeriod)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-bold text-yellow-600">
+                        {item.totalPoints}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center hidden sm:table-cell">
+                    {item.hasUnitEvaluation && item.unitEvaluation ? (
+                      <div className="flex items-center justify-center gap-1">
+                        <Star className="h-4 w-4 fill-green-500 text-green-500" />
+                        <span className={`font-bold ${item.unitEvaluation.final_total_points >= item.totalPoints ? 'text-green-600' : 'text-orange-600'}`}>
+                          {item.unitEvaluation.final_total_points}
+                        </span>
+                      </div>
+                    ) : <span className="text-muted-foreground text-sm">-</span>}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {item.hasUnitEvaluation ? (
+                      <Badge variant="outline" className="border-green-500 text-green-600">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Sudah</span>
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-orange-500 text-orange-600">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Belum</span>
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right pr-4">
+                    <Button 
+                      variant={item.hasUnitEvaluation ? "outline" : "default"} 
+                      size="sm" 
+                      onClick={() => onOpenEvaluationForm(item)} 
+                      className="h-8 px-3"
+                    >
+                      <ClipboardCheck className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">
+                        {item.hasUnitEvaluation ? "Edit Evaluasi" : "Evaluasi"}
+                      </span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+      {sortedData.length > 10 && (
+        <TablePagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          pageSize={pagination.pageSize}
+          onPageChange={pagination.setCurrentPage}
+          onPageSizeChange={pagination.setPageSize}
+          pageSizeOptions={[5, 10, 20, 50]}
+          showPageSizeSelector={true}
+        />
+      )}
+    </div>
+  );
+}
+
+// Paginated Aggregated Ratings Table for "Penilaian Final" section (Admin Pusat)
 interface PaginatedAggregatedTableProps {
   data: AggregatedRating[];
   isAdminPusat: boolean;
   periodStatus: any;
   selectedPeriod: string;
   designatedWinners: DesignatedWinner[];
+  employees: any[];
+  filteredAggregatedRatings: AggregatedRating[];
   onOpenFinalEvaluationForm: (item: AggregatedRating) => void;
   onDesignateWinner: (item: AggregatedRating, type: 'monthly' | 'yearly') => void;
   onRemoveDesignatedWinner: (winnerId: string) => void;
@@ -230,6 +375,8 @@ export function PaginatedAggregatedTable({
   periodStatus,
   selectedPeriod,
   designatedWinners,
+  employees,
+  filteredAggregatedRatings,
   onOpenFinalEvaluationForm,
   onDesignateWinner,
   onRemoveDesignatedWinner,
@@ -283,11 +430,30 @@ export function PaginatedAggregatedTable({
           </TableHeader>
           <TableBody>
             {pagination.paginatedData.map((item, index) => {
-              const rank = (pagination.currentPage - 1) * pagination.pageSize + index + 1;
               const globalIndex = sortedData.findIndex(d => d.employeeId === item.employeeId && d.ratingPeriod === item.ratingPeriod);
               const winner = isDesignatedWinner(item.employeeId, item.ratingPeriod);
               const category = getEmployeeCategory(item.employeeId);
               
+              // Calculate if this is top for designations
+              const period = item.ratingPeriod;
+              const year = period.split('-')[0];
+              const sameCategory = filteredAggregatedRatings.filter(r => {
+                const empCat = employees.find(e => e.id === r.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+                return r.ratingPeriod === period && empCat === category;
+              });
+              const sameCategorySorted = [...sameCategory].sort((a, b) => getFinalPointsForSort(b) - getFinalPointsForSort(a));
+              const isTopMonthly = sameCategorySorted[0]?.employeeId === item.employeeId;
+
+              const yearRatings = filteredAggregatedRatings.filter(r => {
+                const empCat = employees.find(e => e.id === r.employeeId)?.kriteria_asn === 'Non ASN' ? 'Non ASN' : 'ASN';
+                return r.ratingPeriod.startsWith(year) && empCat === category;
+              });
+              const yearSorted = [...yearRatings].sort((a, b) => getFinalPointsForSort(b) - getFinalPointsForSort(a));
+              const isTopYearly = yearSorted[0]?.employeeId === item.employeeId;
+
+              const monthlyWinner = designatedWinners.find(w => w.employee_id === item.employeeId && w.period === period && w.winner_type === 'monthly');
+              const yearlyWinner = designatedWinners.find(w => w.employee_id === item.employeeId && w.period === year && w.winner_type === 'yearly');
+
               return (
                 <TableRow key={`${item.employeeId}-${item.ratingPeriod}`}>
                   <TableCell className="pl-4 text-center">
@@ -339,8 +505,8 @@ export function PaginatedAggregatedTable({
                   <TableCell className="text-center hidden sm:table-cell">
                     {item.hasFinalEvaluation && item.finalEvaluation ? (
                       <div className="flex items-center justify-center gap-1">
-                        <Crown className="h-4 w-4 fill-purple-500 text-purple-500" />
-                        <span className="font-bold text-purple-600">
+                        <Crown className="h-4 w-4 text-purple-500" />
+                        <span className={`font-bold ${item.finalEvaluation.final_total_points >= item.totalPoints ? 'text-purple-600' : 'text-orange-600'}`}>
                           {item.finalEvaluation.final_total_points}
                         </span>
                       </div>
@@ -355,42 +521,36 @@ export function PaginatedAggregatedTable({
                         Pemenang
                       </Badge>
                     ) : item.hasFinalEvaluation ? (
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                      <Badge variant="outline" className="border-purple-500 text-purple-600">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Verified
+                        <span className="hidden sm:inline">Final</span>
                       </Badge>
                     ) : item.hasUnitEvaluation ? (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Unit
+                      <Badge variant="outline" className="border-blue-500 text-blue-600">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Unit</span>
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        Pending
+                      <Badge variant="outline" className="border-orange-500 text-orange-600">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Belum</span>
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right pr-4">
-                    {periodStatus?.isVerificationActive || selectedPeriod === "all" ? (
-                      <div className="flex justify-end gap-2 flex-wrap">
-                        <Button
-                          variant={item.hasFinalEvaluation ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => onOpenFinalEvaluationForm(item)}
-                          className="h-8 px-3"
-                        >
-                          <Crown className="h-4 w-4 md:mr-2" />
-                          <span className="hidden md:inline">
-                            {item.hasFinalEvaluation ? "Edit Evaluasi" : "Evaluasi Final"}
-                          </span>
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                        <Lock className="h-3 w-3" />
-                        <span className="hidden sm:inline">Periode Tutup</span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                      <Button 
+                        variant={item.hasFinalEvaluation ? "outline" : "default"} 
+                        size="sm" 
+                        onClick={() => onOpenFinalEvaluationForm(item)} 
+                        className={`h-8 px-3 ${!item.hasFinalEvaluation ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                      >
+                        <Crown className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">
+                          {item.hasFinalEvaluation ? "Edit Final" : "Nilai Final"}
+                        </span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
