@@ -26,16 +26,18 @@ interface PeriodStatus {
   canVerify: boolean;
   settings: EomSettings | null;
   message: string;
+  activePeriod: string | null; // The period from active settings
 }
 
 export function useEomPeriodStatus(period?: string, workUnitId?: number) {
   const [status, setStatus] = useState<PeriodStatus>({
     phase: 'no_settings',
-    canRate: true, // Default allow if no settings
-    canEvaluate: true,
-    canVerify: true,
+    canRate: false, // Default to NOT allow if no settings - changed from true
+    canEvaluate: false,
+    canVerify: false,
     settings: null,
-    message: ""
+    message: "",
+    activePeriod: null
   });
   const [isUnitParticipating, setIsUnitParticipating] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,28 +70,67 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
         }
       }
 
-      // Get current period settings
-      const targetPeriod = period || getCurrentPeriod();
+      const now = new Date();
       
-      const { data: settings } = await supabase
-        .from("eom_settings")
-        .select("*")
-        .eq("period", targetPeriod)
-        .maybeSingle();
+      // If a specific period is requested, get that period's settings
+      // Otherwise, find the currently active period based on date ranges
+      let settings: EomSettings | null = null;
+      
+      if (period) {
+        // Get settings for specific period
+        const { data } = await supabase
+          .from("eom_settings")
+          .select("*")
+          .eq("period", period)
+          .maybeSingle();
+        settings = data;
+      } else {
+        // Find currently active period - check ALL settings and find which one's date range we're in
+        const { data: allSettings } = await supabase
+          .from("eom_settings")
+          .select("*")
+          .order("rating_start_date", { ascending: false });
+        
+        if (allSettings && allSettings.length > 0) {
+          // Find a period where current date falls within any of the phases
+          for (const s of allSettings) {
+            const ratingStart = new Date(s.rating_start_date);
+            const verifyEnd = new Date(s.verification_end_date);
+            verifyEnd.setHours(23, 59, 59, 999);
+            
+            // Check if now is within the entire period range (from rating start to verification end)
+            if (now >= ratingStart && now <= verifyEnd) {
+              settings = s;
+              break;
+            }
+          }
+          
+          // If no active period found, check if there's an upcoming period
+          if (!settings) {
+            for (const s of allSettings) {
+              const ratingStart = new Date(s.rating_start_date);
+              if (now < ratingStart) {
+                settings = s;
+                break;
+              }
+            }
+          }
+        }
+      }
 
       if (!settings) {
         setStatus({
           phase: 'no_settings',
-          canRate: true,
-          canEvaluate: true,
-          canVerify: true,
+          canRate: false, // No active period = cannot rate
+          canEvaluate: false,
+          canVerify: false,
           settings: null,
-          message: "Tidak ada pengaturan periode. Semua fitur tersedia."
+          message: "Tidak ada periode penilaian yang aktif saat ini.",
+          activePeriod: null
         });
         return;
       }
 
-      const now = new Date();
       const ratingStart = new Date(settings.rating_start_date);
       const ratingEnd = new Date(settings.rating_end_date);
       ratingEnd.setHours(23, 59, 59, 999); // End of day
@@ -110,26 +151,26 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
 
       if (now < ratingStart) {
         phase = 'not_started';
-        message = `Periode penilaian akan dimulai pada ${formatDate(ratingStart)}`;
+        message = `Periode penilaian ${settings.period} akan dimulai pada ${formatDate(ratingStart)}`;
       } else if (now >= ratingStart && now <= ratingEnd) {
         phase = 'rating';
         canRate = true;
-        message = `Periode penilaian aktif sampai ${formatDate(ratingEnd)}`;
+        message = `Periode penilaian ${settings.period} aktif sampai ${formatDate(ratingEnd)}`;
       } else if (now >= evalStart && now <= evalEnd) {
         phase = 'evaluation';
         canEvaluate = true;
-        message = `Periode evaluasi aktif. Penilaian oleh User Unit sudah ditutup.`;
+        message = `Periode evaluasi ${settings.period} aktif. Penilaian oleh User Unit sudah ditutup.`;
       } else if (now >= verifyStart && now <= verifyEnd) {
         phase = 'verification';
         canVerify = true;
-        message = `Periode verifikasi dan penetapan pemenang aktif.`;
+        message = `Periode verifikasi dan penetapan pemenang ${settings.period} aktif.`;
       } else if (now > verifyEnd) {
         phase = 'completed';
-        message = `Periode sudah selesai.`;
+        message = `Periode ${settings.period} sudah selesai.`;
       } else {
-        // Gap between periods
+        // Gap between rating end and evaluation start, or between evaluation end and verification start
         phase = 'not_started';
-        message = `Menunggu periode berikutnya.`;
+        message = `Menunggu fase berikutnya untuk periode ${settings.period}.`;
       }
 
       setStatus({
@@ -138,18 +179,20 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
         canEvaluate,
         canVerify,
         settings,
-        message
+        message,
+        activePeriod: settings.period // Return the period from settings
       });
     } catch (error) {
       console.error("Error loading period status:", error);
-      // On error, allow all actions
+      // On error, don't allow actions
       setStatus({
         phase: 'no_settings',
-        canRate: true,
-        canEvaluate: true,
-        canVerify: true,
+        canRate: false,
+        canEvaluate: false,
+        canVerify: false,
         settings: null,
-        message: ""
+        message: "Terjadi kesalahan memuat periode penilaian.",
+        activePeriod: null
       });
     } finally {
       setIsLoading(false);
@@ -157,11 +200,6 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
   };
 
   return { ...status, isUnitParticipating, isLoading, refresh: loadPeriodStatus };
-}
-
-function getCurrentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 }
 
 function formatDate(date: Date): string {

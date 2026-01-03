@@ -158,20 +158,34 @@ export default function EmployeeRating() {
     useEffect(() => {
         if (employeeId && user) {
             loadEmployee();
-            checkRatingQuota();
         }
     }, [employeeId, user]);
-
-    // Redirect if period is locked
+    
+    // Check rating quota when period status is loaded
     useEffect(() => {
-        if (!periodStatus.isLoading && !periodStatus.canRate && periodStatus.phase !== 'no_settings') {
-            toast.error("Periode penilaian sudah ditutup. " + periodStatus.message);
-            navigate("/employee-of-the-month");
+        if (employeeId && user && !periodStatus.isLoading && periodStatus.activePeriod) {
+            checkRatingQuota();
+        }
+    }, [employeeId, user, periodStatus.isLoading, periodStatus.activePeriod]);
+
+    // Redirect if period is locked or no active period
+    useEffect(() => {
+        if (!periodStatus.isLoading) {
+            if (periodStatus.phase === 'no_settings') {
+                toast.error("Tidak ada periode penilaian yang aktif saat ini.");
+                navigate("/employee-of-the-month");
+            } else if (!periodStatus.canRate) {
+                toast.error("Periode penilaian sudah ditutup. " + periodStatus.message);
+                navigate("/employee-of-the-month");
+            }
         }
     }, [periodStatus.isLoading, periodStatus.canRate, periodStatus.phase]);
 
     const checkRatingQuota = async () => {
         if (!user || !employeeId) return;
+        
+        // Wait for period status to be loaded
+        if (periodStatus.isLoading || !periodStatus.activePeriod) return;
         
         // First, get the employee's category (ASN/Non ASN)
         const { data: employeeData } = await supabase
@@ -184,15 +198,15 @@ export default function EmployeeRating() {
         
         const employeeCategory = employeeData.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
         
-        const now = new Date();
-        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        // Use the active period from settings, NOT current month
+        const activePeriod = periodStatus.activePeriod;
 
         // Check if user has already rated an employee of the SAME category this period
         const { data: existingRatings } = await supabase
             .from("employee_ratings")
             .select("id, rated_employee_id")
             .eq("rater_id", user.id)
-            .eq("rating_period", currentPeriod);
+            .eq("rating_period", activePeriod);
 
         if (existingRatings && existingRatings.length > 0) {
             // Get the categories of already rated employees
@@ -209,7 +223,7 @@ export default function EmployeeRating() {
             });
             
             if (hasRatedSameCategory) {
-                toast.error(`Anda sudah memberikan penilaian untuk kategori ${employeeCategory} pada periode ini. Setiap pegawai dapat memberikan 1 penilaian untuk ASN dan 1 penilaian untuk Non ASN per periode.`);
+                toast.error(`Anda sudah memberikan penilaian untuk kategori ${employeeCategory} pada periode ${activePeriod}. Setiap pegawai dapat memberikan 1 penilaian untuk ASN dan 1 penilaian untuk Non ASN per periode.`);
                 navigate("/employee-of-the-month");
             }
         }
@@ -246,6 +260,12 @@ export default function EmployeeRating() {
     };
 
     const handleSubmit = async () => {
+        // Check if there's an active period
+        if (!periodStatus.activePeriod) {
+            toast.error("Tidak ada periode penilaian yang aktif saat ini.");
+            return;
+        }
+        
         // Validation
         if (!reason.trim()) {
             toast.error("Mohon isi alasan memilih pegawai ini");
@@ -276,8 +296,8 @@ export default function EmployeeRating() {
         setIsSubmitting(true);
 
         try {
-            const now = new Date();
-            const ratingPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            // Use the active period from settings, NOT current month
+            const ratingPeriod = periodStatus.activePeriod;
 
             // Calculate total points and points per criteria
             const criteriaTotals: Record<string, number> = {};
@@ -316,7 +336,7 @@ export default function EmployeeRating() {
                 });
                 
                 if (hasRatedSameCategory) {
-                    toast.error(`Anda sudah memberikan penilaian untuk kategori ${ratedCategory} pada periode ini.`);
+                    toast.error(`Anda sudah memberikan penilaian untuk kategori ${ratedCategory} pada periode ${ratingPeriod}.`);
                     setIsSubmitting(false);
                     navigate("/employee-of-the-month");
                     return;
@@ -344,7 +364,7 @@ export default function EmployeeRating() {
                 return;
             }
 
-            toast.success(`Penilaian berhasil dikirim! Total Poin: ${totalPoints}/${maxPossiblePoints}`);
+            toast.success(`Penilaian periode ${ratingPeriod} berhasil dikirim! Total Poin: ${totalPoints}/${maxPossiblePoints}`);
 
             setTimeout(() => {
                 navigate("/employee-of-the-month");
