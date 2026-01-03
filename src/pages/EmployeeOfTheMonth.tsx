@@ -81,12 +81,18 @@ export default function EmployeeOfTheMonth() {
         loadEmployees();
         loadLeaderboard();
         loadYearlyLeaderboard();
-        loadMyRatings();
         loadDesignatedWinners();
         if (isAdminUnit && user?.work_unit_id) {
             loadUnitLeaderboard();
         }
     }, [user, isAdminUnit]);
+
+    // Quota check MUST follow the active configured period (from settings), not the calendar month.
+    useEffect(() => {
+        if (!user) return;
+        if (periodStatus.isLoading) return;
+        loadMyRatings();
+    }, [user, periodStatus.isLoading, periodStatus.activePeriod]);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
@@ -165,26 +171,32 @@ export default function EmployeeOfTheMonth() {
 
     const loadMyRatings = async () => {
         if (!user) return;
-        
-        const now = new Date();
-        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // IMPORTANT: quota is per ACTIVE configured period, not per month.
+        const activePeriod = periodStatus.activePeriod;
+        if (!activePeriod) {
+            setRatedEmployeeIds(new Set());
+            setHasRatedASN(false);
+            setHasRatedNonASN(false);
+            return;
+        }
 
         const { data: myRatings } = await supabase
             .from("employee_ratings")
             .select("rated_employee_id")
             .eq("rater_id", user.id)
-            .eq("rating_period", currentPeriod);
+            .eq("rating_period", activePeriod);
 
         if (myRatings && myRatings.length > 0) {
             setRatedEmployeeIds(new Set(myRatings.map(r => r.rated_employee_id)));
-            
+
             // Get categories of rated employees to track quota per category
             const ratedEmployeeIds = myRatings.map(r => r.rated_employee_id);
             const { data: ratedProfiles } = await supabase
                 .from("profiles")
                 .select("id, kriteria_asn")
                 .in("id", ratedEmployeeIds);
-            
+
             if (ratedProfiles) {
                 const hasASN = ratedProfiles.some(p => p.kriteria_asn !== "Non ASN");
                 const hasNonASN = ratedProfiles.some(p => p.kriteria_asn === "Non ASN");
