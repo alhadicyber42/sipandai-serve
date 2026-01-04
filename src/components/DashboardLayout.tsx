@@ -230,12 +230,14 @@ export const DashboardLayout = ({
           "fixed lg:sticky top-0 left-0 h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-white z-40 flex flex-col",
           "w-[280px] sm:w-72 lg:w-64 xl:w-72",
           "transition-transform duration-300 ease-out",
+          // Add padding top on mobile to prevent header overlap
+          "pt-14 sm:pt-16 lg:pt-0",
           isSidebarOpen 
             ? "translate-x-0 shadow-2xl border-r border-white/10" 
             : "-translate-x-full lg:translate-x-0 lg:shadow-2xl lg:border-r lg:border-white/10"
         )}
       >
-        {/* Logo */}
+        {/* Logo - Desktop only */}
         <div className="p-4 sm:p-5 lg:p-6 border-b border-white/10 hidden lg:block relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl -ml-12 -mb-12"></div>
@@ -250,31 +252,46 @@ export const DashboardLayout = ({
           </div>
         </div>
 
-        {/* User Info - aligned left like menu items */}
+        {/* User Info - clickable profile link with visual hint */}
         <div className="p-3 sm:p-4 border-b border-white/10 bg-black/20 backdrop-blur-sm">
           <Link 
             to="/profile" 
             onClick={() => setIsSidebarOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 touch-target w-full",
+              "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 touch-target w-full",
               isActive("/profile") 
                 ? "bg-gradient-to-r from-indigo-600/80 to-blue-600/80 text-white font-medium shadow-md" 
-                : "text-white/70 hover:text-white hover:bg-white/5"
+                : "text-white/70 hover:text-white hover:bg-white/5 active:bg-white/10"
             )}
+            aria-label="Buka halaman profil"
           >
-            <Avatar className="w-8 h-8 border-2 border-white/20 shadow-md flex-shrink-0">
-              <AvatarImage src={user?.avatar_url || undefined} alt={user?.name} />
-              <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-blue-500 text-white text-xs font-bold">
-                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className="h-4 w-4" />}
-              </AvatarFallback>
-            </Avatar>
+            {/* Avatar with ring animation on hover */}
+            <div className="relative flex-shrink-0">
+              <Avatar className="w-9 h-9 border-2 border-white/20 shadow-md transition-all duration-200 group-hover:border-indigo-400 group-hover:scale-105">
+                <AvatarImage src={user?.avatar_url || undefined} alt={user?.name} />
+                <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-blue-500 text-white text-xs font-bold">
+                  {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              {/* Subtle pulse indicator */}
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900" />
+            </div>
+            
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{user?.name}</p>
+              <p className="font-medium text-sm truncate group-hover:text-white transition-colors">{user?.name}</p>
               <p className="text-xs text-white/60 truncate">
                 {user?.role === "admin_pusat" ? "Administrator Pusat" : user?.role === "admin_unit" ? "Admin Unit" : "Pegawai"}
               </p>
             </div>
+            
+            {/* Visual hint arrow - shows this is clickable */}
+            <ChevronDown className="h-4 w-4 text-white/40 -rotate-90 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
           </Link>
+          
+          {/* Subtle hint text for first-time users on mobile */}
+          <p className="text-[10px] text-white/40 text-center mt-1.5 lg:hidden">
+            Ketuk untuk lihat profil
+          </p>
         </div>
 
         {/* Navigation */}
