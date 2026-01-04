@@ -857,28 +857,30 @@ export default function Dashboard() {
 
               {/* Pagination Controls for Activities */}
               {recentActivities.length > activitiesPerPage && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4 pt-4 border-t">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
                     disabled={activitiesPage === 1}
-                    className="gap-2"
+                    className="gap-1 sm:gap-2 w-full sm:w-auto order-2 sm:order-1"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Sebelumnya
+                    <span className="hidden sm:inline">Sebelumnya</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
-                  <div className="text-sm text-muted-foreground">
-                    Halaman {activitiesPage} dari {totalActivitiesPages}
+                  <div className="text-xs sm:text-sm text-muted-foreground order-1 sm:order-2">
+                    {activitiesPage} / {totalActivitiesPages}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setActivitiesPage(p => Math.min(totalActivitiesPages, p + 1))}
                     disabled={activitiesPage === totalActivitiesPages}
-                    className="gap-2"
+                    className="gap-1 sm:gap-2 w-full sm:w-auto order-3"
                   >
-                    Berikutnya
+                    <span className="hidden sm:inline">Berikutnya</span>
+                    <span className="sm:hidden">Next</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

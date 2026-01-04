@@ -390,37 +390,38 @@ export default function EmployeeRating() {
 
     return (
         <DashboardLayout>
-            <div className="max-w-4xl mx-auto space-y-6 pb-8">
+            <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-8 px-1 sm:px-0">
                 <Button
                     variant="ghost"
                     onClick={() => navigate("/employee-of-the-month")}
-                    className="mb-4"
+                    className="mb-2 sm:mb-4 -ml-2 sm:ml-0"
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Kembali ke Daftar
+                    <span className="hidden sm:inline">Kembali ke Daftar</span>
+                    <span className="sm:hidden">Kembali</span>
                 </Button>
 
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Penilaian Pegawai</h1>
-                    <p className="text-muted-foreground">
+                <div className="space-y-1 sm:space-y-2">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Penilaian Pegawai</h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                         Berikan penilaian untuk setiap indikator. Skala: 1 (Sangat Kurang) - 5 (Sangat Baik)
                     </p>
                 </div>
 
                 {/* Employee Info Card */}
                 <Card className={`border-t-4 ${isNonASN ? 'border-t-emerald-600' : 'border-t-blue-600'}`}>
-                    <CardHeader>
-                        <div className="flex flex-col md:flex-row items-center gap-6">
-                            <Avatar className="h-24 w-24 border-4 border-background shadow-md">
+                    <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-md flex-shrink-0">
                                 <AvatarImage src={employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.name}`} />
-                                <AvatarFallback className="text-xl">{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-lg sm:text-xl">{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <div className="text-center md:text-left space-y-1">
-                                <CardTitle className="text-2xl">{employee.name}</CardTitle>
-                                <CardDescription className="text-lg font-medium text-blue-600">
+                            <div className="text-center sm:text-left space-y-1 min-w-0 flex-1">
+                                <CardTitle className="text-lg sm:text-xl md:text-2xl break-words">{employee.name}</CardTitle>
+                                <CardDescription className="text-base sm:text-lg font-medium text-blue-600">
                                     {employee.nip}
                                 </CardDescription>
-                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                <div className="flex flex-wrap gap-2 justify-center sm:justify-start mt-2">
                                     <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">
                                         {employee.role === 'user_unit' ? 'Pegawai Unit' : employee.role.replace('_', ' ')}
                                     </div>
@@ -510,25 +511,26 @@ export default function EmployeeRating() {
 
                 {/* Submit Section */}
                 <Card className="bg-muted/50">
-                    <CardFooter className="flex justify-between items-center p-6">
-                        <div className="text-sm text-muted-foreground">
+                    <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6">
+                        <div className="text-xs sm:text-sm text-muted-foreground">
                             <span className="text-red-500">*</span> Semua indikator wajib dinilai (Total: {activeCriteria.reduce((sum, c) => sum + c.items.length, 0)} indikator)
                         </div>
-                        <div className="flex gap-3">
-                            <Button variant="outline" onClick={() => navigate("/employee-of-the-month")}>
+                        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+                            <Button variant="outline" onClick={() => navigate("/employee-of-the-month")} className="flex-1 sm:flex-initial">
                                 Batal
                             </Button>
                             <Button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="bg-blue-600 hover:bg-blue-700 min-w-[140px]"
+                                className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-initial sm:min-w-[140px]"
                             >
                                 {isSubmitting ? (
                                     "Mengirim..."
                                 ) : (
                                     <>
                                         <Send className="mr-2 h-4 w-4" />
-                                        Kirim Penilaian
+                                        <span className="hidden sm:inline">Kirim Penilaian</span>
+                                        <span className="sm:hidden">Kirim</span>
                                     </>
                                 )}
                             </Button>
