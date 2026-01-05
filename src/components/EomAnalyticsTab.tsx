@@ -41,12 +41,20 @@ interface WorkUnit {
   code: string;
 }
 
+interface EomPeriodSetting {
+  id: string;
+  period: string;
+  rating_start_date: string;
+  rating_end_date: string;
+}
+
 export function EomAnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [participatingUnits, setParticipatingUnits] = useState<WorkUnit[]>([]);
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [allRatings, setAllRatings] = useState<any[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
+  const [periodSettings, setPeriodSettings] = useState<EomPeriodSetting[]>([]);
 
   useEffect(() => {
     loadData();
@@ -55,6 +63,20 @@ export function EomAnalyticsTab() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Load period settings from eom_settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from("eom_settings")
+        .select("id, period, rating_start_date, rating_end_date")
+        .order("period", { ascending: false });
+
+      if (settingsError) throw settingsError;
+      setPeriodSettings(settingsData || []);
+
+      // Set the first period as default if available
+      if (settingsData && settingsData.length > 0) {
+        setSelectedPeriod(settingsData[0].period);
+      }
+
       // Load participating units
       const { data: participatingUnitsData, error: puError } = await supabase
         .from("eom_participating_units")
@@ -78,11 +100,6 @@ export function EomAnalyticsTab() {
       if (profError) throw profError;
       setAllProfiles(profiles || []);
 
-      // Set current period as default
-      const now = new Date();
-      const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      setSelectedPeriod(currentPeriod);
-
       // Load all ratings
       const { data: ratings, error: ratError } = await supabase
         .from("employee_ratings")
@@ -99,18 +116,12 @@ export function EomAnalyticsTab() {
     }
   };
 
-  // Generate period options (last 12 months)
-  const periodOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
-    const now = new Date();
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const label = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-      options.push({ value, label });
-    }
-    return options;
-  }, []);
+  // Format period for display
+  const formatPeriodLabel = (period: string) => {
+    const [year, month] = period.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  };
 
   // Calculate analytics per unit
   const unitAnalytics: UnitAnalytics[] = useMemo(() => {
@@ -312,15 +323,21 @@ export function EomAnalyticsTab() {
           </p>
         </div>
         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Pilih Periode" />
+          <SelectTrigger className="w-[250px]">
+            <SelectValue placeholder="Pilih Periode Penilaian" />
           </SelectTrigger>
           <SelectContent>
-            {periodOptions.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+            {periodSettings.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Belum ada periode penilaian
+              </div>
+            ) : (
+              periodSettings.map(setting => (
+                <SelectItem key={setting.id} value={setting.period}>
+                  {formatPeriodLabel(setting.period)}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
