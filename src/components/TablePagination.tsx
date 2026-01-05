@@ -30,19 +30,24 @@ export function TablePagination({
   if (totalItems === 0) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>
-          Menampilkan {startIndex}-{endIndex} dari {totalItems} data
+    <div className="flex flex-col gap-3 px-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center">
+        <span className="text-center sm:text-left">
+          <span className="sm:hidden">
+            {startIndex}-{endIndex}/{totalItems}
+          </span>
+          <span className="hidden sm:inline">
+            Menampilkan {startIndex}-{endIndex} dari {totalItems} data
+          </span>
         </span>
         {showPageSizeSelector && onPageSizeChange && (
-          <div className="flex items-center gap-2 ml-4">
-            <span>Per halaman:</span>
+          <div className="flex items-center justify-center gap-2 sm:ml-4 sm:justify-start">
+            <span className="text-xs sm:text-sm">Per halaman:</span>
             <Select
               value={pageSize.toString()}
               onValueChange={(value) => onPageSizeChange(Number(value))}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[60px] sm:w-[70px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -57,49 +62,50 @@ export function TablePagination({
         )}
       </div>
       
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
         >
-          <ChevronsLeft className="h-4 w-4" />
+          <ChevronsLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         
-        <div className="flex items-center gap-1 mx-2">
-          <span className="text-sm font-medium">
-            Halaman {currentPage} dari {totalPages}
+        <div className="flex items-center gap-1 mx-1 sm:mx-2">
+          <span className="text-xs font-medium sm:text-sm">
+            <span className="sm:hidden">{currentPage}/{totalPages}</span>
+            <span className="hidden sm:inline">Halaman {currentPage} dari {totalPages}</span>
           </span>
         </div>
         
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
         >
-          <ChevronsRight className="h-4 w-4" />
+          <ChevronsRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
       </div>
     </div>
