@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Building2, Clock, Save, Plus, Settings2, CheckCircle2, AlertCircle, CalendarClock, Users, Star, ClipboardCheck, Trophy } from "lucide-react";
+import { Calendar, Building2, Clock, Save, Settings2, CheckCircle2, CalendarClock, Users, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WORK_UNITS } from "@/lib/constants";
 import { toast } from "sonner";
@@ -40,14 +40,10 @@ export function EomSettingsTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Form state for new period settings
+  // Simplified form state - only start and end date (all phases run concurrently)
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
-  const [ratingStartDate, setRatingStartDate] = useState<string>("");
-  const [ratingEndDate, setRatingEndDate] = useState<string>("");
-  const [evaluationStartDate, setEvaluationStartDate] = useState<string>("");
-  const [evaluationEndDate, setEvaluationEndDate] = useState<string>("");
-  const [verificationStartDate, setVerificationStartDate] = useState<string>("");
-  const [verificationEndDate, setVerificationEndDate] = useState<string>("");
+  const [periodStartDate, setPeriodStartDate] = useState<string>("");
+  const [periodEndDate, setPeriodEndDate] = useState<string>("");
   const [editingSettingsId, setEditingSettingsId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -152,52 +148,31 @@ export function EomSettingsTab() {
   };
 
   const handleSaveSettings = async () => {
-    if (!selectedPeriod || !ratingStartDate || !ratingEndDate || 
-        !evaluationStartDate || !evaluationEndDate ||
-        !verificationStartDate || !verificationEndDate) {
+    if (!selectedPeriod || !periodStartDate || !periodEndDate) {
       toast.error("Mohon lengkapi semua field");
       return;
     }
 
-    // Validate date ranges
-    const rStart = new Date(ratingStartDate);
-    const rEnd = new Date(ratingEndDate);
-    const eStart = new Date(evaluationStartDate);
-    const eEnd = new Date(evaluationEndDate);
-    const vStart = new Date(verificationStartDate);
-    const vEnd = new Date(verificationEndDate);
+    // Validate date range
+    const pStart = new Date(periodStartDate);
+    const pEnd = new Date(periodEndDate);
 
-    if (rStart > rEnd) {
-      toast.error("Tanggal akhir penilaian harus setelah tanggal mulai");
-      return;
-    }
-    if (eStart > eEnd) {
-      toast.error("Tanggal akhir evaluasi harus setelah tanggal mulai");
-      return;
-    }
-    if (vStart > vEnd) {
-      toast.error("Tanggal akhir verifikasi harus setelah tanggal mulai");
-      return;
-    }
-    if (rEnd > eStart) {
-      toast.error("Periode evaluasi harus dimulai setelah periode penilaian berakhir");
-      return;
-    }
-    if (eEnd > vStart) {
-      toast.error("Periode verifikasi harus dimulai setelah periode evaluasi berakhir");
+    if (pStart > pEnd) {
+      toast.error("Tanggal akhir harus setelah tanggal mulai");
       return;
     }
 
     setIsSaving(true);
     try {
+      // All phases use the same date range (concurrent)
       const settingsData = {
         period: selectedPeriod,
-        rating_start_date: ratingStartDate,
-        rating_end_date: ratingEndDate,
-        evaluation_start_date: evaluationStartDate,
-        evaluation_end_date: evaluationEndDate,
-        verification_start_date: verificationStartDate,
-        verification_end_date: verificationEndDate,
+        rating_start_date: periodStartDate,
+        rating_end_date: periodEndDate,
+        evaluation_start_date: periodStartDate,
+        evaluation_end_date: periodEndDate,
+        verification_start_date: periodStartDate,
+        verification_end_date: periodEndDate,
         created_by: user?.id
       };
 
@@ -237,47 +212,31 @@ export function EomSettingsTab() {
 
   const resetForm = () => {
     setSelectedPeriod("");
-    setRatingStartDate("");
-    setRatingEndDate("");
-    setEvaluationStartDate("");
-    setEvaluationEndDate("");
-    setVerificationStartDate("");
-    setVerificationEndDate("");
+    setPeriodStartDate("");
+    setPeriodEndDate("");
     setEditingSettingsId(null);
   };
 
   const handleEditSettings = (setting: EomSettings) => {
     setEditingSettingsId(setting.id || null);
     setSelectedPeriod(setting.period);
-    setRatingStartDate(setting.rating_start_date);
-    setRatingEndDate(setting.rating_end_date);
-    setEvaluationStartDate(setting.evaluation_start_date);
-    setEvaluationEndDate(setting.evaluation_end_date);
-    setVerificationStartDate(setting.verification_start_date);
-    setVerificationEndDate(setting.verification_end_date);
+    setPeriodStartDate(setting.rating_start_date);
+    setPeriodEndDate(setting.rating_end_date);
   };
 
   const getCurrentPhase = (setting: EomSettings): { phase: string; color: string; icon: React.ReactNode } => {
     const now = new Date();
-    const ratingStart = new Date(setting.rating_start_date);
-    const ratingEnd = new Date(setting.rating_end_date);
-    const evalStart = new Date(setting.evaluation_start_date);
-    const evalEnd = new Date(setting.evaluation_end_date);
-    const verifyStart = new Date(setting.verification_start_date);
-    const verifyEnd = new Date(setting.verification_end_date);
+    const periodStart = new Date(setting.rating_start_date);
+    const periodEnd = new Date(setting.rating_end_date);
+    periodEnd.setHours(23, 59, 59, 999);
 
-    if (now < ratingStart) {
+    if (now < periodStart) {
       return { phase: "Belum Dimulai", color: "bg-gray-100 text-gray-700", icon: <Clock className="h-3 w-3" /> };
-    } else if (now >= ratingStart && now <= ratingEnd) {
-      return { phase: "Periode Penilaian", color: "bg-blue-100 text-blue-700", icon: <Star className="h-3 w-3" /> };
-    } else if (now >= evalStart && now <= evalEnd) {
-      return { phase: "Periode Evaluasi", color: "bg-orange-100 text-orange-700", icon: <ClipboardCheck className="h-3 w-3" /> };
-    } else if (now >= verifyStart && now <= verifyEnd) {
-      return { phase: "Periode Verifikasi", color: "bg-purple-100 text-purple-700", icon: <Trophy className="h-3 w-3" /> };
-    } else if (now > verifyEnd) {
-      return { phase: "Selesai", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-3 w-3" /> };
+    } else if (now >= periodStart && now <= periodEnd) {
+      return { phase: "Aktif", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-3 w-3" /> };
+    } else {
+      return { phase: "Selesai", color: "bg-blue-100 text-blue-700", icon: <Star className="h-3 w-3" /> };
     }
-    return { phase: "Tidak Aktif", color: "bg-gray-100 text-gray-700", icon: <AlertCircle className="h-3 w-3" /> };
   };
 
   const activeUnitsCount = participatingUnits.filter(u => u.is_active).length;
@@ -335,85 +294,30 @@ export function EomSettingsTab() {
                 </Select>
               </div>
 
-              {/* Rating Period */}
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-4">
-                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-medium">
-                  <Star className="h-4 w-4" />
-                  Periode Penilaian (User Unit menilai pegawai)
+              {/* Unified Period - All phases run concurrently */}
+              <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800 space-y-4">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium">
+                  <CalendarClock className="h-4 w-4" />
+                  Rentang Periode Aktif
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tanggal Mulai</Label>
-                    <Input 
-                      type="date" 
-                      value={ratingStartDate}
-                      onChange={e => setRatingStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tanggal Akhir</Label>
-                    <Input 
-                      type="date" 
-                      value={ratingEndDate}
-                      onChange={e => setRatingEndDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Evaluation Period */}
-              <div className="p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800 space-y-4">
-                <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 font-medium">
-                  <ClipboardCheck className="h-4 w-4" />
-                  Periode Evaluasi (Admin Unit mengevaluasi)
-                </div>
-                <p className="text-sm text-orange-600 dark:text-orange-400">
-                  Saat periode ini dimulai, User Unit tidak bisa lagi memberikan penilaian.
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Selama periode ini, semua aktivitas (penilaian, evaluasi, verifikasi) dapat dilakukan bersamaan.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Tanggal Mulai</Label>
                     <Input 
                       type="date" 
-                      value={evaluationStartDate}
-                      onChange={e => setEvaluationStartDate(e.target.value)}
+                      value={periodStartDate}
+                      onChange={e => setPeriodStartDate(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Tanggal Akhir</Label>
                     <Input 
                       type="date" 
-                      value={evaluationEndDate}
-                      onChange={e => setEvaluationEndDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Verification Period */}
-              <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800 space-y-4">
-                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-medium">
-                  <Trophy className="h-4 w-4" />
-                  Periode Verifikasi & Penetapan Pemenang (Admin Pusat)
-                </div>
-                <p className="text-sm text-purple-600 dark:text-purple-400">
-                  Saat periode ini, Admin Pusat memverifikasi evaluasi dan menetapkan pemenang.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tanggal Mulai</Label>
-                    <Input 
-                      type="date" 
-                      value={verificationStartDate}
-                      onChange={e => setVerificationStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tanggal Akhir</Label>
-                    <Input 
-                      type="date" 
-                      value={verificationEndDate}
-                      onChange={e => setVerificationEndDate(e.target.value)}
+                      value={periodEndDate}
+                      onChange={e => setPeriodEndDate(e.target.value)}
                     />
                   </div>
                 </div>
@@ -455,9 +359,7 @@ export function EomSettingsTab() {
                       <TableRow>
                         <TableHead>Periode</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="hidden md:table-cell">Penilaian</TableHead>
-                        <TableHead className="hidden md:table-cell">Evaluasi</TableHead>
-                        <TableHead className="hidden lg:table-cell">Verifikasi</TableHead>
+                        <TableHead className="hidden md:table-cell">Tanggal Aktif</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -476,13 +378,7 @@ export function EomSettingsTab() {
                               </Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                              {format(parseISO(setting.rating_start_date), "d MMM", { locale: localeId })} - {format(parseISO(setting.rating_end_date), "d MMM", { locale: localeId })}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                              {format(parseISO(setting.evaluation_start_date), "d MMM", { locale: localeId })} - {format(parseISO(setting.evaluation_end_date), "d MMM", { locale: localeId })}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                              {format(parseISO(setting.verification_start_date), "d MMM", { locale: localeId })} - {format(parseISO(setting.verification_end_date), "d MMM", { locale: localeId })}
+                              {format(parseISO(setting.rating_start_date), "d MMM yyyy", { locale: localeId })} - {format(parseISO(setting.rating_end_date), "d MMM yyyy", { locale: localeId })}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button 
