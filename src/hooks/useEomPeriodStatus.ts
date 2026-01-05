@@ -12,12 +12,7 @@ interface EomSettings {
   verification_end_date: string;
 }
 
-interface ParticipatingUnit {
-  work_unit_id: number;
-  is_active: boolean;
-}
-
-export type PeriodPhase = 'not_started' | 'rating' | 'evaluation' | 'verification' | 'completed' | 'no_settings';
+export type PeriodPhase = 'not_started' | 'active' | 'completed' | 'no_settings';
 
 interface PeriodStatus {
   phase: PeriodPhase;
@@ -26,13 +21,13 @@ interface PeriodStatus {
   canVerify: boolean;
   settings: EomSettings | null;
   message: string;
-  activePeriod: string | null; // The period from active settings
+  activePeriod: string | null;
 }
 
 export function useEomPeriodStatus(period?: string, workUnitId?: number) {
   const [status, setStatus] = useState<PeriodStatus>({
     phase: 'no_settings',
-    canRate: false, // Default to NOT allow if no settings - changed from true
+    canRate: false,
     canEvaluate: false,
     canVerify: false,
     settings: null,
@@ -57,8 +52,6 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
           .eq("work_unit_id", workUnitId)
           .maybeSingle();
         
-        // If no entry exists or is_active is false, unit is not participating
-        // If no entries exist at all in the table, assume all units participate (backward compatibility)
         const { count } = await supabase
           .from("eom_participating_units")
           .select("*", { count: 'exact', head: true });
@@ -66,18 +59,14 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
         if (count && count > 0) {
           setIsUnitParticipating(unitData?.is_active ?? false);
         } else {
-          setIsUnitParticipating(true); // No restrictions configured
+          setIsUnitParticipating(true);
         }
       }
 
       const now = new Date();
-      
-      // If a specific period is requested, get that period's settings
-      // Otherwise, find the currently active period based on date ranges
       let settings: EomSettings | null = null;
       
       if (period) {
-        // Get settings for specific period
         const { data } = await supabase
           .from("eom_settings")
           .select("*")
@@ -85,31 +74,30 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
           .maybeSingle();
         settings = data;
       } else {
-        // Find currently active period - check ALL settings and find which one's date range we're in
+        // Find currently active period based on rating dates (all phases run concurrently)
         const { data: allSettings } = await supabase
           .from("eom_settings")
           .select("*")
           .order("rating_start_date", { ascending: false });
         
         if (allSettings && allSettings.length > 0) {
-          // Find a period where current date falls within any of the phases
           for (const s of allSettings) {
-            const ratingStart = new Date(s.rating_start_date);
-            const verifyEnd = new Date(s.verification_end_date);
-            verifyEnd.setHours(23, 59, 59, 999);
+            const periodStart = new Date(s.rating_start_date);
+            const periodEnd = new Date(s.rating_end_date);
+            periodEnd.setHours(23, 59, 59, 999);
             
-            // Check if now is within the entire period range (from rating start to verification end)
-            if (now >= ratingStart && now <= verifyEnd) {
+            // Check if now is within the period range
+            if (now >= periodStart && now <= periodEnd) {
               settings = s;
               break;
             }
           }
           
-          // If no active period found, check if there's an upcoming period
+          // If no active period found, check for upcoming period
           if (!settings) {
             for (const s of allSettings) {
-              const ratingStart = new Date(s.rating_start_date);
-              if (now < ratingStart) {
+              const periodStart = new Date(s.rating_start_date);
+              if (now < periodStart) {
                 settings = s;
                 break;
               }
@@ -121,7 +109,7 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
       if (!settings) {
         setStatus({
           phase: 'no_settings',
-          canRate: false, // No active period = cannot rate
+          canRate: false,
           canEvaluate: false,
           canVerify: false,
           settings: null,
@@ -131,17 +119,9 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
         return;
       }
 
-      const ratingStart = new Date(settings.rating_start_date);
-      const ratingEnd = new Date(settings.rating_end_date);
-      ratingEnd.setHours(23, 59, 59, 999); // End of day
-      
-      const evalStart = new Date(settings.evaluation_start_date);
-      const evalEnd = new Date(settings.evaluation_end_date);
-      evalEnd.setHours(23, 59, 59, 999);
-      
-      const verifyStart = new Date(settings.verification_start_date);
-      const verifyEnd = new Date(settings.verification_end_date);
-      verifyEnd.setHours(23, 59, 59, 999);
+      const periodStart = new Date(settings.rating_start_date);
+      const periodEnd = new Date(settings.rating_end_date);
+      periodEnd.setHours(23, 59, 59, 999);
 
       let phase: PeriodPhase;
       let canRate = false;
@@ -149,28 +129,19 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
       let canVerify = false;
       let message = "";
 
-      if (now < ratingStart) {
+      if (now < periodStart) {
         phase = 'not_started';
-        message = `Periode penilaian ${settings.period} akan dimulai pada ${formatDate(ratingStart)}`;
-      } else if (now >= ratingStart && now <= ratingEnd) {
-        phase = 'rating';
+        message = `Periode penilaian ${settings.period} akan dimulai pada ${formatDate(periodStart)}`;
+      } else if (now >= periodStart && now <= periodEnd) {
+        phase = 'active';
+        // All phases run concurrently
         canRate = true;
-        message = `Periode penilaian ${settings.period} aktif sampai ${formatDate(ratingEnd)}`;
-      } else if (now >= evalStart && now <= evalEnd) {
-        phase = 'evaluation';
         canEvaluate = true;
-        message = `Periode evaluasi ${settings.period} aktif. Penilaian oleh User Unit sudah ditutup.`;
-      } else if (now >= verifyStart && now <= verifyEnd) {
-        phase = 'verification';
         canVerify = true;
-        message = `Periode verifikasi dan penetapan pemenang ${settings.period} aktif.`;
-      } else if (now > verifyEnd) {
+        message = `Periode penilaian ${settings.period} aktif sampai ${formatDate(periodEnd)}`;
+      } else {
         phase = 'completed';
         message = `Periode ${settings.period} sudah selesai.`;
-      } else {
-        // Gap between rating end and evaluation start, or between evaluation end and verification start
-        phase = 'not_started';
-        message = `Menunggu fase berikutnya untuk periode ${settings.period}.`;
       }
 
       setStatus({
@@ -180,11 +151,10 @@ export function useEomPeriodStatus(period?: string, workUnitId?: number) {
         canVerify,
         settings,
         message,
-        activePeriod: settings.period // Return the period from settings
+        activePeriod: settings.period
       });
     } catch (error) {
       console.error("Error loading period status:", error);
-      // On error, don't allow actions
       setStatus({
         phase: 'no_settings',
         canRate: false,
