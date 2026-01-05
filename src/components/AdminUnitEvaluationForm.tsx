@@ -188,28 +188,28 @@ export function AdminUnitEvaluationForm({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
+            <DialogContent className="w-[95vw] max-w-2xl h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col p-0">
+                <DialogHeader className="flex-shrink-0 p-4 sm:p-6 pb-2 sm:pb-4">
+                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                         <Award className="h-5 w-5 text-yellow-600" />
-                        Penilaian Lanjutan Pimpinan Unit
+                        <span className="hidden sm:inline">Penilaian Lanjutan Pimpinan Unit</span>
+                        <span className="sm:hidden">Evaluasi Pimpinan</span>
                     </DialogTitle>
-                    <DialogDescription>
-                        Evaluasi akhir untuk <strong>{employeeName}</strong> periode <strong>{formatPeriod(ratingPeriod)}</strong>
+                    <DialogDescription className="text-xs sm:text-sm">
+                        Evaluasi untuk <strong className="break-all">{employeeName}</strong> periode <strong>{formatPeriod(ratingPeriod)}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6">
+                    <div className="space-y-4 sm:space-y-6 py-2 pb-4">
                     {/* Original Score Card */}
                     <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/20 border-yellow-200 dark:border-yellow-800">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Star className="h-6 w-6 text-yellow-600 fill-yellow-600" />
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Total Poin dari Rekan Kerja</p>
-                                        <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{originalTotalPoints} Poin</p>
-                                    </div>
+                        <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center gap-3">
+                                <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 fill-yellow-600 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">Total Poin Rekan Kerja</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-400">{originalTotalPoints} Poin</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -617,14 +617,15 @@ export function AdminUnitEvaluationForm({
                             )}
                         </CardContent>
                     </Card>
+                    </div>
                 </div>
 
-                <DialogFooter className="gap-2">
-                    <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <DialogFooter className="flex-shrink-0 p-4 sm:p-6 pt-2 sm:pt-4 gap-2">
+                    <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="text-sm">
                         Batal
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? "Menyimpan..." : existingEvaluation ? "Perbarui Penilaian" : "Simpan Penilaian"}
+                    <Button onClick={handleSubmit} disabled={isSubmitting} className="text-sm">
+                        {isSubmitting ? "Menyimpan..." : existingEvaluation ? "Perbarui" : "Simpan"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

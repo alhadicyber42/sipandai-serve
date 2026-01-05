@@ -291,39 +291,39 @@ export function WinnerRecapTab() {
 
     return (
       <div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {pagination.paginatedData.map(winner => (
             <Card key={winner.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-3">
+              <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-2 sm:p-3">
                 <div className="flex items-center gap-2 text-white">
-                  <Trophy className="h-4 w-4" />
-                  <span className="font-semibold text-sm">
+                  <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="font-semibold text-xs sm:text-sm">
                     {formatPeriod(winner.period)}
                   </span>
                 </div>
               </div>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border-2 border-yellow-400">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-yellow-400 flex-shrink-0">
                     <AvatarImage src={winner.employee_avatar} />
-                    <AvatarFallback className="bg-yellow-100 text-yellow-700 font-bold">
+                    <AvatarFallback className="bg-yellow-100 text-yellow-700 font-bold text-sm">
                       {winner.employee_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{winner.employee_name}</p>
+                    <p className="font-semibold text-sm sm:text-base truncate">{winner.employee_name}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {winner.employee_jabatan || winner.employee_work_unit}
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <Badge variant="secondary">
+                <div className="mt-2 sm:mt-3 flex items-center justify-between">
+                  <Badge variant="secondary" className="text-xs">
                     {winner.employee_category}
                   </Badge>
                   <div className="flex items-center gap-1 text-yellow-600">
-                    <Star className="h-4 w-4 fill-yellow-400" />
-                    <span className="font-bold">{winner.final_points}</span>
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-400" />
+                    <span className="font-bold text-sm">{winner.final_points}</span>
                   </div>
                 </div>
               </CardContent>
@@ -359,14 +359,14 @@ export function WinnerRecapTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Year Filter */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">Tahun:</span>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span className="text-sm font-medium">Pilih Tahun:</span>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <Calendar className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -382,20 +382,21 @@ export function WinnerRecapTab() {
 
       {/* Employee of the Year Candidates Section */}
       <Card className="border-purple-200 dark:border-purple-800">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/30 rounded-t-lg">
-          <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-            <Trophy className="h-5 w-5" />
-            Kandidat Employee of The Year {selectedYear}
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/30 rounded-t-lg px-3 sm:px-6 py-3 sm:py-4">
+          <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300 text-base sm:text-lg">
+            <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Kandidat Employee of The Year {selectedYear}</span>
+            <span className="sm:hidden">Kandidat EOY {selectedYear}</span>
           </CardTitle>
-          <CardDescription>
-            Kandidat otomatis berdasarkan akumulasi pemenang bulanan
+          <CardDescription className="text-xs sm:text-sm">
+            Kandidat otomatis dari pemenang bulanan
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 md:p-6">
+        <CardContent className="p-3 sm:p-4 md:p-6">
           <Tabs defaultValue="ASN" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="ASN">ASN</TabsTrigger>
-              <TabsTrigger value="Non ASN">Non ASN</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-9 sm:h-10">
+              <TabsTrigger value="ASN" className="text-xs sm:text-sm">ASN</TabsTrigger>
+              <TabsTrigger value="Non ASN" className="text-xs sm:text-sm">Non ASN</TabsTrigger>
             </TabsList>
             
             {['ASN', 'Non ASN'].map(category => {

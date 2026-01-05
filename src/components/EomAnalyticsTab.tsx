@@ -221,14 +221,14 @@ export function EomAnalyticsTab() {
     const pagination = usePagination(employees, { initialPageSize: 10 });
 
     return (
-      <div>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Pegawai</TableHead>
-              <TableHead>NIP</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>{type === 'rated' ? 'Status Penilaian' : 'Status'}</TableHead>
+              <TableHead className="hidden sm:table-cell">NIP</TableHead>
+              <TableHead className="hidden md:table-cell">Kategori</TableHead>
+              <TableHead>{type === 'rated' ? 'Status' : 'Status'}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -236,43 +236,47 @@ export function EomAnalyticsTab() {
               <TableRow key={emp.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                       <AvatarImage src={emp.avatar_url || undefined} />
                       <AvatarFallback className="text-xs">
                         {getInitials(emp.name)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{emp.name}</span>
+                    <div className="min-w-0">
+                      <span className="font-medium text-sm block truncate max-w-[120px] sm:max-w-none">{emp.name}</span>
+                      <span className="text-xs text-muted-foreground sm:hidden block">{emp.nip}</span>
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{emp.nip}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={
+                <TableCell className="text-muted-foreground hidden sm:table-cell">{emp.nip}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Badge variant="outline" className={`text-xs ${
                     emp.kriteria_asn === "Non ASN" 
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                  }>
+                  }`}>
                     {emp.kriteria_asn || "ASN"}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   {type === 'rated' ? (
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap gap-1">
                       {emp.ratedASN && (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
                           ✓ ASN
                         </Badge>
                       )}
                       {emp.ratedNonASN && (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                          ✓ Non ASN
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                          ✓ Non
                         </Badge>
                       )}
                     </div>
                   ) : (
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      <XCircle className="h-3 w-3 mr-1" />
-                      Belum Menilai
+                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                      <XCircle className="h-3 w-3 mr-0.5 sm:mr-1" />
+                      <span className="hidden sm:inline">Belum Menilai</span>
+                      <span className="sm:hidden">Belum</span>
                     </Badge>
                   )}
                 </TableCell>
@@ -432,25 +436,25 @@ export function EomAnalyticsTab() {
             <Accordion type="multiple" className="w-full">
               {unitAnalytics.map((unit) => (
                 <AccordionItem key={unit.unitId} value={String(unit.unitId)}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <div className="flex items-center gap-3">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{unit.unitName}</span>
+                  <AccordionTrigger className="hover:no-underline py-3 sm:py-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-2 sm:pr-4 gap-2 sm:gap-4">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium text-sm sm:text-base truncate">{unit.unitName}</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            {unit.employeesRated}
+                      <div className="flex items-center gap-2 sm:gap-4 ml-6 sm:ml-0">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs px-1.5 sm:px-2">
+                            <CheckCircle2 className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Sudah: </span>{unit.employeesRated}
                           </Badge>
-                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            {unit.employeesNotRated}
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs px-1.5 sm:px-2">
+                            <XCircle className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Belum: </span>{unit.employeesNotRated}
                           </Badge>
                         </div>
-                        <div className="w-24 flex items-center gap-2">
-                          <Progress value={unit.ratedPercentage} className="h-2" />
+                        <div className="w-16 sm:w-24 flex items-center gap-1 sm:gap-2">
+                          <Progress value={unit.ratedPercentage} className="h-1.5 sm:h-2" />
                           <span className="text-xs font-medium w-10 text-right">
                             {unit.ratedPercentage.toFixed(0)}%
                           </span>

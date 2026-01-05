@@ -250,38 +250,40 @@ export function EomSettingsTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="timeline" className="gap-2">
-            <CalendarClock className="h-4 w-4" />
-            Timeline Periode
+        <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
+          <TabsTrigger value="timeline" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+            <CalendarClock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Timeline Periode</span>
+            <span className="sm:hidden">Timeline</span>
           </TabsTrigger>
-          <TabsTrigger value="units" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Unit Kerja Peserta
+          <TabsTrigger value="units" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Unit Kerja Peserta</span>
+            <span className="sm:hidden">Unit Kerja</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Timeline Settings */}
-        <TabsContent value="timeline" className="space-y-6">
+        <TabsContent value="timeline" className="space-y-4 sm:space-y-6 mt-4">
           {/* Form for adding/editing period settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings2 className="h-5 w-5" />
-                {editingSettingsId ? "Edit Pengaturan Periode" : "Tambah Pengaturan Periode Baru"}
+            <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Settings2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                {editingSettingsId ? "Edit Periode" : "Tambah Periode Baru"}
               </CardTitle>
-              <CardDescription>
-                Atur timeline untuk setiap periode penilaian Employee of the Year
+              <CardDescription className="text-xs sm:text-sm">
+                Atur timeline untuk setiap periode penilaian
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
               {/* Period Selection */}
               <div className="space-y-2">
-                <Label>Periode Penilaian</Label>
+                <Label className="text-sm">Periode Penilaian</Label>
                 <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih periode (bulan)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -295,41 +297,43 @@ export function EomSettingsTab() {
               </div>
 
               {/* Unified Period - All phases run concurrently */}
-              <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800 space-y-4">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium">
+              <div className="p-3 sm:p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800 space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium text-sm">
                   <CalendarClock className="h-4 w-4" />
                   Rentang Periode Aktif
                 </div>
-                <p className="text-sm text-green-600 dark:text-green-400">
+                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">
                   Selama periode ini, semua aktivitas (penilaian, evaluasi, verifikasi) dapat dilakukan bersamaan.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tanggal Mulai</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-sm">Tanggal Mulai</Label>
                     <Input 
                       type="date" 
                       value={periodStartDate}
                       onChange={e => setPeriodStartDate(e.target.value)}
+                      className="text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Tanggal Akhir</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-sm">Tanggal Akhir</Label>
                     <Input 
                       type="date" 
                       value={periodEndDate}
                       onChange={e => setPeriodEndDate(e.target.value)}
+                      className="text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={handleSaveSettings} disabled={isSaving} className="gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleSaveSettings} disabled={isSaving} className="gap-2 text-sm w-full sm:w-auto">
                   <Save className="h-4 w-4" />
                   {isSaving ? "Menyimpan..." : editingSettingsId ? "Perbarui" : "Simpan"}
                 </Button>
                 {editingSettingsId && (
-                  <Button variant="outline" onClick={resetForm}>
+                  <Button variant="outline" onClick={resetForm} className="w-full sm:w-auto">
                     Batal
                   </Button>
                 )}
@@ -339,28 +343,28 @@ export function EomSettingsTab() {
 
           {/* List of existing period settings */}
           <Card>
-            <CardHeader>
-              <CardTitle>Daftar Pengaturan Periode</CardTitle>
-              <CardDescription>
-                Timeline yang sudah dikonfigurasi untuk setiap periode
+            <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">Daftar Pengaturan Periode</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Timeline yang sudah dikonfigurasi
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-4 sm:pt-0">
               {settings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Belum ada pengaturan periode</p>
-                  <p className="text-sm">Tambahkan pengaturan periode di atas</p>
+                <div className="text-center py-8 text-muted-foreground px-4">
+                  <Calendar className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">Belum ada pengaturan periode</p>
+                  <p className="text-xs">Tambahkan pengaturan periode di atas</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Periode</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden md:table-cell">Tanggal Aktif</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Periode</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                        <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Tanggal Aktif</TableHead>
+                        <TableHead className="text-right text-xs sm:text-sm">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -368,23 +372,30 @@ export function EomSettingsTab() {
                         const phase = getCurrentPhase(setting);
                         return (
                           <TableRow key={setting.id}>
-                            <TableCell className="font-medium">
-                              {formatPeriodDisplay(setting.period)}
+                            <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-4">
+                              <div>
+                                <span className="block">{formatPeriodDisplay(setting.period)}</span>
+                                <span className="text-[10px] text-muted-foreground sm:hidden block mt-0.5">
+                                  {format(parseISO(setting.rating_start_date), "d MMM", { locale: localeId })} - {format(parseISO(setting.rating_end_date), "d MMM", { locale: localeId })}
+                                </span>
+                              </div>
                             </TableCell>
-                            <TableCell>
-                              <Badge className={`${phase.color} gap-1`}>
+                            <TableCell className="py-2 sm:py-4">
+                              <Badge className={`${phase.color} gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2`}>
                                 {phase.icon}
-                                {phase.phase}
+                                <span className="hidden sm:inline">{phase.phase}</span>
+                                <span className="sm:hidden">{phase.phase === "Belum Dimulai" ? "Pending" : phase.phase}</span>
                               </Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                            <TableCell className="hidden sm:table-cell text-xs sm:text-sm text-muted-foreground py-2 sm:py-4">
                               {format(parseISO(setting.rating_start_date), "d MMM yyyy", { locale: localeId })} - {format(parseISO(setting.rating_end_date), "d MMM yyyy", { locale: localeId })}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right py-2 sm:py-4">
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleEditSettings(setting)}
+                                className="h-7 sm:h-8 text-xs px-2 sm:px-3"
                               >
                                 Edit
                               </Button>
@@ -401,48 +412,48 @@ export function EomSettingsTab() {
         </TabsContent>
 
         {/* Participating Units */}
-        <TabsContent value="units" className="space-y-6">
+        <TabsContent value="units" className="space-y-4 sm:space-y-6 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+            <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 Unit Kerja Peserta
               </CardTitle>
-              <CardDescription>
-                Pilih unit kerja yang dapat mengikuti penilaian Employee of the Year
+              <CardDescription className="text-xs sm:text-sm">
+                Pilih unit kerja yang dapat mengikuti penilaian
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total unit kerja aktif:
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="mb-4 p-2 sm:p-3 bg-muted rounded-lg flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Total unit aktif:
                 </span>
-                <Badge variant="secondary" className="text-lg px-3">
+                <Badge variant="secondary" className="text-sm sm:text-lg px-2 sm:px-3">
                   {activeUnitsCount} / {WORK_UNITS.length}
                 </Badge>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {participatingUnits.map(unit => {
                   const workUnit = WORK_UNITS.find(u => u.id === unit.work_unit_id);
                   return (
                     <div 
                       key={unit.work_unit_id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
                         unit.is_active 
                           ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' 
                           : 'bg-muted/30 border-border'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <Building2 className={`h-4 w-4 ${unit.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
-                        <span className={unit.is_active ? 'font-medium' : 'text-muted-foreground'}>
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <Building2 className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 ${unit.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
+                        <span className={`text-xs sm:text-sm truncate ${unit.is_active ? 'font-medium' : 'text-muted-foreground'}`}>
                           {workUnit?.name || `Unit ${unit.work_unit_id}`}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         {unit.is_active && (
-                          <Badge variant="outline" className="border-green-500 text-green-600 hidden sm:flex">
+                          <Badge variant="outline" className="border-green-500 text-green-600 hidden sm:flex text-xs">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             Aktif
                           </Badge>
