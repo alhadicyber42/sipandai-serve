@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiStepForm } from "@/components/ui/multi-step-form";
 import { toast } from "sonner";
-import { Building2, Mail, Lock, User, Phone, IdCard, Briefcase, Calendar, Plus, Trash2, GitCompare, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Building2, Mail, Lock, User, Phone, IdCard, Briefcase, Calendar, Plus, Trash2, GitCompare, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { WORK_UNITS } from "@/lib/constants";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -163,6 +165,12 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [registerStep, setRegisterStep] = useState(1);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // Login Form
   const loginForm = useForm<LoginFormValues>({
@@ -233,6 +241,38 @@ export default function Auth() {
       toast.error(result.error || "Login gagal");
     }
     setIsLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      toast.error("Masukkan email Anda");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotPasswordEmail)) {
+      toast.error("Format email tidak valid");
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/auth?tab=login`,
+      });
+
+      if (error) {
+        toast.error(error.message || "Gagal mengirim email reset password");
+      } else {
+        toast.success("Email reset password telah dikirim. Silakan cek inbox Anda.");
+        setForgotPasswordOpen(false);
+        setForgotPasswordEmail("");
+      }
+    } catch (err) {
+      toast.error("Terjadi kesalahan saat mengirim email reset password");
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   const validateStep = async (step: number): Promise<boolean> => {
@@ -414,21 +454,37 @@ export default function Auth() {
                       <p className="text-xs md:text-sm text-destructive font-medium">{loginForm.formState.errors.email.message}</p>
                     )}
                   </div>
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <Label htmlFor="login-password" className="text-sm md:text-base font-semibold">Password</Label>
                     <div className="relative group">
                       <Lock className="absolute left-3 top-2.5 md:top-3.5 h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                       <Input
                         id="login-password"
-                        type="password"
+                        type={showLoginPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base border-2 focus:border-blue-600 transition-all"
+                        className="pl-9 md:pl-10 pr-10 h-10 md:h-12 text-sm md:text-base border-2 focus:border-blue-600 transition-all"
                         {...loginForm.register("password")}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-2.5 md:top-3.5 h-4 w-4 md:h-5 md:w-5 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showLoginPassword ? <EyeOff className="h-4 w-4 md:h-5 md:w-5" /> : <Eye className="h-4 w-4 md:h-5 md:w-5" />}
+                      </button>
                     </div>
                     {loginForm.formState.errors.password && (
                       <p className="text-xs md:text-sm text-destructive font-medium">{loginForm.formState.errors.password.message}</p>
                     )}
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setForgotPasswordOpen(true)}
+                      className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                    >
+                      Lupa password?
+                    </button>
                   </div>
                   <Button
                     type="submit"
@@ -663,11 +719,18 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-password"
-                      type="password"
+                      type={showRegisterPassword ? "text" : "password"}
                       placeholder="Min. 8 karakter, huruf besar, kecil & angka"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-9 pr-10 border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("password")}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                   {/* Password Strength Indicator */}
                   {passwordValue && (
@@ -702,11 +765,18 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
                     <Input
                       id="register-confirm"
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Ulangi password"
-                      className="pl-9 border-2 focus:border-blue-600 transition-all"
+                      className="pl-9 pr-10 border-2 focus:border-blue-600 transition-all"
                       {...registerForm.register("confirmPassword")}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                   {registerForm.formState.errors.confirmPassword && <p className="text-sm text-destructive font-medium">{registerForm.formState.errors.confirmPassword.message}</p>}
                 </div>
@@ -753,6 +823,52 @@ export default function Auth() {
           )}
         </MultiStepForm>
       )}
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Lupa Password</DialogTitle>
+            <DialogDescription>
+              Masukkan email Anda untuk menerima link reset password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email" className="text-sm font-semibold">Email</Label>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="nama@email.com"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  className="pl-9 border-2 focus:border-blue-600 transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setForgotPasswordOpen(false);
+                  setForgotPasswordEmail("");
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleForgotPassword}
+                disabled={isSendingReset}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                {isSendingReset ? "Mengirim..." : "Kirim Link Reset"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
