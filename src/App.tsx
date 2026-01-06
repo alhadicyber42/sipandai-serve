@@ -17,6 +17,7 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const KenaikanPangkat = lazy(() => import("./pages/services/KenaikanPangkat"));
 const Mutasi = lazy(() => import("./pages/services/Mutasi"));
@@ -105,6 +106,7 @@ const App = () => (
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/layanan/kenaikan-pangkat" element={<ProtectedRoute><KenaikanPangkat /></ProtectedRoute>} />
                   <Route path="/layanan/mutasi" element={<ProtectedRoute><Mutasi /></ProtectedRoute>} />
