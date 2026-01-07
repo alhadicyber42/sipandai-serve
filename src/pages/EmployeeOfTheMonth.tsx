@@ -16,8 +16,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { WORK_UNITS } from "@/lib/constants";
-import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X, Lock, AlertCircle, CalendarClock, BarChart3 } from "lucide-react";
+import { Trophy, ThumbsUp, Star, Medal, Search, User, TrendingUp, Award, Crown, Briefcase, Building2, Quote, Clock, CheckCircle2, Gavel, X, Lock, AlertCircle, CalendarClock, BarChart3, Eye } from "lucide-react";
 import { EomAnalyticsTab } from "@/components/EomAnalyticsTab";
+import { EmployeeDetailDialog } from "@/components/eom/EmployeeDetailDialog";
 import confetti from "canvas-confetti";
 import { TestimonialCarousel, Testimonial } from "@/components/ui/testimonial-carousel";
 import { TestimonialSlideshow, TestimonialItem } from "@/components/TestimonialSlideshow";
@@ -70,6 +71,29 @@ export default function EmployeeOfTheMonth() {
     const isUserUnit = user?.role === "user_unit";
     const isAdminUnit = user?.role === "admin_unit";
     const isAdminPusat = user?.role === "admin_pusat";
+    const isUserPimpinan = user?.role === "user_pimpinan";
+    
+    // Employee detail dialog state
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+    const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState<{
+        id: string;
+        name: string;
+        avatar?: string;
+        nip: string;
+        isNonASN: boolean;
+    } | null>(null);
+    
+    // Handler for showing employee detail
+    const handleShowDetail = (employee: any) => {
+        setSelectedEmployeeForDetail({
+            id: employee.id,
+            name: employee.name,
+            avatar: employee.avatar_url,
+            nip: employee.nip,
+            isNonASN: employee.kriteria_asn === "Non ASN"
+        });
+        setIsDetailDialogOpen(true);
+    };
     
     // Period status for rating lock
     const periodStatus = useEomPeriodStatus(undefined, user?.work_unit_id);
@@ -1003,7 +1027,7 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminPusat ? 'grid-cols-4' : isAdminUnit ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminPusat ? 'grid-cols-4' : (isAdminUnit || isUserPimpinan) ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         <TabsTrigger
                             value="employees"
                             className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
@@ -1020,6 +1044,17 @@ export default function EmployeeOfTheMonth() {
                                 <Building2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 <span className="hidden sm:inline">Leaderboard Unit</span>
                                 <span className="sm:hidden">Unit</span>
+                            </TabsTrigger>
+                        )}
+                        {/* Peringkat tab for user_pimpinan */}
+                        {isUserPimpinan && (
+                            <TabsTrigger
+                                value="ranking"
+                                className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white py-2 sm:py-3"
+                            >
+                                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Peringkat</span>
+                                <span className="sm:hidden">Ranking</span>
                             </TabsTrigger>
                         )}
                         <TabsTrigger
@@ -1192,34 +1227,48 @@ export default function EmployeeOfTheMonth() {
                                                                                 {WORK_UNITS.find(u => u.id === employee.work_unit_id)?.name || "-"}
                                                                             </TableCell>
                                                                             <TableCell className="text-right">
-                                                                                {isSelf ? (
-                                                                                    <Badge variant="secondary" className="text-xs">
-                                                                                        Anda sendiri
-                                                                                    </Badge>
-                                                                                ) : isRated ? (
-                                                                                    <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
-                                                                                        ✓ Sudah Dinilai
-                                                                                    </Badge>
-                                                                                ) : categoryQuotaUsed ? (
-                                                                                    <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
-                                                                                        Kuota {isNonASN ? "Non ASN" : "ASN"} Habis
-                                                                                    </Badge>
-                                                                                ) : !periodStatus.canRate || !periodStatus.isUnitParticipating ? (
-                                                                                    <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">
-                                                                                        <Lock className="h-3 w-3 mr-1" />
-                                                                                        Terkunci
-                                                                                    </Badge>
-                                                                                ) : (
-                                                                                    <Button
-                                                                                        size="sm"
-                                                                                        onClick={() => navigate(`/employee-rating?id=${employee.id}`)}
-                                                                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                                                                                    >
-                                                                                        <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                                                                                        <span className="hidden sm:inline">Nilai Pegawai</span>
-                                                                                        <span className="sm:hidden">Nilai</span>
-                                                                                    </Button>
-                                                                                )}
+                                                                                <div className="flex items-center justify-end gap-2">
+                                                                                    {/* Detail button for user_pimpinan */}
+                                                                                    {isUserPimpinan && !isSelf && (
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            variant="outline"
+                                                                                            onClick={() => handleShowDetail(employee)}
+                                                                                            className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                                                                                        >
+                                                                                            <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                                                                            <span className="hidden sm:inline">Detail</span>
+                                                                                        </Button>
+                                                                                    )}
+                                                                                    {isSelf ? (
+                                                                                        <Badge variant="secondary" className="text-xs">
+                                                                                            Anda sendiri
+                                                                                        </Badge>
+                                                                                    ) : isRated ? (
+                                                                                        <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
+                                                                                            ✓ Sudah Dinilai
+                                                                                        </Badge>
+                                                                                    ) : categoryQuotaUsed ? (
+                                                                                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
+                                                                                            Kuota {isNonASN ? "Non ASN" : "ASN"} Habis
+                                                                                        </Badge>
+                                                                                    ) : !periodStatus.canRate || !periodStatus.isUnitParticipating ? (
+                                                                                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">
+                                                                                            <Lock className="h-3 w-3 mr-1" />
+                                                                                            Terkunci
+                                                                                        </Badge>
+                                                                                    ) : (
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            onClick={() => navigate(`/employee-rating?id=${employee.id}`)}
+                                                                                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                                                                        >
+                                                                                            <ThumbsUp className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                                                                            <span className="hidden sm:inline">Nilai Pegawai</span>
+                                                                                            <span className="sm:hidden">Nilai</span>
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </div>
                                                                             </TableCell>
                                                                         </TableRow>
                                                                     );
@@ -1337,6 +1386,53 @@ export default function EmployeeOfTheMonth() {
                                             })}
                                         </div>
                                     )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    )}
+
+                    {/* Ranking Tab - Only for user_pimpinan */}
+                    {isUserPimpinan && (
+                        <TabsContent value="ranking" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-bottom-4 data-[state=active]:duration-500">
+                            <Card className="border-amber-200 dark:border-amber-800">
+                                <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                                        <TrendingUp className="h-5 w-5" />
+                                        Peringkat Pegawai
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Lihat peringkat pegawai berdasarkan total poin dari penilaian rekan kerja
+                                    </p>
+                                </CardHeader>
+                                <CardContent className="pt-6">
+                                    <Tabs defaultValue="asn" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-2 mb-6">
+                                            <TabsTrigger value="asn">ASN</TabsTrigger>
+                                            <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
+                                        </TabsList>
+                                        {["asn", "non_asn"].map((type) => (
+                                            <TabsContent key={type} value={type}>
+                                                {leaderboardWithDetails.filter(e => type === "asn" ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) : e.employee.kriteria_asn === "Non ASN").length === 0 ? (
+                                                    <div className="text-center py-12">
+                                                        <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                                        <p className="text-muted-foreground">Belum ada data penilaian</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {leaderboardWithDetails.filter(e => type === "asn" ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) : e.employee.kriteria_asn === "Non ASN").map((entry, index) => (
+                                                            <div key={entry.employeeId} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${index === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-100/50 border-amber-400' : 'bg-muted/30 border-border'}`}>
+                                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-black ${index === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-600 text-white' : 'bg-muted text-muted-foreground'}`}>{index + 1}</div>
+                                                                <Avatar className="h-10 w-10"><AvatarImage src={entry.employee.avatar_url} /><AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback></Avatar>
+                                                                <div className="flex-1 min-w-0"><h3 className="font-bold text-sm truncate">{entry.employee.name}</h3><p className="text-xs text-muted-foreground">{entry.employee.nip}</p></div>
+                                                                <div className="text-right"><span className="font-black text-lg">{entry.totalPoints}</span><p className="text-xs text-muted-foreground">{entry.ratingCount}x</p></div>
+                                                                <Button size="sm" variant="outline" onClick={() => handleShowDetail(entry.employee)} className="border-purple-300 text-purple-600"><Eye className="h-4 w-4" /></Button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TabsContent>
+                                        ))}
+                                    </Tabs>
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -1885,6 +1981,19 @@ export default function EmployeeOfTheMonth() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Employee Detail Dialog for user_pimpinan */}
+            {selectedEmployeeForDetail && (
+                <EmployeeDetailDialog
+                    open={isDetailDialogOpen}
+                    onOpenChange={setIsDetailDialogOpen}
+                    employeeId={selectedEmployeeForDetail.id}
+                    employeeName={selectedEmployeeForDetail.name}
+                    employeeAvatar={selectedEmployeeForDetail.avatar}
+                    employeeNip={selectedEmployeeForDetail.nip}
+                    isNonASN={selectedEmployeeForDetail.isNonASN}
+                />
+            )}
         </DashboardLayout>
     );
 }

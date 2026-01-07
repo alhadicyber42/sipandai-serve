@@ -415,6 +415,7 @@ export type Database = {
           criteria_totals: Json
           detailed_ratings: Json
           id: string
+          is_pimpinan_rating: boolean | null
           max_possible_points: number
           rated_employee_id: string
           rater_id: string
@@ -427,6 +428,7 @@ export type Database = {
           criteria_totals?: Json
           detailed_ratings?: Json
           id?: string
+          is_pimpinan_rating?: boolean | null
           max_possible_points?: number
           rated_employee_id: string
           rater_id: string
@@ -439,6 +441,7 @@ export type Database = {
           criteria_totals?: Json
           detailed_ratings?: Json
           id?: string
+          is_pimpinan_rating?: boolean | null
           max_possible_points?: number
           rated_employee_id?: string
           rater_id?: string
@@ -1133,6 +1136,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       is_admin_pusat: { Args: never; Returns: boolean }
+      is_user_pimpinan: { Args: never; Returns: boolean }
     }
     Enums: {
       consultation_category:
@@ -1171,7 +1175,7 @@ export type Database = {
         | "rejected"
         | "resubmitted"
       service_type: "kenaikan_pangkat" | "mutasi" | "pensiun" | "cuti"
-      user_role: "user_unit" | "admin_unit" | "admin_pusat"
+      user_role: "user_unit" | "admin_unit" | "admin_pusat" | "user_pimpinan"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1339,7 +1343,7 @@ export const Constants = {
         "resubmitted",
       ],
       service_type: ["kenaikan_pangkat", "mutasi", "pensiun", "cuti"],
-      user_role: ["user_unit", "admin_unit", "admin_pusat"],
+      user_role: ["user_unit", "admin_unit", "admin_pusat", "user_pimpinan"],
     },
   },
 } as const
