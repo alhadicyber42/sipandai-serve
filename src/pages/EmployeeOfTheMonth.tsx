@@ -42,6 +42,8 @@ export default function EmployeeOfTheMonth() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
+    // Ranking leaderboard - uses SUM of peer ratings like admin pusat's Penilaian Final
+    const [rankingLeaderboard, setRankingLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
     // Leaderboard employees - full profile data for all employees in leaderboard (for ranking tab)
     const [leaderboardEmployees, setLeaderboardEmployees] = useState<Record<string, any>>({});
     const [activeTab, setActiveTab] = useState("employees");
@@ -124,7 +126,12 @@ export default function EmployeeOfTheMonth() {
         if (isAdminUnit && user?.work_unit_id) {
             loadUnitLeaderboard(periodStatus.activePeriod);
         }
-    }, [user, isAdminUnit, periodStatus.isLoading, periodStatus.activePeriod]);
+        
+        // Load ranking leaderboard for user_pimpinan (uses SUM like admin pusat)
+        if (isUserPimpinan) {
+            loadRankingLeaderboard(periodStatus.activePeriod);
+        }
+    }, [user, isAdminUnit, isUserPimpinan, periodStatus.isLoading, periodStatus.activePeriod]);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
@@ -432,6 +439,63 @@ export default function EmployeeOfTheMonth() {
             }
         } catch (error) {
             console.error('Error loading leaderboard:', error);
+        }
+    };
+
+    // Load ranking leaderboard for user_pimpinan - uses SUM like admin pusat's Penilaian Final
+    const loadRankingLeaderboard = async (activePeriod: string) => {
+        try {
+            // Fetch all ratings for the period
+            const { data: ratings, error } = await supabase
+                .from("employee_ratings")
+                .select("*")
+                .eq("rating_period", activePeriod);
+
+            if (error) {
+                console.error('Error loading rankings:', error);
+                return;
+            }
+
+            // Aggregate by employee - SUM total_points (not average)
+            const employeePoints: Record<string, { totalPoints: number; ratingCount: number }> = {};
+
+            (ratings || []).forEach((rating: any) => {
+                const empId = rating.rated_employee_id;
+                if (!employeePoints[empId]) {
+                    employeePoints[empId] = { totalPoints: 0, ratingCount: 0 };
+                }
+                employeePoints[empId].totalPoints += rating.total_points || 0;
+                employeePoints[empId].ratingCount += 1;
+            });
+
+            // Convert to array and sort by total points descending
+            const rankingData = Object.entries(employeePoints)
+                .map(([employeeId, data]) => ({
+                    employeeId,
+                    totalPoints: data.totalPoints,
+                    ratingCount: data.ratingCount
+                }))
+                .sort((a, b) => b.totalPoints - a.totalPoints);
+
+            setRankingLeaderboard(rankingData);
+
+            // Load employee profiles for ranking display
+            if (rankingData.length > 0) {
+                const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("*")
+                    .in("id", rankingData.map(e => e.employeeId));
+
+                const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+                    acc[p.id] = p;
+                    return acc;
+                }, {});
+
+                // Merge with existing leaderboardEmployees
+                setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
+            }
+        } catch (error) {
+            console.error('Error loading ranking leaderboard:', error);
         }
     };
 
@@ -1453,8 +1517,8 @@ export default function EmployeeOfTheMonth() {
                                             <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
                                         </TabsList>
                                         {["asn", "non_asn"].map((type) => {
-                                            // Use leaderboard + leaderboardEmployees directly for full cross-unit visibility
-                                            const filteredData = leaderboard
+                                            // Use rankingLeaderboard (SUM) for user_pimpinan ranking tab
+                                            const filteredData = rankingLeaderboard
                                                 .filter(entry => {
                                                     const emp = leaderboardEmployees[entry.employeeId];
                                                     if (!emp) return false;
@@ -1547,7 +1611,7 @@ export default function EmployeeOfTheMonth() {
                                     Leaderboard Bulanan
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground mt-2">
-                                    {isUserUnit 
+                                    {(isUserUnit || isUserPimpinan)
                                         ? "Pemenang Employee of the Month yang telah ditetapkan oleh Admin Pusat"
                                         : "Peringkat berdasarkan total poin yang diperoleh dari penilaian rekan kerja bulan ini"
                                     }
@@ -1566,8 +1630,8 @@ export default function EmployeeOfTheMonth() {
                                         
                                         return (
                                             <TabsContent key={type} value={type}>
-                                                {isUserUnit ? (
-                                                    // For user_unit: only show designated winner
+                                                {(isUserUnit || isUserPimpinan) ? (
+                                                    // For user_unit and user_pimpinan: only show designated winner
                                                     hasWinner && designatedWinner ? (
                                                         <div className="space-y-4">
                                                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-400 p-4 sm:p-8 text-white shadow-xl">
