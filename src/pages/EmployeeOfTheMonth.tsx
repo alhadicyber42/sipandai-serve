@@ -1819,7 +1819,7 @@ export default function EmployeeOfTheMonth() {
                                     Employee of The Year {new Date().getFullYear()}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground mt-2">
-                                    {isUserUnit 
+                                    {(isUserUnit || isUserPimpinan)
                                         ? "Pemenang Employee of the Year yang telah ditetapkan oleh Admin Pusat"
                                         : "Akumulasi total poin sepanjang tahun ini. Pemenang akan dinobatkan di akhir tahun!"
                                     }
@@ -1838,8 +1838,8 @@ export default function EmployeeOfTheMonth() {
                                         
                                         return (
                                             <TabsContent key={type} value={type}>
-                                                {isUserUnit ? (
-                                                    // For user_unit: only show designated winner
+                                                {(isUserUnit || isUserPimpinan) ? (
+                                                    // For user_unit and user_pimpinan: only show designated winner
                                                     hasWinner && designatedWinner ? (
                                                         <div className="space-y-4">
                                                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-4 sm:p-8 text-white shadow-xl">
@@ -2156,6 +2156,7 @@ export default function EmployeeOfTheMonth() {
                     employeeAvatar={selectedEmployeeForDetail.avatar}
                     employeeNip={selectedEmployeeForDetail.nip}
                     isNonASN={selectedEmployeeForDetail.isNonASN}
+                    period={periodStatus.activePeriod}
                 />
             )}
         </DashboardLayout>
