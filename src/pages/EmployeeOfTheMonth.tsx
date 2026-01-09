@@ -55,6 +55,7 @@ export default function EmployeeOfTheMonth() {
     const [ratedEmployeeIds, setRatedEmployeeIds] = useState<Set<string>>(new Set());
     const [hasRatedASN, setHasRatedASN] = useState(false);
     const [hasRatedNonASN, setHasRatedNonASN] = useState(false);
+    const [pimpinanRatedEmployeeIds, setPimpinanRatedEmployeeIds] = useState<Set<string>>(new Set());
     
     // Designated winners state
     const [monthlyWinners, setMonthlyWinners] = useState<DesignatedWinner[]>([]);
@@ -493,6 +494,17 @@ export default function EmployeeOfTheMonth() {
 
                 // Merge with existing leaderboardEmployees
                 setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
+            }
+
+            // Load pimpinan ratings for this period
+            const { data: pimpinanRatings } = await supabase
+                .from("employee_ratings")
+                .select("rated_employee_id")
+                .eq("rating_period", activePeriod)
+                .eq("is_pimpinan_rating", true);
+
+            if (pimpinanRatings) {
+                setPimpinanRatedEmployeeIds(new Set(pimpinanRatings.map(r => r.rated_employee_id)));
             }
         } catch (error) {
             console.error('Error loading ranking leaderboard:', error);
@@ -1569,9 +1581,17 @@ export default function EmployeeOfTheMonth() {
                                                                             <AvatarFallback className={rank === 1 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700' : ''}>{getInitials(entry.employee.name)}</AvatarFallback>
                                                                         </Avatar>
                                                                         <div className="flex-1 min-w-0">
-                                                                            <h3 className={`font-bold text-sm sm:text-base truncate ${rank === 1 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
-                                                                                {entry.employee.name}
-                                                                            </h3>
+                                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                                <h3 className={`font-bold text-sm sm:text-base truncate ${rank === 1 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
+                                                                                    {entry.employee.name}
+                                                                                </h3>
+                                                                                {pimpinanRatedEmployeeIds.has(entry.employeeId) && (
+                                                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 shrink-0">
+                                                                                        <Crown className="h-3 w-3 mr-1" />
+                                                                                        Dinilai Pimpinan
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
                                                                             <p className="text-xs text-muted-foreground">{entry.employee.nip}</p>
                                                                             <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">
                                                                                 <Building2 className="h-3 w-3 inline mr-1" />
