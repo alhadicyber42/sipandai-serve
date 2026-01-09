@@ -67,6 +67,7 @@ interface Stats {
   admin_pusat: number;
   admin_unit: number;
   user_unit: number;
+  user_pimpinan: number;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -75,7 +76,7 @@ export default function KelolaAdminUnit() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, admin_pusat: 0, admin_unit: 0, user_unit: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, admin_pusat: 0, admin_unit: 0, user_unit: 0, user_pimpinan: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,11 +129,12 @@ export default function KelolaAdminUnit() {
     setIsStatsLoading(true);
     try {
       // Get counts by role using separate queries for accuracy
-      const [totalRes, adminPusatRes, adminUnitRes, userUnitRes] = await Promise.all([
+      const [totalRes, adminPusatRes, adminUnitRes, userUnitRes, userPimpinanRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_pusat"),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_unit"),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "user_unit"),
+        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "user_pimpinan"),
       ]);
 
       setStats({
@@ -140,6 +142,7 @@ export default function KelolaAdminUnit() {
         admin_pusat: adminPusatRes.count || 0,
         admin_unit: adminUnitRes.count || 0,
         user_unit: userUnitRes.count || 0,
+        user_pimpinan: userPimpinanRes.count || 0,
       });
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -277,6 +280,7 @@ export default function KelolaAdminUnit() {
       user_unit: "User Unit",
       admin_unit: "Admin Unit",
       admin_pusat: "Admin Pusat",
+      user_pimpinan: "Pimpinan",
     };
     return roleNames[role] || role;
   };
@@ -287,6 +291,8 @@ export default function KelolaAdminUnit() {
         return "default";
       case "admin_unit":
         return "secondary";
+      case "user_pimpinan":
+        return "destructive";
       default:
         return "outline";
     }
@@ -354,9 +360,10 @@ export default function KelolaAdminUnit() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {isStatsLoading ? (
             <>
+              <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -384,6 +391,14 @@ export default function KelolaAdminUnit() {
                     {stats.admin_unit}
                   </div>
                   <p className="text-sm text-muted-foreground">Admin Unit</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-destructive">
+                    {stats.user_pimpinan}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Pimpinan</p>
                 </CardContent>
               </Card>
               <Card>
@@ -432,6 +447,7 @@ export default function KelolaAdminUnit() {
                   <SelectItem value="all">Semua Role</SelectItem>
                   <SelectItem value="admin_pusat">Admin Pusat</SelectItem>
                   <SelectItem value="admin_unit">Admin Unit</SelectItem>
+                  <SelectItem value="user_pimpinan">Pimpinan</SelectItem>
                   <SelectItem value="user_unit">User Unit</SelectItem>
                 </SelectContent>
               </Select>
@@ -635,6 +651,7 @@ export default function KelolaAdminUnit() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user_unit">User Unit</SelectItem>
+                  <SelectItem value="user_pimpinan">Pimpinan</SelectItem>
                   <SelectItem value="admin_unit">Admin Unit</SelectItem>
                   <SelectItem value="admin_pusat">Admin Pusat</SelectItem>
                 </SelectContent>
