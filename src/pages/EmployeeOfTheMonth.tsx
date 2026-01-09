@@ -908,12 +908,12 @@ export default function EmployeeOfTheMonth() {
                     </div>
                 </div>
 
-                {/* Winner Section - Different display for user_unit vs admin */}
+                {/* Winner Section - Different display for user_unit/user_pimpinan vs admin */}
                 {activeTab !== "yearly" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* ASN Winner */}
-                        {isUserUnit ? (
-                            // For user_unit: show designated winner or pending card
+                        {(isUserUnit || isUserPimpinan) ? (
+                            // For user_unit and user_pimpinan: show designated winner or pending card
                             hasMonthlyWinnerASN && designatedASNMonthly 
                                 ? renderDesignatedWinnerCard(designatedASNMonthly, 'yellow', 'ASN')
                                 : renderPendingCard('ASN', 'yellow')
@@ -968,8 +968,8 @@ export default function EmployeeOfTheMonth() {
                         )}
 
                         {/* Non ASN Winner */}
-                        {isUserUnit ? (
-                            // For user_unit: show designated winner or pending card
+                        {(isUserUnit || isUserPimpinan) ? (
+                            // For user_unit and user_pimpinan: show designated winner or pending card
                             hasMonthlyWinnerNonASN && designatedNonASNMonthly
                                 ? renderDesignatedWinnerCard(designatedNonASNMonthly, 'emerald', 'NON ASN')
                                 : renderPendingCard('Non ASN', 'emerald')
@@ -1398,10 +1398,10 @@ export default function EmployeeOfTheMonth() {
                                 <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
                                     <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                                         <TrendingUp className="h-5 w-5" />
-                                        Peringkat Pegawai
+                                        Top 10 Peringkat Pegawai
                                     </CardTitle>
                                     <p className="text-sm text-muted-foreground mt-2">
-                                        Lihat peringkat pegawai berdasarkan total poin dari penilaian rekan kerja
+                                        10 pegawai dengan perolehan nilai tertinggi dari seluruh unit kerja
                                     </p>
                                 </CardHeader>
                                 <CardContent className="pt-6">
@@ -1410,28 +1410,77 @@ export default function EmployeeOfTheMonth() {
                                             <TabsTrigger value="asn">ASN</TabsTrigger>
                                             <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
                                         </TabsList>
-                                        {["asn", "non_asn"].map((type) => (
-                                            <TabsContent key={type} value={type}>
-                                                {leaderboardWithDetails.filter(e => type === "asn" ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) : e.employee.kriteria_asn === "Non ASN").length === 0 ? (
-                                                    <div className="text-center py-12">
-                                                        <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                                                        <p className="text-muted-foreground">Belum ada data penilaian</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-3">
-                                                        {leaderboardWithDetails.filter(e => type === "asn" ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) : e.employee.kriteria_asn === "Non ASN").map((entry, index) => (
-                                                            <div key={entry.employeeId} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${index === 0 ? 'bg-gradient-to-r from-amber-50 to-orange-100/50 border-amber-400' : 'bg-muted/30 border-border'}`}>
-                                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-black ${index === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-600 text-white' : 'bg-muted text-muted-foreground'}`}>{index + 1}</div>
-                                                                <Avatar className="h-10 w-10"><AvatarImage src={entry.employee.avatar_url} /><AvatarFallback>{getInitials(entry.employee.name)}</AvatarFallback></Avatar>
-                                                                <div className="flex-1 min-w-0"><h3 className="font-bold text-sm truncate">{entry.employee.name}</h3><p className="text-xs text-muted-foreground">{entry.employee.nip}</p></div>
-                                                                <div className="text-right"><span className="font-black text-lg">{entry.totalPoints}</span><p className="text-xs text-muted-foreground">{entry.ratingCount}x</p></div>
-                                                                <Button size="sm" variant="outline" onClick={() => handleShowDetail(entry.employee)} className="border-purple-300 text-purple-600"><Eye className="h-4 w-4" /></Button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </TabsContent>
-                                        ))}
+                                        {["asn", "non_asn"].map((type) => {
+                                            const filteredData = leaderboardWithDetails
+                                                .filter(e => type === "asn" 
+                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) 
+                                                    : e.employee.kriteria_asn === "Non ASN"
+                                                )
+                                                .slice(0, 10); // Limit to top 10
+                                            
+                                            return (
+                                                <TabsContent key={type} value={type}>
+                                                    {filteredData.length === 0 ? (
+                                                        <div className="text-center py-12">
+                                                            <Trophy className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                                                            <p className="text-muted-foreground">Belum ada data penilaian {type === "asn" ? "ASN" : "Non ASN"}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {filteredData.map((entry, index) => {
+                                                                const rank = index + 1;
+                                                                const isTop3 = rank <= 3;
+                                                                const workUnitName = WORK_UNITS.find(u => u.id === entry.employee.work_unit_id)?.name || "-";
+                                                                
+                                                                return (
+                                                                    <div 
+                                                                        key={entry.employeeId} 
+                                                                        className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                                                                            rank === 1 ? 'bg-gradient-to-r from-amber-50 to-orange-100/50 dark:from-amber-950/30 dark:to-orange-900/20 border-amber-400 dark:border-amber-600' : 
+                                                                            isTop3 ? 'bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 border-amber-300 dark:border-amber-700' :
+                                                                            'bg-muted/30 border-border hover:border-amber-300'
+                                                                        }`}
+                                                                    >
+                                                                        <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full font-black text-sm sm:text-xl shrink-0 ${
+                                                                            rank === 1 ? 'bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-lg ring-2 ring-amber-300' : 
+                                                                            rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md ring-2 ring-gray-200' :
+                                                                            rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md ring-2 ring-orange-300' :
+                                                                            'bg-muted text-muted-foreground'
+                                                                        }`}>
+                                                                            {rank}
+                                                                        </div>
+                                                                        <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 ${isTop3 ? 'border-2 sm:border-4' : 'border'} ${rank === 1 ? 'border-amber-400' : isTop3 ? 'border-orange-400' : 'border-border'}`}>
+                                                                            <AvatarImage src={entry.employee.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.employee.name}`} />
+                                                                            <AvatarFallback className={rank === 1 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700' : ''}>{getInitials(entry.employee.name)}</AvatarFallback>
+                                                                        </Avatar>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h3 className={`font-bold text-sm sm:text-base truncate ${rank === 1 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
+                                                                                {entry.employee.name}
+                                                                            </h3>
+                                                                            <p className="text-xs text-muted-foreground">{entry.employee.nip}</p>
+                                                                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">
+                                                                                <Building2 className="h-3 w-3 inline mr-1" />
+                                                                                {workUnitName}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-right shrink-0">
+                                                                            <div className={`flex items-center justify-end gap-1 ${rank === 1 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                                                                                <Star className={`h-4 w-4 sm:h-5 sm:w-5 ${rank === 1 ? 'fill-current' : ''}`} />
+                                                                                <span className="text-lg sm:text-2xl font-black">{entry.totalPoints}</span>
+                                                                            </div>
+                                                                            <p className="text-[9px] sm:text-xs text-muted-foreground">{entry.ratingCount} penilaian</p>
+                                                                        </div>
+                                                                        <Button size="sm" variant="outline" onClick={() => handleShowDetail(entry.employee)} className="border-purple-300 text-purple-600 hover:bg-purple-50">
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </TabsContent>
+                                            );
+                                        })}
                                     </Tabs>
                                 </CardContent>
                             </Card>
