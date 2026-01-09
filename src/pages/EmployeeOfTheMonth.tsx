@@ -42,6 +42,8 @@ export default function EmployeeOfTheMonth() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string, totalPoints: number, ratingCount: number }>>([]);
+    // Leaderboard employees - full profile data for all employees in leaderboard (for ranking tab)
+    const [leaderboardEmployees, setLeaderboardEmployees] = useState<Record<string, any>>({});
     const [activeTab, setActiveTab] = useState("employees");
     const [testimonialsASN, setTestimonialsASN] = useState<Testimonial[]>([]);
     const [testimonialsNonASN, setTestimonialsNonASN] = useState<Testimonial[]>([]);
@@ -394,20 +396,24 @@ export default function EmployeeOfTheMonth() {
                 setSlideshowTestimonials(slideshowData);
             };
 
-            // Get employee profiles to determine ASN status
+            // Get employee profiles with full data for leaderboard display
             const { data: profiles } = await supabase
                 .from("profiles")
-                .select("id, kriteria_asn")
+                .select("*")
                 .in("id", leaderboardData.map(e => e.employeeId));
 
+            // Create a map of employee ID to full profile data
             const profileMap = (profiles || []).reduce((acc: any, p: any) => {
-                acc[p.id] = p.kriteria_asn;
+                acc[p.id] = p;
                 return acc;
             }, {});
+            
+            // Store full profile data for leaderboard employees (for ranking tab)
+            setLeaderboardEmployees(profileMap);
 
             // Find top ASN and Non ASN employees
-            const asnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId] === "ASN" || !profileMap[e.employeeId]);
-            const nonAsnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId] === "Non ASN");
+            const asnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId]?.kriteria_asn === "ASN" || !profileMap[e.employeeId]?.kriteria_asn);
+            const nonAsnLeaderboard = leaderboardData.filter(e => profileMap[e.employeeId]?.kriteria_asn === "Non ASN");
 
             if (asnLeaderboard.length > 0) {
                 await loadTestimonialsForWinner(asnLeaderboard[0].employeeId, ratings || [], setTestimonialsASN, setSlideshowTestimonialsASN);
@@ -1411,12 +1417,21 @@ export default function EmployeeOfTheMonth() {
                                             <TabsTrigger value="non_asn">Non ASN</TabsTrigger>
                                         </TabsList>
                                         {["asn", "non_asn"].map((type) => {
-                                            const filteredData = leaderboardWithDetails
-                                                .filter(e => type === "asn" 
-                                                    ? (e.employee.kriteria_asn === "ASN" || !e.employee.kriteria_asn) 
-                                                    : e.employee.kriteria_asn === "Non ASN"
-                                                )
-                                                .slice(0, 10); // Limit to top 10
+                                            // Use leaderboard + leaderboardEmployees directly for full cross-unit visibility
+                                            const filteredData = leaderboard
+                                                .filter(entry => {
+                                                    const emp = leaderboardEmployees[entry.employeeId];
+                                                    if (!emp) return false;
+                                                    return type === "asn" 
+                                                        ? (emp.kriteria_asn === "ASN" || !emp.kriteria_asn) 
+                                                        : emp.kriteria_asn === "Non ASN";
+                                                })
+                                                .slice(0, 10) // Limit to top 10
+                                                .map((entry, index) => ({
+                                                    ...entry,
+                                                    rank: index + 1,
+                                                    employee: leaderboardEmployees[entry.employeeId]
+                                                }));
                                             
                                             return (
                                                 <TabsContent key={type} value={type}>
@@ -1427,8 +1442,8 @@ export default function EmployeeOfTheMonth() {
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-3">
-                                                            {filteredData.map((entry, index) => {
-                                                                const rank = index + 1;
+                                                            {filteredData.map((entry) => {
+                                                                const rank = entry.rank;
                                                                 const isTop3 = rank <= 3;
                                                                 const workUnitName = WORK_UNITS.find(u => u.id === entry.employee.work_unit_id)?.name || "-";
                                                                 
