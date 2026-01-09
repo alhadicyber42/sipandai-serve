@@ -140,6 +140,8 @@ export default function EmployeeRating() {
     
     // Support both route param and query param for employee ID
     const employeeId = routeEmployeeId || searchParams.get('id');
+    const isPimpinanRating = searchParams.get('pimpinan') === 'true';
+    const isUserPimpinan = user?.role === "user_pimpinan";
     const [employee, setEmployee] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -201,7 +203,37 @@ export default function EmployeeRating() {
         // Use the active period from settings, NOT current month
         const activePeriod = periodStatus.activePeriod;
 
-        // Check if user has already rated an employee of the SAME category this period
+        // For pimpinan ratings, check if they've already given a pimpinan rating for this category
+        if (isUserPimpinan && isPimpinanRating) {
+            const { data: existingPimpinanRatings } = await supabase
+                .from("employee_ratings")
+                .select("id, rated_employee_id, is_pimpinan_rating")
+                .eq("rater_id", user.id)
+                .eq("rating_period", activePeriod)
+                .eq("is_pimpinan_rating", true);
+
+            if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
+                const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
+                const { data: ratedProfiles } = await supabase
+                    .from("profiles")
+                    .select("id, kriteria_asn")
+                    .in("id", ratedEmployeeIds);
+                
+                const hasRatedSameCategory = ratedProfiles?.some(p => {
+                    const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
+                    return category === employeeCategory;
+                });
+                
+                if (hasRatedSameCategory) {
+                    toast.error(`Anda sudah memberikan penilaian pimpinan untuk kategori ${employeeCategory} pada periode ${activePeriod}.`);
+                    navigate("/employee-of-the-month");
+                    return;
+                }
+            }
+            return; // Pimpinan rating check done, skip regular quota check
+        }
+
+        // Regular user quota check - check if user has already rated an employee of the SAME category this period
         const { data: existingRatings } = await supabase
             .from("employee_ratings")
             .select("id, rated_employee_id")
@@ -301,49 +333,82 @@ export default function EmployeeRating() {
 
             // Calculate total points and points per criteria
             const criteriaTotals: Record<string, number> = {};
-            let totalPoints = 0;
+            let basePoints = 0;
 
             activeCriteria.forEach(criteria => {
                 const criteriaRatings = ratings[criteria.id] || {};
                 const sum = Object.values(criteriaRatings).reduce((acc, val) => acc + val, 0);
                 criteriaTotals[criteria.id] = sum;
-                totalPoints += sum;
+                basePoints += sum;
             });
 
-            const maxPossiblePoints = activeCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0);
+            // Apply pimpinan multiplier: 1000 points weight (10x multiplier)
+            // Base rating is max 100 points, pimpinan rating is max 1000 points
+            const pimpinanMultiplier = (isUserPimpinan && isPimpinanRating) ? 10 : 1;
+            const totalPoints = basePoints * pimpinanMultiplier;
+            const maxPossiblePoints = activeCriteria.reduce((sum, c) => sum + (c.items.length * 5), 0) * pimpinanMultiplier;
 
             // Determine the category of the employee being rated
             const ratedCategory = isNonASN ? "Non ASN" : "ASN";
             
-            // Check if user has already rated an employee of the SAME category this period
-            const { data: existingRatings } = await supabase
-                .from("employee_ratings")
-                .select("id, rated_employee_id")
-                .eq("rater_id", user.id)
-                .eq("rating_period", ratingPeriod);
+            // For pimpinan ratings, check if they've already given a pimpinan rating for this category
+            if (isUserPimpinan && isPimpinanRating) {
+                const { data: existingPimpinanRatings } = await supabase
+                    .from("employee_ratings")
+                    .select("id, rated_employee_id, is_pimpinan_rating")
+                    .eq("rater_id", user.id)
+                    .eq("rating_period", ratingPeriod)
+                    .eq("is_pimpinan_rating", true);
 
-            if (existingRatings && existingRatings.length > 0) {
-                // Get the categories of already rated employees
-                const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
-                const { data: ratedProfiles } = await supabase
-                    .from("profiles")
-                    .select("id, kriteria_asn")
-                    .in("id", ratedEmployeeIds);
-                
-                const hasRatedSameCategory = ratedProfiles?.some(p => {
-                    const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
-                    return category === ratedCategory;
-                });
-                
-                if (hasRatedSameCategory) {
-                    toast.error(`Anda sudah memberikan penilaian untuk kategori ${ratedCategory} pada periode ${ratingPeriod}.`);
-                    setIsSubmitting(false);
-                    navigate("/employee-of-the-month");
-                    return;
+                if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
+                    const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
+                    const { data: ratedProfiles } = await supabase
+                        .from("profiles")
+                        .select("id, kriteria_asn")
+                        .in("id", ratedEmployeeIds);
+                    
+                    const hasRatedSameCategory = ratedProfiles?.some(p => {
+                        const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
+                        return category === ratedCategory;
+                    });
+                    
+                    if (hasRatedSameCategory) {
+                        toast.error(`Anda sudah memberikan penilaian pimpinan untuk kategori ${ratedCategory} pada periode ${ratingPeriod}.`);
+                        setIsSubmitting(false);
+                        navigate("/employee-of-the-month");
+                        return;
+                    }
+                }
+            } else {
+                // Regular user quota check
+                const { data: existingRatings } = await supabase
+                    .from("employee_ratings")
+                    .select("id, rated_employee_id")
+                    .eq("rater_id", user.id)
+                    .eq("rating_period", ratingPeriod);
+
+                if (existingRatings && existingRatings.length > 0) {
+                    const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
+                    const { data: ratedProfiles } = await supabase
+                        .from("profiles")
+                        .select("id, kriteria_asn")
+                        .in("id", ratedEmployeeIds);
+                    
+                    const hasRatedSameCategory = ratedProfiles?.some(p => {
+                        const category = p.kriteria_asn === "Non ASN" ? "Non ASN" : "ASN";
+                        return category === ratedCategory;
+                    });
+                    
+                    if (hasRatedSameCategory) {
+                        toast.error(`Anda sudah memberikan penilaian untuk kategori ${ratedCategory} pada periode ${ratingPeriod}.`);
+                        setIsSubmitting(false);
+                        navigate("/employee-of-the-month");
+                        return;
+                    }
                 }
             }
 
-            // Save to database
+            // Save to database with pimpinan flag
             const { error: insertError } = await supabase
                 .from("employee_ratings")
                 .insert({
@@ -355,6 +420,7 @@ export default function EmployeeRating() {
                     criteria_totals: criteriaTotals,
                     total_points: totalPoints,
                     max_possible_points: maxPossiblePoints,
+                    is_pimpinan_rating: isUserPimpinan && isPimpinanRating,
                 } as any);
 
             if (insertError) {
@@ -402,11 +468,34 @@ export default function EmployeeRating() {
                 </Button>
 
                 <div className="space-y-1 sm:space-y-2">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Penilaian Pegawai</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Penilaian Pegawai</h1>
+                        {(isUserPimpinan && isPimpinanRating) && (
+                            <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-1 text-xs font-bold text-white shadow-md">
+                                <Star className="h-3 w-3 mr-1 fill-white" />
+                                Penilaian Pimpinan (1000 Poin)
+                            </span>
+                        )}
+                    </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                        Berikan penilaian untuk setiap indikator. Skala: 1 (Sangat Kurang) - 5 (Sangat Baik)
+                        {(isUserPimpinan && isPimpinanRating) 
+                            ? "Penilaian Pimpinan memiliki bobot 10x lipat (maksimal 1000 poin). Berikan penilaian objektif untuk setiap indikator."
+                            : "Berikan penilaian untuk setiap indikator. Skala: 1 (Sangat Kurang) - 5 (Sangat Baik)"
+                        }
                     </p>
                 </div>
+
+                {/* Pimpinan Rating Info Card */}
+                {(isUserPimpinan && isPimpinanRating) && (
+                    <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+                        <Star className="h-4 w-4 text-amber-600" />
+                        <AlertTitle className="text-amber-700 dark:text-amber-400">Penilaian Pimpinan</AlertTitle>
+                        <AlertDescription className="text-amber-600 dark:text-amber-300">
+                            Penilaian ini memiliki bobot 10 kali lipat dari penilaian reguler. Total poin maksimal: 1000 poin.
+                            Anda dapat memberikan 1 penilaian pimpinan untuk kategori ASN dan 1 untuk Non ASN per periode.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Employee Info Card */}
                 <Card className={`border-t-4 ${isNonASN ? 'border-t-emerald-600' : 'border-t-blue-600'}`}>
@@ -433,7 +522,6 @@ export default function EmployeeRating() {
                         </div>
                     </CardHeader>
                 </Card>
-
                 {/* Rating Criteria */}
                 {activeCriteria.map((criteria, criteriaIndex) => (
                     <Card key={criteria.id} className="shadow-sm">
