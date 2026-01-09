@@ -105,13 +105,20 @@ export default function EmployeeOfTheMonth() {
 
     useEffect(() => {
         loadEmployees();
-        loadLeaderboard();
         loadYearlyLeaderboard();
         loadDesignatedWinners();
+    }, [user]);
+
+    // Load leaderboard when periodStatus is ready and we have an active period
+    useEffect(() => {
+        if (periodStatus.isLoading) return;
+        if (!periodStatus.activePeriod) return;
+        
+        loadLeaderboard(periodStatus.activePeriod);
         if (isAdminUnit && user?.work_unit_id) {
-            loadUnitLeaderboard();
+            loadUnitLeaderboard(periodStatus.activePeriod);
         }
-    }, [user, isAdminUnit]);
+    }, [user, isAdminUnit, periodStatus.isLoading, periodStatus.activePeriod]);
 
     // Quota check MUST follow the active configured period (from settings), not the calendar month.
     useEffect(() => {
@@ -260,11 +267,10 @@ export default function EmployeeOfTheMonth() {
         setYearlyWinners((yearlyData as DesignatedWinner[]) || []);
     };
 
-    const loadLeaderboard = async () => {
+    const loadLeaderboard = async (activePeriod: string) => {
         try {
-            // Get current period
-            const now = new Date();
-            const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            // Use active period from EOM settings
+            const currentPeriod = activePeriod;
 
             // Fetch ratings from database
             const { data: ratings, error } = await supabase
@@ -427,12 +433,12 @@ export default function EmployeeOfTheMonth() {
     };
 
     // Load unit-specific leaderboard for admin_unit
-    const loadUnitLeaderboard = async () => {
+    const loadUnitLeaderboard = async (activePeriod: string) => {
         if (!user?.work_unit_id) return;
         
         try {
-            const now = new Date();
-            const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            // Use active period from EOM settings
+            const currentPeriod = activePeriod;
 
             // Get all employees in the unit
             const { data: unitEmployees } = await supabase
