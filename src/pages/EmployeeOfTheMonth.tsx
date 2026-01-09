@@ -1589,14 +1589,16 @@ export default function EmployeeOfTheMonth() {
                                                                             <Button size="sm" variant="outline" onClick={() => handleShowDetail(entry.employee)} className="border-purple-300 text-purple-600 hover:bg-purple-50">
                                                                                 <Eye className="h-4 w-4" />
                                                                             </Button>
-                                                                            <Button 
-                                                                                size="sm" 
-                                                                                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                                                                                onClick={() => navigate(`/employee-of-the-month/rate/${entry.employeeId}?pimpinan=true`)}
-                                                                            >
-                                                                                <Star className="h-4 w-4 sm:mr-1" />
-                                                                                <span className="hidden sm:inline">Nilai</span>
-                                                                            </Button>
+                                                                            {entry.employeeId !== user?.id && (
+                                                                                <Button 
+                                                                                    size="sm" 
+                                                                                    className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                                                                                    onClick={() => navigate(`/employee-of-the-month/rate/${entry.employeeId}?pimpinan=true`)}
+                                                                                >
+                                                                                    <Star className="h-4 w-4 sm:mr-1" />
+                                                                                    <span className="hidden sm:inline">Nilai</span>
+                                                                                </Button>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 );
