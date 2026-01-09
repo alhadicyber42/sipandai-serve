@@ -106,26 +106,25 @@ export default function EmployeeOfTheMonth() {
     useEffect(() => {
         loadEmployees();
         loadYearlyLeaderboard();
-        loadDesignatedWinners();
     }, [user]);
 
-    // Load leaderboard when periodStatus is ready and we have an active period
+    // Load all period-dependent data when periodStatus is ready
     useEffect(() => {
         if (periodStatus.isLoading) return;
+        
+        // Always load designated winners (uses active period if available)
+        loadDesignatedWinners();
+        
+        // Only load leaderboard and ratings if there's an active period
         if (!periodStatus.activePeriod) return;
         
         loadLeaderboard(periodStatus.activePeriod);
+        loadMyRatings();
+        
         if (isAdminUnit && user?.work_unit_id) {
             loadUnitLeaderboard(periodStatus.activePeriod);
         }
     }, [user, isAdminUnit, periodStatus.isLoading, periodStatus.activePeriod]);
-
-    // Quota check MUST follow the active configured period (from settings), not the calendar month.
-    useEffect(() => {
-        if (!user) return;
-        if (periodStatus.isLoading) return;
-        loadMyRatings();
-    }, [user, periodStatus.isLoading, periodStatus.activePeriod]);
 
     // Trigger confetti fireworks when winner is displayed
     useEffect(() => {
@@ -244,11 +243,15 @@ export default function EmployeeOfTheMonth() {
     };
 
     const loadDesignatedWinners = async () => {
+        // Use active period from EOM settings if available, fallback to current month
+        const activePeriod = periodStatus.activePeriod;
         const now = new Date();
-        const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const currentYear = now.getFullYear().toString();
+        const currentPeriod = activePeriod || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Extract year from period (format: YYYY-MM)
+        const currentYear = currentPeriod.split('-')[0];
 
-        // Load monthly winners for current period
+        // Load monthly winners for active period
         const { data: monthlyData } = await supabase
             .from("designated_winners")
             .select("*")
@@ -257,7 +260,7 @@ export default function EmployeeOfTheMonth() {
 
         setMonthlyWinners((monthlyData as DesignatedWinner[]) || []);
 
-        // Load yearly winners for current year
+        // Load yearly winners for current year (based on active period)
         const { data: yearlyData } = await supabase
             .from("designated_winners")
             .select("*")
@@ -914,7 +917,13 @@ export default function EmployeeOfTheMonth() {
                         <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/30 shadow-sm w-fit">
                             <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                             <span className="font-semibold text-white text-xs sm:text-sm">
-                                Periode: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                                Periode: {periodStatus.activePeriod 
+                                    ? (() => {
+                                        const [year, month] = periodStatus.activePeriod.split('-');
+                                        const date = new Date(parseInt(year), parseInt(month) - 1);
+                                        return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                                    })()
+                                    : 'Belum ada periode aktif'}
                             </span>
                         </div>
                     </div>
@@ -1118,6 +1127,17 @@ export default function EmployeeOfTheMonth() {
                                 </div>
                             </CardHeader>
                             <CardContent>
+                                {/* No Active Period Warning */}
+                                {periodStatus.phase === 'no_settings' && (
+                                    <Alert className="mb-4 border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800">
+                                        <AlertCircle className="h-4 w-4 text-red-600" />
+                                        <AlertTitle className="text-red-800 dark:text-red-300">Tidak Ada Periode Penilaian Aktif</AlertTitle>
+                                        <AlertDescription className="text-red-700 dark:text-red-400">
+                                            Saat ini tidak ada periode penilaian yang aktif. Silakan hubungi Admin Pusat untuk membuat periode penilaian baru.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
                                 {/* Period Lock Warning */}
                                 {!periodStatus.canRate && periodStatus.phase !== 'no_settings' && (
                                     <Alert className="mb-4 border-orange-200 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800">
@@ -1263,6 +1283,11 @@ export default function EmployeeOfTheMonth() {
                                                                                     ) : categoryQuotaUsed ? (
                                                                                         <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
                                                                                             Kuota {isNonASN ? "Non ASN" : "ASN"} Habis
+                                                                                        </Badge>
+                                                                                    ) : periodStatus.phase === 'no_settings' ? (
+                                                                                        <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+                                                                                            <AlertCircle className="h-3 w-3 mr-1" />
+                                                                                            Tidak Ada Periode
                                                                                         </Badge>
                                                                                     ) : !periodStatus.canRate || !periodStatus.isUnitParticipating ? (
                                                                                         <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">
