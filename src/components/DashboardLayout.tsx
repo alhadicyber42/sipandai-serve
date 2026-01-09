@@ -45,7 +45,8 @@ export const DashboardLayout = ({
   const getMenuItems = () => {
     const role = user?.role;
     
-    if (role === "user_unit") {
+    // user_pimpinan has same menu as user_unit
+    if (role === "user_unit" || role === "user_pimpinan") {
       return [
         {
           path: "/dashboard",
@@ -280,7 +281,7 @@ export const DashboardLayout = ({
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate group-hover:text-white transition-colors">{user?.name}</p>
               <p className="text-xs text-white/60 truncate">
-                {user?.role === "admin_pusat" ? "Administrator Pusat" : user?.role === "admin_unit" ? "Admin Unit" : "Pegawai"}
+                {user?.role === "admin_pusat" ? "Administrator Pusat" : user?.role === "admin_unit" ? "Admin Unit" : user?.role === "user_pimpinan" ? "Pimpinan" : "Pegawai"}
               </p>
             </div>
             
