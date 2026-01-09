@@ -105,7 +105,6 @@ export default function EmployeeOfTheMonth() {
 
     useEffect(() => {
         loadEmployees();
-        loadYearlyLeaderboard();
     }, [user]);
 
     // Load all period-dependent data when periodStatus is ready
@@ -119,6 +118,7 @@ export default function EmployeeOfTheMonth() {
         if (!periodStatus.activePeriod) return;
         
         loadLeaderboard(periodStatus.activePeriod);
+        loadYearlyLeaderboard(periodStatus.activePeriod);
         loadMyRatings();
         
         if (isAdminUnit && user?.work_unit_id) {
@@ -535,33 +535,35 @@ export default function EmployeeOfTheMonth() {
         }
     };
 
-    const loadYearlyLeaderboard = async () => {
+    const loadYearlyLeaderboard = async (activePeriod?: string) => {
         try {
-            const now = new Date();
-            const currentYear = now.getFullYear().toString();
+            // Use year from active period if available, otherwise use current year
+            const yearToUse = activePeriod 
+                ? activePeriod.split('-')[0] 
+                : new Date().getFullYear().toString();
 
-            // Fetch all ratings for the current year
+            // Fetch all ratings for the target year
             const { data: ratings, error } = await supabase
                 .from("employee_ratings")
                 .select("*")
-                .ilike("rating_period", `${currentYear}-%`);
+                .ilike("rating_period", `${yearToUse}-%`);
 
             if (error) {
                 console.error('Error loading yearly ratings:', error);
                 return;
             }
 
-            // Fetch admin unit evaluations for current year
+            // Fetch admin unit evaluations for target year
             const { data: unitEvaluations } = await supabase
                 .from("admin_unit_evaluations")
                 .select("*")
-                .ilike("rating_period", `${currentYear}-%`);
+                .ilike("rating_period", `${yearToUse}-%`);
 
-            // Fetch admin pusat (final) evaluations for current year
+            // Fetch admin pusat (final) evaluations for target year
             const { data: finalEvaluations } = await supabase
                 .from("admin_pusat_evaluations")
                 .select("*")
-                .ilike("rating_period", `${currentYear}-%`);
+                .ilike("rating_period", `${yearToUse}-%`);
 
             // Create maps for evaluations by employee and period
             const unitEvalMap: Record<string, number> = {};
@@ -647,10 +649,13 @@ export default function EmployeeOfTheMonth() {
         setIsDesignating(true);
         
         try {
+            // Use active period from EOM settings for consistency
+            const activePeriod = periodStatus.activePeriod;
             const now = new Date();
+            
             const period = selectedForDesignation.type === 'monthly'
-                ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-                : now.getFullYear().toString();
+                ? (activePeriod || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+                : (activePeriod ? activePeriod.split('-')[0] : now.getFullYear().toString());
 
             // Check if winner already exists for this period and category
             const existingQuery = supabase
