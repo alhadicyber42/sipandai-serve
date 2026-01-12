@@ -45,7 +45,7 @@ export default function Pensiun() {
             .select("*")
             .eq("service_type", "pensiun");
 
-        if (user.role === "user_unit") {
+        if (user.role === "user_unit" || user.role === "user_pimpinan") {
             query = query.eq("user_id", user.id);
         } else if (user.role === "admin_unit") {
             query = query.eq("work_unit_id", user.work_unit_id);
@@ -336,7 +336,7 @@ export default function Pensiun() {
                                 <div>
                                     <h1 className="text-2xl md:text-4xl font-bold">Pensiun</h1>
                                     <p className="text-sm md:text-base text-white/90 mt-1">
-                                        {user?.role === "user_unit"
+                                        {user?.role === "user_unit" || user?.role === "user_pimpinan"
                                             ? "Kelola usulan pensiun Anda"
                                             : user?.role === "admin_unit"
                                                 ? "Review usulan pensiun unit Anda"
@@ -345,7 +345,7 @@ export default function Pensiun() {
                                 </div>
                             </div>
 
-                            {user?.role === "user_unit" && (
+                            {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
                                 <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                                     <DialogTrigger asChild>
                                         <Button size="lg" className="gap-2 bg-white text-purple-600 hover:bg-white/90 shadow-lg border-none">
@@ -505,7 +505,7 @@ export default function Pensiun() {
                 />
 
                 {/* Edit Dialog for Returned Submissions */}
-                {user?.role === "user_unit" && (
+                {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-4 sm:p-6">
                             <DialogHeader className="pb-2">
