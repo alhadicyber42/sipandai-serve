@@ -733,7 +733,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {user?.role === "user_unit" && (
+          {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
             <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/30 border-red-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
               <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl"></div>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">
@@ -756,7 +756,7 @@ export default function Dashboard() {
             <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
               <div className="text-lg md:text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.consultations}</div>
               <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
-                {user?.role === "user_unit" ? "Konsultasi Anda" : "Total konsultasi"}
+                {(user?.role === "user_unit" || user?.role === "user_pimpinan") ? "Konsultasi Anda" : "Total konsultasi"}
               </p>
             </CardContent>
           </Card>
@@ -893,7 +893,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Quick Actions for User - Only show if not showing employee stats */}
-          {user?.role === "user_unit" && (
+          {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
             <Card className="shadow-lg border-primary/10">
               <CardHeader className="border-b bg-gradient-to-r from-blue-500/10 to-indigo-500/10">
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
