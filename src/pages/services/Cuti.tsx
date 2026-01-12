@@ -137,7 +137,7 @@ export default function Cuti() {
       .select("*")
       .eq("service_type", "cuti");
 
-    if (user.role === "user_unit") {
+    if (user.role === "user_unit" || user.role === "user_pimpinan") {
       query = query.eq("user_id", user.id);
     } else if (user.role === "admin_unit") {
       query = query.eq("work_unit_id", user.work_unit_id);
@@ -197,7 +197,7 @@ export default function Cuti() {
       setServices(enrichedServices);
 
       // Calculate Leave Stats for User
-      if (user.role === "user_unit") {
+      if (user.role === "user_unit" || user.role === "user_pimpinan") {
         const currentYear = getYear(new Date());
         let usedDays = 0;
         let pendingDays = 0;
@@ -288,8 +288,8 @@ export default function Cuti() {
     } else {
       setServices([]);
       
-      // Still load deferrals even if there are no services (for user_unit)
-      if (user.role === "user_unit") {
+      // Still load deferrals even if there are no services (for user_unit/user_pimpinan)
+      if (user.role === "user_unit" || user.role === "user_pimpinan") {
         const { data: deferrals } = await supabase
           .from("leave_deferrals")
           .select("id, deferral_year, days_deferred, status, notes, created_at, approval_document")
@@ -893,7 +893,7 @@ export default function Cuti() {
                   <div>
                     <h1 className="text-2xl md:text-4xl font-bold text-white">Cuti Pegawai</h1>
                     <p className="text-sm md:text-base text-white/90 mt-1">
-                      {user?.role === "user_unit"
+                      {user?.role === "user_unit" || user?.role === "user_pimpinan"
                         ? "Kelola permohonan dan saldo cuti Anda"
                         : user?.role === "admin_unit"
                           ? "Review permohonan cuti unit Anda"
@@ -903,7 +903,7 @@ export default function Cuti() {
                 </div>
               </div>
 
-              {user?.role === "user_unit" && (
+              {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
                   setIsDialogOpen(open);
                   if (open) {
@@ -1160,7 +1160,7 @@ export default function Cuti() {
           </div>
         </div>
 
-        {user?.role === "user_unit" && (
+        {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
           <div className="grid gap-4 md:grid-cols-4">
             {isLoading ? (
               <>
@@ -1666,7 +1666,7 @@ export default function Cuti() {
         )}
 
         {/* User Submission Tabs - Cuti & Penangguhan */}
-        {user?.role === "user_unit" ? (
+        {user?.role === "user_unit" || user?.role === "user_pimpinan" ? (
           <Tabs value={userSubmissionTab} onValueChange={setUserSubmissionTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="cuti" className="gap-2">
@@ -1789,7 +1789,7 @@ export default function Cuti() {
           </div>
         )}
         {/* Edit Dialog for Returned Services */}
-        {user?.role === "user_unit" && (
+        {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
               <DialogHeader>

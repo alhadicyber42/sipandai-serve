@@ -79,7 +79,7 @@ export default function Dashboard() {
       .from("services")
       .select("*");
 
-    if (user?.role === "user_unit") {
+    if (user?.role === "user_unit" || user?.role === "user_pimpinan") {
       servicesQuery = servicesQuery.eq("user_id", user.id);
     } else if (user?.role === "admin_unit") {
       servicesQuery = servicesQuery.eq("work_unit_id", user.work_unit_id);
@@ -127,7 +127,7 @@ export default function Dashboard() {
 
     // Load consultations based on role
     let consultationsQuery = supabase.from("consultations").select("*");
-    if (user?.role === "user_unit") {
+    if (user?.role === "user_unit" || user?.role === "user_pimpinan") {
       consultationsQuery = consultationsQuery.eq("user_id", user.id);
     } else if (user?.role === "admin_unit") {
       consultationsQuery = consultationsQuery.eq("work_unit_id", user.work_unit_id);
@@ -153,7 +153,7 @@ export default function Dashboard() {
       .limit(10);
 
     // Filter by user role
-    if (user?.role === "user_unit") {
+    if (user?.role === "user_unit" || user?.role === "user_pimpinan") {
       // User can only see their own activities
       historyQuery = historyQuery.eq("actor_id", user.id);
     }
@@ -196,8 +196,8 @@ export default function Dashboard() {
       await loadEmployeeStats();
     }
 
-    // Load leave stats for user_unit
-    if (user?.role === "user_unit") {
+    // Load leave stats for user_unit and user_pimpinan
+    if (user?.role === "user_unit" || user?.role === "user_pimpinan") {
       await loadUserLeaveStats();
     }
 
@@ -357,6 +357,7 @@ export default function Dashboard() {
     if (user?.role === "admin_unit") {
       return services.filter((s) => s.work_unit_id === user.work_unit_id);
     }
+    // user_unit and user_pimpinan
     return services.filter((s) => s.user_id === user?.id);
   };
 
@@ -367,6 +368,7 @@ export default function Dashboard() {
     if (user?.role === "admin_unit") {
       return consultations.filter((c) => c.work_unit_id === user.work_unit_id);
     }
+    // user_unit and user_pimpinan
     return consultations.filter((c) => c.user_id === user?.id);
   };
 
@@ -411,7 +413,7 @@ export default function Dashboard() {
         .order("created_at", { ascending: false });
 
       // Filter based on role
-      if (user.role === "admin_unit" || user.role === "user_unit") {
+      if (user.role === "admin_unit" || user.role === "user_unit" || user.role === "user_pimpinan") {
         // Users can see announcements for all units (null) or their specific unit
         query = query.or(`work_unit_id.is.null,work_unit_id.eq.${user.work_unit_id}`);
       }
@@ -534,7 +536,9 @@ export default function Dashboard() {
                 ? "Administrator Pusat - Kelola seluruh sistem"
                 : user?.role === "admin_unit"
                   ? `Administrator Unit - ${workUnit?.name}`
-                  : `Pegawai - ${workUnit?.name}`}
+                  : user?.role === "user_pimpinan"
+                    ? `Pimpinan - ${workUnit?.name}`
+                    : `Pegawai - ${workUnit?.name}`}
             </p>
           </div>
         </div>
@@ -574,7 +578,7 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   )}
-                  {user?.role !== "user_unit" && (
+                  {user?.role !== "user_unit" && user?.role !== "user_pimpinan" && (
                     <Button
                       onClick={() => navigate("/pengumuman")}
                       size="sm"
@@ -664,12 +668,12 @@ export default function Dashboard() {
             <CardContent className="p-3 md:p-4 lg:p-6 pt-0">
               <div className="text-lg md:text-xl lg:text-2xl font-bold text-primary">{stats.total}</div>
               <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
-                {user?.role === "user_unit" ? "Usulan Anda" : "Semua usulan"}
+                {user?.role === "user_unit" || user?.role === "user_pimpinan" ? "Usulan Anda" : "Semua usulan"}
               </p>
             </CardContent>
           </Card>
 
-          {user?.role === "user_unit" && employeeStats?.remaining !== undefined && (
+          {(user?.role === "user_unit" || user?.role === "user_pimpinan") && employeeStats?.remaining !== undefined && (
             <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-500/30 hover:shadow-lg hover:scale-105 transition-all duration-300">
               <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/10 rounded-full blur-2xl"></div>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-4 lg:p-6">

@@ -48,7 +48,7 @@ export default function KenaikanPangkat() {
       .select("*")
       .eq("service_type", "kenaikan_pangkat");
 
-    if (user.role === "user_unit") {
+    if (user.role === "user_unit" || user.role === "user_pimpinan") {
       query = query.eq("user_id", user.id);
     } else if (user.role === "admin_unit") {
       query = query.eq("work_unit_id", user.work_unit_id);
@@ -383,7 +383,7 @@ export default function KenaikanPangkat() {
                   <div>
                     <h1 className="text-2xl md:text-4xl font-bold">Kenaikan Pangkat</h1>
                     <p className="text-sm md:text-base text-white/80 mt-1">
-                      {user?.role === "user_unit"
+                      {user?.role === "user_unit" || user?.role === "user_pimpinan"
                         ? "Kelola usulan kenaikan pangkat Anda"
                         : user?.role === "admin_unit"
                           ? "Review usulan kenaikan pangkat unit Anda"
@@ -393,7 +393,7 @@ export default function KenaikanPangkat() {
                 </div>
               </div>
 
-              {user?.role === "user_unit" && (
+              {(user?.role === "user_unit" || user?.role === "user_pimpinan") && (
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="lg" className="gap-2 bg-white text-orange-600 hover:bg-white/90 shadow-lg">
