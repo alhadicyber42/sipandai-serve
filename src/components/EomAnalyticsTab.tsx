@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BarChart3, Users, CheckCircle2, XCircle, Building2, TrendingUp, Loader2 } from "lucide-react";
+import { BarChart3, Users, CheckCircle2, XCircle, Building2, TrendingUp, Loader2, Download } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
+import { exportMultipleSheets } from "@/lib/export-helper";
 
 interface UnitAnalytics {
   unitId: number;
@@ -313,6 +315,78 @@ export function EomAnalyticsTab() {
     );
   }
 
+  // Get rating status description
+  const getRatingStatusDescription = (emp: EmployeeRatingStatus) => {
+    if (!emp.hasRated) return "Belum menilai";
+    if (emp.ratedASN && emp.ratedNonASN) return "Sudah menilai ASN & Non ASN";
+    if (emp.ratedASN) return "Sudah menilai ASN, Belum menilai Non ASN";
+    if (emp.ratedNonASN) return "Sudah menilai Non ASN, Belum menilai ASN";
+    return "Status tidak diketahui";
+  };
+
+  // Export analytics data to Excel
+  const handleExportAnalytics = () => {
+    if (unitAnalytics.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    // Prepare summary sheet data
+    const summaryData = unitAnalytics.map(unit => ({
+      "Unit Kerja": unit.unitName,
+      "Total Pegawai": unit.totalEmployees,
+      "Sudah Menilai": unit.employeesRated,
+      "Belum Menilai": unit.employeesNotRated,
+      "Persentase Partisipasi": `${unit.ratedPercentage.toFixed(1)}%`,
+    }));
+
+    // Prepare detailed data per unit - all employees
+    const detailedData = unitAnalytics.flatMap(unit => 
+      [...unit.ratedEmployees, ...unit.notRatedEmployees].map(emp => ({
+        "Unit Kerja": unit.unitName,
+        "Nama Pegawai": emp.name,
+        "NIP": emp.nip,
+        "Kategori ASN": emp.kriteria_asn || "ASN",
+        "Status": emp.hasRated ? "Sudah Menilai" : "Belum Menilai",
+        "Menilai ASN": emp.ratedASN ? "Ya" : "Tidak",
+        "Menilai Non ASN": emp.ratedNonASN ? "Ya" : "Tidak",
+        "Keterangan": getRatingStatusDescription(emp),
+      }))
+    );
+
+    // Prepare "Belum Menilai" sheet
+    const notRatedData = unitAnalytics.flatMap(unit => 
+      unit.notRatedEmployees.map(emp => ({
+        "Unit Kerja": unit.unitName,
+        "Nama Pegawai": emp.name,
+        "NIP": emp.nip,
+        "Kategori ASN": emp.kriteria_asn || "ASN",
+        "Keterangan": "Belum melakukan penilaian sama sekali",
+      }))
+    );
+
+    // Prepare "Sudah Menilai" sheet with detailed status
+    const ratedData = unitAnalytics.flatMap(unit => 
+      unit.ratedEmployees.map(emp => ({
+        "Unit Kerja": unit.unitName,
+        "Nama Pegawai": emp.name,
+        "NIP": emp.nip,
+        "Kategori ASN": emp.kriteria_asn || "ASN",
+        "Menilai ASN": emp.ratedASN ? "Ya" : "Tidak",
+        "Menilai Non ASN": emp.ratedNonASN ? "Ya" : "Tidak",
+        "Keterangan": getRatingStatusDescription(emp),
+      }))
+    );
+
+    // Export to multiple sheets
+    exportMultipleSheets([
+      { data: summaryData, sheetName: "Ringkasan Per Unit" },
+      { data: detailedData, sheetName: "Detail Semua Pegawai" },
+      { data: ratedData, sheetName: "Sudah Menilai" },
+      { data: notRatedData, sheetName: "Belum Menilai" },
+    ], `Analytics_EOM_${formatPeriodLabel(selectedPeriod).replace(' ', '_')}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with Period Selector */}
@@ -326,24 +400,36 @@ export function EomAnalyticsTab() {
             Statistik partisipasi penilaian per unit kerja
           </p>
         </div>
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder="Pilih Periode Penilaian" />
-          </SelectTrigger>
-          <SelectContent>
-            {periodSettings.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-muted-foreground">
-                Belum ada periode penilaian
-              </div>
-            ) : (
-              periodSettings.map(setting => (
-                <SelectItem key={setting.id} value={setting.period}>
-                  {formatPeriodLabel(setting.period)}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-[200px] sm:w-[250px]">
+              <SelectValue placeholder="Pilih Periode Penilaian" />
+            </SelectTrigger>
+            <SelectContent>
+              {periodSettings.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  Belum ada periode penilaian
+                </div>
+              ) : (
+                periodSettings.map(setting => (
+                  <SelectItem key={setting.id} value={setting.period}>
+                    {formatPeriodLabel(setting.period)}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAnalytics}
+            disabled={unitAnalytics.length === 0}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export Excel</span>
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
