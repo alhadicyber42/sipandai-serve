@@ -3,40 +3,13 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ResponsiveTableWrapper } from "@/components/ui/responsive-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, Search, UserCog, Filter, ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -44,7 +17,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TableSkeleton, StatCardSkeleton } from "@/components/skeletons";
 import { NoDataState, SearchState } from "@/components/EmptyState";
 import { useDebounce } from "@/hooks/useDebounce";
-
 interface UserWithRole {
   id: string;
   name: string;
@@ -55,13 +27,11 @@ interface UserWithRole {
   work_unit_name?: string;
   role: string;
 }
-
 interface WorkUnit {
   id: number;
   name: string;
   code: string;
 }
-
 interface Stats {
   total: number;
   admin_pusat: number;
@@ -69,14 +39,20 @@ interface Stats {
   user_unit: number;
   user_pimpinan: number;
 }
-
 const ITEMS_PER_PAGE = 50;
-
 export default function KelolaAdminUnit() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, admin_pusat: 0, admin_unit: 0, user_unit: 0, user_pimpinan: 0 });
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    admin_pusat: 0,
+    admin_unit: 0,
+    user_unit: 0,
+    user_pimpinan: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,11 +61,10 @@ export default function KelolaAdminUnit() {
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [newRole, setNewRole] = useState<string>("");
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  
   const debouncedSearch = useDebounce(searchQuery, 300);
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
@@ -112,37 +87,42 @@ export default function KelolaAdminUnit() {
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, roleFilter, workUnitFilter]);
-
   const loadWorkUnits = async () => {
     try {
-      const { data: units } = await supabase
-        .from("work_units")
-        .select("id, name, code")
-        .order("name");
+      const {
+        data: units
+      } = await supabase.from("work_units").select("id, name, code").order("name");
       if (units) setWorkUnits(units);
     } catch (error) {
       console.error("Error loading work units:", error);
     }
   };
-
   const loadStats = async () => {
     setIsStatsLoading(true);
     try {
       // Get counts by role using separate queries for accuracy
-      const [totalRes, adminPusatRes, adminUnitRes, userUnitRes, userPimpinanRes] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_pusat"),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin_unit"),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "user_unit"),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "user_pimpinan"),
-      ]);
-
+      const [totalRes, adminPusatRes, adminUnitRes, userUnitRes, userPimpinanRes] = await Promise.all([supabase.from("profiles").select("id", {
+        count: "exact",
+        head: true
+      }), supabase.from("user_roles").select("id", {
+        count: "exact",
+        head: true
+      }).eq("role", "admin_pusat"), supabase.from("user_roles").select("id", {
+        count: "exact",
+        head: true
+      }).eq("role", "admin_unit"), supabase.from("user_roles").select("id", {
+        count: "exact",
+        head: true
+      }).eq("role", "user_unit"), supabase.from("user_roles").select("id", {
+        count: "exact",
+        head: true
+      }).eq("role", "user_pimpinan")]);
       setStats({
         total: totalRes.count || 0,
         admin_pusat: adminPusatRes.count || 0,
         admin_unit: adminUnitRes.count || 0,
         user_unit: userUnitRes.count || 0,
-        user_pimpinan: userPimpinanRes.count || 0,
+        user_pimpinan: userPimpinanRes.count || 0
       });
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -150,14 +130,11 @@ export default function KelolaAdminUnit() {
       setIsStatsLoading(false);
     }
   };
-
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       // Build query for profiles with pagination
-      let query = supabase
-        .from("profiles")
-        .select(`
+      let query = supabase.from("profiles").select(`
           id,
           name,
           nip,
@@ -166,17 +143,17 @@ export default function KelolaAdminUnit() {
           work_unit_id,
           role,
           work_units (name)
-        `, { count: "exact" });
+        `, {
+        count: "exact"
+      });
 
       // Apply filters
       if (debouncedSearch) {
         query = query.or(`name.ilike.%${debouncedSearch}%,nip.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`);
       }
-
       if (roleFilter !== "all") {
         query = query.eq("role", roleFilter as "admin_pusat" | "admin_unit" | "user_unit");
       }
-
       if (workUnitFilter !== "all") {
         query = query.eq("work_unit_id", parseInt(workUnitFilter));
       }
@@ -184,29 +161,25 @@ export default function KelolaAdminUnit() {
       // Apply pagination
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
-      
-      const { data: profiles, count, error } = await query
-        .order("name")
-        .range(from, to);
-
+      const {
+        data: profiles,
+        count,
+        error
+      } = await query.order("name").range(from, to);
       if (error) throw error;
-
       setTotalCount(count || 0);
-
       if (profiles && profiles.length > 0) {
         // Batch fetch all roles in one query
         const userIds = profiles.map(p => p.id);
-        const { data: rolesData } = await supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .in("user_id", userIds);
+        const {
+          data: rolesData
+        } = await supabase.from("user_roles").select("user_id, role").in("user_id", userIds);
 
         // Create a map of user_id to role
         const rolesMap = new Map<string, string>();
         rolesData?.forEach(r => {
           rolesMap.set(r.user_id, r.role);
         });
-
         const userList: UserWithRole[] = profiles.map(profile => ({
           id: profile.id,
           name: profile.name,
@@ -215,9 +188,8 @@ export default function KelolaAdminUnit() {
           work_unit_id: profile.work_unit_id,
           work_unit_name: (profile.work_units as any)?.name || "-",
           email: profile.email || "-",
-          role: rolesMap.get(profile.id) || (profile as any).role || "user_unit",
+          role: rolesMap.get(profile.id) || (profile as any).role || "user_unit"
         }));
-
         setUsers(userList);
       } else {
         setUsers([]);
@@ -229,40 +201,31 @@ export default function KelolaAdminUnit() {
       setIsLoading(false);
     }
   }, [debouncedSearch, roleFilter, workUnitFilter, currentPage]);
-
   const handleOpenRoleDialog = (user: UserWithRole) => {
     setSelectedUser(user);
     setNewRole(user.role);
     setIsRoleDialogOpen(true);
   };
-
   const handleChangeRole = async () => {
     if (!selectedUser || !newRole) return;
-
     setIsLoading(true);
     try {
       // Delete old role
-      await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", selectedUser.id);
+      await supabase.from("user_roles").delete().eq("user_id", selectedUser.id);
 
       // Insert new role
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: selectedUser.id,
-          role: newRole as any,
-        });
-
+      const {
+        error
+      } = await supabase.from("user_roles").insert({
+        user_id: selectedUser.id,
+        role: newRole as any
+      });
       if (error) throw error;
 
       // Update profile role for backward compatibility
-      await supabase
-        .from("profiles")
-        .update({ role: newRole as any })
-        .eq("id", selectedUser.id);
-
+      await supabase.from("profiles").update({
+        role: newRole as any
+      }).eq("id", selectedUser.id);
       toast.success(`Role berhasil diubah menjadi ${getRoleName(newRole)}`);
       setIsRoleDialogOpen(false);
       loadUsers();
@@ -274,17 +237,15 @@ export default function KelolaAdminUnit() {
       setIsLoading(false);
     }
   };
-
   const getRoleName = (role: string) => {
     const roleNames: Record<string, string> = {
       user_unit: "User Unit",
       admin_unit: "Admin Unit",
       admin_pusat: "Admin Pusat",
-      user_pimpinan: "Pimpinan",
+      user_pimpinan: "Pimpinan"
     };
     return roleNames[role] || role;
   };
-
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case "admin_pusat":
@@ -297,11 +258,9 @@ export default function KelolaAdminUnit() {
         return "outline";
     }
   };
-
   const getPageNumbers = () => {
     const pages: number[] = [];
     const maxVisiblePages = 5;
-    
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
@@ -323,21 +282,16 @@ export default function KelolaAdminUnit() {
     }
     return pages;
   };
-
   if (user?.role !== "admin_pusat") {
-    return (
-      <DashboardLayout>
+    return <DashboardLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">
             Anda tidak memiliki akses ke halaman ini.
           </p>
         </div>
-      </DashboardLayout>
-    );
+      </DashboardLayout>;
   }
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="space-y-6">
         {/* Enhanced Header with Gradient */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-pink-400 p-6 md:p-8 text-white shadow-xl">
@@ -361,16 +315,13 @@ export default function KelolaAdminUnit() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {isStatsLoading ? (
-            <>
+          {isStatsLoading ? <>
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
-            </>
-          ) : (
-            <>
+            </> : <>
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">{stats.total}</div>
@@ -387,7 +338,7 @@ export default function KelolaAdminUnit() {
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-secondary">
+                  <div className="text-2xl font-bold text-primary">
                     {stats.admin_unit}
                   </div>
                   <p className="text-sm text-muted-foreground">Admin Unit</p>
@@ -409,8 +360,7 @@ export default function KelolaAdminUnit() {
                   <p className="text-sm text-muted-foreground">User Unit</p>
                 </CardContent>
               </Card>
-            </>
-          )}
+            </>}
         </div>
 
         <Card>
@@ -418,11 +368,9 @@ export default function KelolaAdminUnit() {
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               Daftar Semua Pengguna
-              {!isLoading && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+              {!isLoading && <span className="text-sm font-normal text-muted-foreground ml-2">
                   ({totalCount} pengguna)
-                </span>
-              )}
+                </span>}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -430,12 +378,7 @@ export default function KelolaAdminUnit() {
             <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari nama, NIP, atau email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Cari nama, NIP, atau email..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
               </div>
 
               <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -452,31 +395,23 @@ export default function KelolaAdminUnit() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={workUnitFilter}
-                onValueChange={setWorkUnitFilter}
-              >
+              <Select value={workUnitFilter} onValueChange={setWorkUnitFilter}>
                 <SelectTrigger>
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter Unit Kerja" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                  {workUnits.map(unit => <SelectItem key={unit.id} value={unit.id.toString()}>
                       {unit.name}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            {isLoading ? (
-              <div className="py-4">
+            {isLoading ? <div className="py-4">
                 <TableSkeleton rows={5} />
-              </div>
-            ) : (
-              <>
+              </div> : <>
                 <ResponsiveTableWrapper>
                   <Table>
                     <TableHeader>
@@ -491,24 +426,13 @@ export default function KelolaAdminUnit() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="p-0 border-none"
-                          >
+                      {users.length === 0 ? <TableRow>
+                          <TableCell colSpan={7} className="p-0 border-none">
                             <div className="py-12">
-                              {searchQuery || roleFilter !== "all" || workUnitFilter !== "all" ? (
-                                <SearchState message="Tidak ada pengguna yang sesuai dengan filter pencarian" />
-                              ) : (
-                                <NoDataState message="Belum ada data pengguna" />
-                              )}
+                              {searchQuery || roleFilter !== "all" || workUnitFilter !== "all" ? <SearchState message="Tidak ada pengguna yang sesuai dengan filter pencarian" /> : <NoDataState message="Belum ada data pengguna" />}
                             </div>
                           </TableCell>
-                        </TableRow>
-                      ) : (
-                        users.map((u) => (
-                          <TableRow key={u.id}>
+                        </TableRow> : users.map(u => <TableRow key={u.id}>
                             <TableCell>
                               <div className="flex flex-col">
                                 <span className="font-medium text-sm sm:text-base">{u.name}</span>
@@ -531,64 +455,37 @@ export default function KelolaAdminUnit() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenRoleDialog(u)}
-                                className="gap-2 h-8 px-2 md:h-9 md:px-4"
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleOpenRoleDialog(u)} className="gap-2 h-8 px-2 md:h-9 md:px-4">
                                 <UserCog className="h-4 w-4" />
                                 <span className="hidden md:inline">Ubah Role</span>
                               </Button>
                             </TableCell>
-                          </TableRow>
-                        ))
-                      )}
+                          </TableRow>)}
                     </TableBody>
                   </Table>
                 </ResponsiveTableWrapper>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                {totalPages > 1 && <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground">
-                      Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} dari {totalCount} pengguna
+                      Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} dari {totalCount} pengguna
                     </p>
                     <Pagination>
                       <PaginationContent>
                         <PaginationItem>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="h-8 w-8 p-0"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="h-8 w-8 p-0">
                             <ChevronsLeft className="h-4 w-4" />
                           </Button>
                         </PaginationItem>
                         <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
+                          <PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                         </PaginationItem>
                         
-                        {getPageNumbers().map((page, index) => (
-                          <PaginationItem key={index} className="hidden sm:inline-flex">
-                            {page < 0 ? (
-                              <span className="px-2">...</span>
-                            ) : (
-                              <PaginationLink
-                                onClick={() => setCurrentPage(page)}
-                                isActive={currentPage === page}
-                                className="cursor-pointer"
-                              >
+                        {getPageNumbers().map((page, index) => <PaginationItem key={index} className="hidden sm:inline-flex">
+                            {page < 0 ? <span className="px-2">...</span> : <PaginationLink onClick={() => setCurrentPage(page)} isActive={currentPage === page} className="cursor-pointer">
                                 {page}
-                              </PaginationLink>
-                            )}
-                          </PaginationItem>
-                        ))}
+                              </PaginationLink>}
+                          </PaginationItem>)}
                         
                         <PaginationItem className="sm:hidden">
                           <span className="px-2 text-sm">
@@ -597,28 +494,17 @@ export default function KelolaAdminUnit() {
                         </PaginationItem>
 
                         <PaginationItem>
-                          <PaginationNext
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
+                          <PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                         </PaginationItem>
                         <PaginationItem>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages}
-                            className="h-8 w-8 p-0"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="h-8 w-8 p-0">
                             <ChevronsRight className="h-4 w-4" />
                           </Button>
                         </PaginationItem>
                       </PaginationContent>
                     </Pagination>
-                  </div>
-                )}
-              </>
-            )}
+                  </div>}
+              </>}
           </CardContent>
         </Card>
       </div>
@@ -663,10 +549,7 @@ export default function KelolaAdminUnit() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsRoleDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
               Batal
             </Button>
             <Button onClick={handleChangeRole} disabled={isLoading || !newRole}>
@@ -675,6 +558,5 @@ export default function KelolaAdminUnit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 }
