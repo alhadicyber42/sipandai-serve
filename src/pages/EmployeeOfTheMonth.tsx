@@ -110,6 +110,13 @@ export default function EmployeeOfTheMonth() {
         loadEmployees();
     }, [user]);
 
+    // Set default tab to "ranking" for user_pimpinan
+    useEffect(() => {
+        if (isUserPimpinan) {
+            setActiveTab("ranking");
+        }
+    }, [isUserPimpinan]);
+
     // Load all period-dependent data when periodStatus is ready
     useEffect(() => {
         if (periodStatus.isLoading) return;
@@ -496,7 +503,7 @@ export default function EmployeeOfTheMonth() {
                 setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
             }
 
-            // Load pimpinan ratings for this period
+            // Load pimpinan ratings for this period (all pimpinan ratings)
             const { data: pimpinanRatings } = await supabase
                 .from("employee_ratings")
                 .select("rated_employee_id")
@@ -505,6 +512,31 @@ export default function EmployeeOfTheMonth() {
 
             if (pimpinanRatings) {
                 setPimpinanRatedEmployeeIds(new Set(pimpinanRatings.map(r => r.rated_employee_id)));
+            }
+            
+            // Load current pimpinan's own ratings to track their quota
+            if (user) {
+                const { data: myPimpinanRatings } = await supabase
+                    .from("employee_ratings")
+                    .select("rated_employee_id")
+                    .eq("rater_id", user.id)
+                    .eq("rating_period", activePeriod)
+                    .eq("is_pimpinan_rating", true);
+                
+                if (myPimpinanRatings && myPimpinanRatings.length > 0) {
+                    const ratedIds = myPimpinanRatings.map(r => r.rated_employee_id);
+                    const { data: ratedProfiles } = await supabase
+                        .from("profiles")
+                        .select("id, kriteria_asn")
+                        .in("id", ratedIds);
+                    
+                    if (ratedProfiles) {
+                        const hasASN = ratedProfiles.some(p => p.kriteria_asn !== "Non ASN");
+                        const hasNonASN = ratedProfiles.some(p => p.kriteria_asn === "Non ASN");
+                        setHasRatedASN(hasASN);
+                        setHasRatedNonASN(hasNonASN);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error loading ranking leaderboard:', error);
@@ -1129,15 +1161,18 @@ export default function EmployeeOfTheMonth() {
 
                 {/* Tabs for Employees List and Leaderboard */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminPusat ? 'grid-cols-4' : (isAdminUnit || isUserPimpinan) ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                        <TabsTrigger
-                            value="employees"
-                            className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
-                        >
-                            <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                            <span className="hidden sm:inline">Daftar Pegawai</span>
-                            <span className="sm:hidden">Pegawai</span>
-                        </TabsTrigger>
+                    <TabsList className={`grid w-full h-auto sm:h-12 bg-muted/50 ${isAdminPusat ? 'grid-cols-4' : isAdminUnit ? 'grid-cols-4' : isUserPimpinan ? 'grid-cols-3' : 'grid-cols-3'}`}>
+                        {/* Hide "Daftar Pegawai" tab for user_pimpinan - they should focus on rating top 10 only */}
+                        {!isUserPimpinan && (
+                            <TabsTrigger
+                                value="employees"
+                                className="text-xs sm:text-sm md:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white py-2 sm:py-3"
+                            >
+                                <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Daftar Pegawai</span>
+                                <span className="sm:hidden">Pegawai</span>
+                            </TabsTrigger>
+                        )}
                         {isAdminUnit && (
                             <TabsTrigger
                                 value="unit_leaderboard"
@@ -1519,10 +1554,48 @@ export default function EmployeeOfTheMonth() {
                                         Top 10 Peringkat Pegawai
                                     </CardTitle>
                                     <p className="text-sm text-muted-foreground mt-2">
-                                        10 pegawai dengan perolehan nilai tertinggi dari seluruh unit kerja
+                                        10 pegawai dengan perolehan nilai tertinggi dari seluruh unit kerja. Berikan penilaian Anda untuk pegawai terbaik.
                                     </p>
                                 </CardHeader>
                                 <CardContent className="pt-6">
+                                    {/* Pimpinan Quota and Weight Info */}
+                                    <div className="mb-6 space-y-3">
+                                        <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-950/30 dark:border-purple-800">
+                                            <Crown className="h-4 w-4 text-purple-600" />
+                                            <AlertTitle className="text-purple-800 dark:text-purple-300">Kuota Penilaian Pimpinan</AlertTitle>
+                                            <AlertDescription className="text-purple-700 dark:text-purple-400">
+                                                Anda memiliki <strong>2 kuota penilaian</strong>: <span className="font-semibold">1 untuk ASN</span> dan <span className="font-semibold">1 untuk Non ASN</span>.
+                                                {pimpinanRatedEmployeeIds.size > 0 && (
+                                                    <span className="block mt-1">
+                                                        Status: {(() => {
+                                                            // Check which categories have been rated
+                                                            const ratedASN = Array.from(pimpinanRatedEmployeeIds).some(id => {
+                                                                const emp = leaderboardEmployees[id];
+                                                                return emp && (emp.kriteria_asn === "ASN" || !emp.kriteria_asn);
+                                                            });
+                                                            const ratedNonASN = Array.from(pimpinanRatedEmployeeIds).some(id => {
+                                                                const emp = leaderboardEmployees[id];
+                                                                return emp && emp.kriteria_asn === "Non ASN";
+                                                            });
+                                                            
+                                                            if (ratedASN && ratedNonASN) return "✅ Sudah menilai ASN dan Non ASN";
+                                                            if (ratedASN) return "✅ Sudah menilai ASN | ⏳ Belum menilai Non ASN";
+                                                            if (ratedNonASN) return "⏳ Belum menilai ASN | ✅ Sudah menilai Non ASN";
+                                                            return "⏳ Belum menilai ASN | ⏳ Belum menilai Non ASN";
+                                                        })()}
+                                                    </span>
+                                                )}
+                                            </AlertDescription>
+                                        </Alert>
+                                        <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                                            <Star className="h-4 w-4 text-amber-600" />
+                                            <AlertTitle className="text-amber-800 dark:text-amber-300">Bobot Nilai Pimpinan</AlertTitle>
+                                            <AlertDescription className="text-amber-700 dark:text-amber-400">
+                                                Penilaian Anda memiliki <strong>bobot 1000 poin</strong> (10x lipat dari pegawai biasa yang bobotnya 100 poin). 
+                                                Ini menunjukkan bahwa penilaian pimpinan sangat berpengaruh dalam menentukan pemenang Employee of the Year.
+                                            </AlertDescription>
+                                        </Alert>
+                                    </div>
                                     <Tabs defaultValue="asn" className="w-full">
                                         <TabsList className="grid w-full grid-cols-2 mb-6">
                                             <TabsTrigger value="asn">ASN</TabsTrigger>
@@ -1558,6 +1631,10 @@ export default function EmployeeOfTheMonth() {
                                                                 const rank = entry.rank;
                                                                 const isTop3 = rank <= 3;
                                                                 const workUnitName = WORK_UNITS.find(u => u.id === entry.employee.work_unit_id)?.name || "-";
+                                                                const isSelf = entry.employeeId === user?.id;
+                                                                const isNonASN = entry.employee.kriteria_asn === "Non ASN";
+                                                                const categoryQuotaUsed = isNonASN ? hasRatedNonASN : hasRatedASN;
+                                                                const alreadyRatedByMe = ratedEmployeeIds.has(entry.employeeId);
                                                                 
                                                                 return (
                                                                     <div 
@@ -1609,7 +1686,29 @@ export default function EmployeeOfTheMonth() {
                                                                             <Button size="sm" variant="outline" onClick={() => handleShowDetail(entry.employee)} className="border-purple-300 text-purple-600 hover:bg-purple-50">
                                                                                 <Eye className="h-4 w-4" />
                                                                             </Button>
-                                                                            {entry.employeeId !== user?.id && (
+                                                                            {isSelf ? (
+                                                                                <Badge variant="secondary" className="text-xs">
+                                                                                    Anda sendiri
+                                                                                </Badge>
+                                                                            ) : alreadyRatedByMe ? (
+                                                                                <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
+                                                                                    ✓ Sudah Dinilai
+                                                                                </Badge>
+                                                                            ) : categoryQuotaUsed ? (
+                                                                                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
+                                                                                    Kuota {isNonASN ? "Non ASN" : "ASN"} Habis
+                                                                                </Badge>
+                                                                            ) : periodStatus.phase === 'no_settings' ? (
+                                                                                <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+                                                                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                                                                    Tidak Ada Periode
+                                                                                </Badge>
+                                                                            ) : !periodStatus.canRate ? (
+                                                                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600 border-orange-200">
+                                                                                    <Lock className="h-3 w-3 mr-1" />
+                                                                                    Terkunci
+                                                                                </Badge>
+                                                                            ) : (
                                                                                 <Button 
                                                                                     size="sm" 
                                                                                     className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
