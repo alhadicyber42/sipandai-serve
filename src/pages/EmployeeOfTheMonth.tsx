@@ -201,9 +201,9 @@ export default function EmployeeOfTheMonth() {
 
     const loadEmployees = async () => {
         setIsLoading(true);
-        // Load limited employee data from secure view - only fields needed for rating
+        // Load all user_unit profiles - both ASN and Non ASN can be rated
         const { data, error } = await supabase
-            .from("employee_rating_view")
+            .from("profiles")
             .select("*")
             .eq("role", "user_unit");
 
@@ -240,7 +240,7 @@ export default function EmployeeOfTheMonth() {
             // Get categories of rated employees to track quota per category
             const ratedEmployeeIds = myRatings.map(r => r.rated_employee_id);
             const { data: ratedProfiles } = await supabase
-                .from("employee_rating_view")
+                .from("profiles")
                 .select("id, kriteria_asn")
                 .in("id", ratedEmployeeIds);
 
@@ -388,7 +388,7 @@ export default function EmployeeOfTheMonth() {
 
                 const raterIds = winnerRatings.map((r: any) => r.rater_id);
                 const { data: raterProfiles } = await supabase
-                    .from("employee_rating_view")
+                    .from("profiles")
                     .select("id, name, avatar_url")
                     .in("id", raterIds);
 
@@ -420,9 +420,9 @@ export default function EmployeeOfTheMonth() {
                 setSlideshowTestimonials(slideshowData);
             };
 
-            // Get employee profiles from secure view for leaderboard display
+            // Get employee profiles with full data for leaderboard display
             const { data: profiles } = await supabase
-                .from("employee_rating_view")
+                .from("profiles")
                 .select("*")
                 .in("id", leaderboardData.map(e => e.employeeId));
 
@@ -490,7 +490,7 @@ export default function EmployeeOfTheMonth() {
             // Load employee profiles for ranking display
             if (rankingData.length > 0) {
                 const { data: profiles } = await supabase
-                    .from("employee_rating_view")
+                    .from("profiles")
                     .select("*")
                     .in("id", rankingData.map(e => e.employeeId));
 
@@ -526,7 +526,7 @@ export default function EmployeeOfTheMonth() {
                 if (myPimpinanRatings && myPimpinanRatings.length > 0) {
                     const ratedIds = myPimpinanRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("employee_rating_view")
+                        .from("profiles")
                         .select("id, kriteria_asn")
                         .in("id", ratedIds);
                     
@@ -553,7 +553,7 @@ export default function EmployeeOfTheMonth() {
 
             // Get all employees in the unit
             const { data: unitEmployees } = await supabase
-                .from("employee_rating_view")
+                .from("profiles")
                 .select("id")
                 .eq("work_unit_id", user.work_unit_id)
                 .eq("role", "user_unit");

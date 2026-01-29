@@ -1116,47 +1116,7 @@ export type Database = {
       }
     }
     Views: {
-      employee_rating_view: {
-        Row: {
-          avatar_url: string | null
-          id: string | null
-          jabatan: string | null
-          kriteria_asn: string | null
-          name: string | null
-          nip: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
-          work_unit_id: number | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          id?: string | null
-          jabatan?: string | null
-          kriteria_asn?: string | null
-          name?: string | null
-          nip?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          work_unit_id?: number | null
-        }
-        Update: {
-          avatar_url?: string | null
-          id?: string | null
-          jabatan?: string | null
-          kriteria_asn?: string | null
-          name?: string | null
-          nip?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
-          work_unit_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_work_unit_id_fkey"
-            columns: ["work_unit_id"]
-            isOneToOne: false
-            referencedRelation: "work_units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       check_user_role: {

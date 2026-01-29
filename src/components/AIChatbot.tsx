@@ -133,15 +133,6 @@ export const AIChatbot = () => {
         content: msg.content
       }));
 
-      // Get current session for auth
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('Silakan login untuk menggunakan chatbot');
-        setIsLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('ai-chatbot', {
         body: { 
           message: userMessage.content,

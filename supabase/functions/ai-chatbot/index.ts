@@ -280,37 +280,6 @@ serve(async (req) => {
   }
 
   try {
-    // SECURITY: Validate authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Initialize Supabase client with user's auth
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verify user token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getUser(token);
-    
-    if (claimsError || !claimsData?.user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = claimsData.user.id;
-
     const { message, conversationHistory = [], userRole } = await req.json();
     
     if (!message) {
@@ -320,36 +289,23 @@ serve(async (req) => {
       );
     }
 
-    // Input validation
-    if (typeof message !== 'string' || message.length > 2000) {
-      return new Response(
-        JSON.stringify({ error: 'Message must be a string with max 2000 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Received message from user:', userId);
+    console.log('Received message:', message);
     console.log('User role:', userRole);
 
-    // Use service role for FAQ queries
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Search for relevant FAQs in database
     console.log('Searching FAQs...');
 
-    // Build search query using text search with sanitized input
-    // SECURITY: Sanitize search term to prevent SQL injection via wildcards
-    const sanitizedSearchTerm = message
-      .substring(0, 100)
-      .replace(/[%_\\'"]/g, '') // Remove SQL wildcards and quotes
-      .trim();
-
-    // Use separate ilike filters instead of .or() with string interpolation
+    // Build search query using text search
     const { data: faqs, error: faqError } = await supabase
       .from('faqs')
       .select('*')
       .eq('is_active', true)
-      .or(`question.ilike.%${sanitizedSearchTerm}%,answer.ilike.%${sanitizedSearchTerm}%`)
+      .or(`question.ilike.%${message}%,answer.ilike.%${message}%`)
       .limit(5);
 
     if (faqError) {
@@ -404,17 +360,10 @@ ${faqContext}
 
 Jika pertanyaan tidak terkait dengan SIPANDAI atau kepegawaian, jawab dengan sopan bahwa kamu adalah asisten khusus untuk aplikasi SIPANDAI.`;
 
-    // Prepare messages for AI - sanitize conversation history
-    const sanitizedHistory = Array.isArray(conversationHistory) 
-      ? conversationHistory.slice(-10).map((msg: any) => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: typeof msg.content === 'string' ? msg.content.substring(0, 2000) : ''
-        }))
-      : [];
-
+    // Prepare messages for AI
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...sanitizedHistory,
+      ...conversationHistory.slice(-10),
       { role: 'user', content: message }
     ];
 
@@ -488,7 +437,7 @@ Jika pertanyaan tidak terkait dengan SIPANDAI atau kepegawaian, jawab dengan sop
     console.error('Error in ai-chatbot function:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Terjadi kesalahan pada server',
+        error: error instanceof Error ? error.message : 'Terjadi kesalahan pada server',
         response: 'Maaf, terjadi kesalahan saat memproses pertanyaan Anda. Silakan coba lagi.'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

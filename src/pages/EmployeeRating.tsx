@@ -189,9 +189,9 @@ export default function EmployeeRating() {
         // Wait for period status to be loaded
         if (periodStatus.isLoading || !periodStatus.activePeriod) return;
         
-        // First, get the employee's category (ASN/Non ASN) from secure view
+        // First, get the employee's category (ASN/Non ASN)
         const { data: employeeData } = await supabase
-            .from("employee_rating_view")
+            .from("profiles")
             .select("kriteria_asn")
             .eq("id", employeeId)
             .single();
@@ -215,7 +215,7 @@ export default function EmployeeRating() {
             if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
                 const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
                 const { data: ratedProfiles } = await supabase
-                    .from("employee_rating_view")
+                    .from("profiles")
                     .select("id, kriteria_asn")
                     .in("id", ratedEmployeeIds);
                 
@@ -244,7 +244,7 @@ export default function EmployeeRating() {
             // Get the categories of already rated employees
             const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
             const { data: ratedProfiles } = await supabase
-                .from("employee_rating_view")
+                .from("profiles")
                 .select("id, kriteria_asn")
                 .in("id", ratedEmployeeIds);
             
@@ -263,9 +263,8 @@ export default function EmployeeRating() {
 
     const loadEmployee = async () => {
         setIsLoading(true);
-        // Load employee from secure view with limited fields
         const { data, error } = await supabase
-            .from("employee_rating_view")
+            .from("profiles")
             .select("*")
             .eq("id", employeeId)
             .single();
@@ -364,7 +363,7 @@ export default function EmployeeRating() {
                 if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
                     const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("employee_rating_view")
+                        .from("profiles")
                         .select("id, kriteria_asn")
                         .in("id", ratedEmployeeIds);
                     
@@ -391,7 +390,7 @@ export default function EmployeeRating() {
                 if (existingRatings && existingRatings.length > 0) {
                     const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("employee_rating_view")
+                        .from("profiles")
                         .select("id, kriteria_asn")
                         .in("id", ratedEmployeeIds);
                     

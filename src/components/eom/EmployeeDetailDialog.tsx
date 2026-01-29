@@ -154,10 +154,10 @@ export function EmployeeDetailDialog({
 
       setCriteriaBreakdown(breakdown);
 
-      // Fetch rater profiles from secure view for testimonials
+      // Fetch rater profiles for testimonials
       const raterIds = ratings.map((r: any) => r.rater_id);
       const { data: raterProfiles } = await supabase
-        .from("employee_rating_view")
+        .from("profiles")
         .select("id, name, avatar_url")
         .in("id", raterIds);
 
