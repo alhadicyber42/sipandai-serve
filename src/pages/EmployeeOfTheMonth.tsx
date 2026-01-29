@@ -201,15 +201,25 @@ export default function EmployeeOfTheMonth() {
 
     const loadEmployees = async () => {
         setIsLoading(true);
-        // Load all user_unit profiles - both ASN and Non ASN can be rated
+        // Load all user_unit profiles using the employee_rating_view which has proper RLS
+        // This view is accessible to all users for EOM rating purposes
         const { data, error } = await supabase
-            .from("profiles")
+            .from("employee_rating_view")
             .select("*")
             .eq("role", "user_unit");
 
         if (error) {
             toast.error("Gagal memuat data pegawai");
             console.error("Error details:", error);
+            // Fallback to profiles table if view fails
+            const { data: fallbackData, error: fallbackError } = await supabase
+                .from("profiles")
+                .select("id, name, nip, jabatan, avatar_url, kriteria_asn, work_unit_id, role")
+                .eq("role", "user_unit");
+            
+            if (!fallbackError) {
+                setEmployees(fallbackData || []);
+            }
         } else {
             setEmployees(data || []);
         }
@@ -238,11 +248,11 @@ export default function EmployeeOfTheMonth() {
             setRatedEmployeeIds(new Set(myRatings.map(r => r.rated_employee_id)));
 
             // Get categories of rated employees to track quota per category
-            const ratedEmployeeIds = myRatings.map(r => r.rated_employee_id);
+            const ratedEmployeeIdsArr = myRatings.map(r => r.rated_employee_id);
             const { data: ratedProfiles } = await supabase
-                .from("profiles")
+                .from("employee_rating_view")
                 .select("id, kriteria_asn")
-                .in("id", ratedEmployeeIds);
+                .in("id", ratedEmployeeIdsArr);
 
             if (ratedProfiles) {
                 const hasASN = ratedProfiles.some(p => p.kriteria_asn !== "Non ASN");
@@ -487,20 +497,34 @@ export default function EmployeeOfTheMonth() {
 
             setRankingLeaderboard(rankingData);
 
-            // Load employee profiles for ranking display
+            // Load employee profiles for ranking display using employee_rating_view
             if (rankingData.length > 0) {
-                const { data: profiles } = await supabase
-                    .from("profiles")
+                const { data: profiles, error: profilesError } = await supabase
+                    .from("employee_rating_view")
                     .select("*")
                     .in("id", rankingData.map(e => e.employeeId));
 
-                const profileMap = (profiles || []).reduce((acc: any, p: any) => {
-                    acc[p.id] = p;
-                    return acc;
-                }, {});
-
-                // Merge with existing leaderboardEmployees
-                setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
+                if (profilesError) {
+                    console.error('Error loading profiles from view:', profilesError);
+                    // Fallback to profiles table
+                    const { data: fallbackProfiles } = await supabase
+                        .from("profiles")
+                        .select("id, name, nip, jabatan, avatar_url, kriteria_asn, work_unit_id, role")
+                        .in("id", rankingData.map(e => e.employeeId));
+                    
+                    const profileMap = (fallbackProfiles || []).reduce((acc: any, p: any) => {
+                        acc[p.id] = p;
+                        return acc;
+                    }, {});
+                    setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
+                } else {
+                    const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+                        acc[p.id] = p;
+                        return acc;
+                    }, {});
+                    // Merge with existing leaderboardEmployees
+                    setLeaderboardEmployees(prev => ({ ...prev, ...profileMap }));
+                }
             }
 
             // Load pimpinan ratings for this period (all pimpinan ratings)
@@ -526,7 +550,7 @@ export default function EmployeeOfTheMonth() {
                 if (myPimpinanRatings && myPimpinanRatings.length > 0) {
                     const ratedIds = myPimpinanRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("profiles")
+                        .from("employee_rating_view")
                         .select("id, kriteria_asn")
                         .in("id", ratedIds);
                     

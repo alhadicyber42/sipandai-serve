@@ -189,9 +189,9 @@ export default function EmployeeRating() {
         // Wait for period status to be loaded
         if (periodStatus.isLoading || !periodStatus.activePeriod) return;
         
-        // First, get the employee's category (ASN/Non ASN)
+        // First, get the employee's category (ASN/Non ASN) using the view
         const { data: employeeData } = await supabase
-            .from("profiles")
+            .from("employee_rating_view")
             .select("kriteria_asn")
             .eq("id", employeeId)
             .single();
@@ -215,7 +215,7 @@ export default function EmployeeRating() {
             if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
                 const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
                 const { data: ratedProfiles } = await supabase
-                    .from("profiles")
+                    .from("employee_rating_view")
                     .select("id, kriteria_asn")
                     .in("id", ratedEmployeeIds);
                 
@@ -244,7 +244,7 @@ export default function EmployeeRating() {
             // Get the categories of already rated employees
             const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
             const { data: ratedProfiles } = await supabase
-                .from("profiles")
+                .from("employee_rating_view")
                 .select("id, kriteria_asn")
                 .in("id", ratedEmployeeIds);
             
@@ -263,20 +263,32 @@ export default function EmployeeRating() {
 
     const loadEmployee = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from("profiles")
+        // Try using employee_rating_view first (has no RLS restrictions for EOM)
+        const { data: viewData, error: viewError } = await supabase
+            .from("employee_rating_view")
             .select("*")
             .eq("id", employeeId)
             .single();
 
-        if (error) {
-            toast.error("Gagal memuat data pegawai");
-            console.error(error);
-            navigate("/employee-of-the-month");
+        if (viewError) {
+            // Fallback to profiles table
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", employeeId)
+                .single();
+            
+            if (error) {
+                toast.error("Gagal memuat data pegawai");
+                console.error(error);
+                navigate("/employee-of-the-month");
+            } else {
+                setEmployee(data);
+                setIsNonASN(data.kriteria_asn === "Non ASN");
+            }
         } else {
-            setEmployee(data);
-            // Check if employee is Non ASN
-            setIsNonASN(data.kriteria_asn === "Non ASN");
+            setEmployee(viewData);
+            setIsNonASN(viewData.kriteria_asn === "Non ASN");
         }
         setIsLoading(false);
     };
@@ -363,7 +375,7 @@ export default function EmployeeRating() {
                 if (existingPimpinanRatings && existingPimpinanRatings.length > 0) {
                     const ratedEmployeeIds = existingPimpinanRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("profiles")
+                        .from("employee_rating_view")
                         .select("id, kriteria_asn")
                         .in("id", ratedEmployeeIds);
                     
@@ -390,7 +402,7 @@ export default function EmployeeRating() {
                 if (existingRatings && existingRatings.length > 0) {
                     const ratedEmployeeIds = existingRatings.map(r => r.rated_employee_id);
                     const { data: ratedProfiles } = await supabase
-                        .from("profiles")
+                        .from("employee_rating_view")
                         .select("id, kriteria_asn")
                         .in("id", ratedEmployeeIds);
                     
