@@ -42,6 +42,33 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // SECURITY: Validate authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Create client with user auth to verify identity
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: authError } = await supabaseAuth.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const {
       employeeId,
       employeeName,
@@ -50,6 +77,57 @@ const handler = async (req: Request): Promise<Response> => {
       workUnitName,
       senderId
     }: RetirementReminderRequest = await req.json();
+
+    // SECURITY: Verify sender matches authenticated user
+    if (senderId !== userData.user.id) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Sender ID mismatch" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use service role for authorization check
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // SECURITY: Verify sender is admin_pusat or admin_unit
+    const { data: senderProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role, work_unit_id")
+      .eq("id", senderId)
+      .single();
+
+    if (profileError || !senderProfile) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Sender profile not found" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if sender has appropriate role
+    if (senderProfile.role !== "admin_pusat" && senderProfile.role !== "admin_unit") {
+      return new Response(
+        JSON.stringify({ success: false, error: "Requires admin_pusat or admin_unit role" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If admin_unit, verify employee is in their unit
+    if (senderProfile.role === "admin_unit") {
+      const { data: employeeProfile } = await supabase
+        .from("profiles")
+        .select("work_unit_id")
+        .eq("id", employeeId)
+        .single();
+
+      if (employeeProfile?.work_unit_id !== senderProfile.work_unit_id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Not authorized to send reminder to this employee" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    console.log(`Authorization verified for sender: ${senderId} (${senderProfile.role})`);
 
     console.log(`Sending retirement reminder to: ${employeeName} (${employeeEmail})`);
 
@@ -112,10 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully:", emailResponse);
 
-    // Log to database using service role
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Log to database using the already-initialized supabase client
 
     // Insert reminder log
     const { error: logError } = await supabase
