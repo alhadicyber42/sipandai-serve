@@ -16,9 +16,50 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // SECURITY: Require authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Create client with user's auth to verify identity
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    
+    if (userError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check if user is admin_pusat
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userData.user.id)
+      .single();
+
+    if (profileError || profile?.role !== 'admin_pusat') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Requires admin_pusat role' }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Get all users from auth.users using admin API
     const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
@@ -73,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: "Terjadi kesalahan pada server"
       }),
       {
         status: 500,
