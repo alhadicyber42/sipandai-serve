@@ -8,12 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BarChart3, Users, CheckCircle2, XCircle, Building2, TrendingUp, Loader2, Download } from "lucide-react";
+import { BarChart3, Users, CheckCircle2, XCircle, Building2, TrendingUp, Loader2, Download, Search, Crown, AlertCircle } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
 import { exportMultipleSheets } from "@/lib/export-helper";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface UnitAnalytics {
   unitId: number;
@@ -50,6 +52,17 @@ interface EomPeriodSetting {
   rating_end_date: string;
 }
 
+interface PimpinanRatingStatus {
+  id: string;
+  name: string;
+  nip: string;
+  avatar_url: string | null;
+  work_unit_name: string;
+  hasRated: boolean;
+  ratedASN: boolean;
+  ratedNonASN: boolean;
+}
+
 export function EomAnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [participatingUnits, setParticipatingUnits] = useState<WorkUnit[]>([]);
@@ -57,6 +70,12 @@ export function EomAnalyticsTab() {
   const [allRatings, setAllRatings] = useState<any[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [periodSettings, setPeriodSettings] = useState<EomPeriodSetting[]>([]);
+  const [pimpinanProfiles, setPimpinanProfiles] = useState<any[]>([]);
+  
+  // Search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>("units");
 
   useEffect(() => {
     loadData();
@@ -105,10 +124,19 @@ export function EomAnalyticsTab() {
       // Load all ratings
       const { data: ratings, error: ratError } = await supabase
         .from("employee_ratings")
-        .select("rater_id, rated_employee_id, rating_period");
+        .select("rater_id, rated_employee_id, rating_period, is_pimpinan_rating");
 
       if (ratError) throw ratError;
       setAllRatings(ratings || []);
+
+      // Load pimpinan profiles with work unit info
+      const { data: pimpinanData, error: pimpinanError } = await supabase
+        .from("profiles")
+        .select("id, name, nip, avatar_url, work_unit_id")
+        .eq("role", "user_pimpinan");
+
+      if (pimpinanError) throw pimpinanError;
+      setPimpinanProfiles(pimpinanData || []);
 
     } catch (error: any) {
       console.error("Error loading analytics data:", error);
@@ -206,6 +234,83 @@ export function EomAnalyticsTab() {
     };
   }, [unitAnalytics]);
 
+  // Search filtered employees across all units
+  const searchResults = useMemo(() => {
+    if (!debouncedSearch.trim()) return [];
+    
+    const searchLower = debouncedSearch.toLowerCase();
+    const allEmployeeStatuses: (EmployeeRatingStatus & { unitName: string })[] = [];
+    
+    unitAnalytics.forEach(unit => {
+      [...unit.ratedEmployees, ...unit.notRatedEmployees].forEach(emp => {
+        if (emp.name.toLowerCase().includes(searchLower) || emp.nip.includes(searchLower)) {
+          allEmployeeStatuses.push({ ...emp, unitName: unit.unitName });
+        }
+      });
+    });
+    
+    return allEmployeeStatuses;
+  }, [debouncedSearch, unitAnalytics]);
+
+  // Pimpinan rating status
+  const pimpinanRatingStatus: PimpinanRatingStatus[] = useMemo(() => {
+    if (!selectedPeriod) return [];
+    
+    // Get pimpinan ratings for the selected period
+    const periodRatings = allRatings.filter(r => r.rating_period === selectedPeriod && r.is_pimpinan_rating);
+    
+    // Create map of pimpinan -> rated categories
+    const pimpinanRaterMap: Record<string, { asnRated: boolean; nonAsnRated: boolean }> = {};
+    
+    periodRatings.forEach(rating => {
+      if (!pimpinanRaterMap[rating.rater_id]) {
+        pimpinanRaterMap[rating.rater_id] = { asnRated: false, nonAsnRated: false };
+      }
+      
+      // Find the rated employee to check their category
+      const ratedEmployee = allProfiles.find(p => p.id === rating.rated_employee_id);
+      if (ratedEmployee) {
+        if (ratedEmployee.kriteria_asn === "Non ASN") {
+          pimpinanRaterMap[rating.rater_id].nonAsnRated = true;
+        } else {
+          pimpinanRaterMap[rating.rater_id].asnRated = true;
+        }
+      }
+    });
+
+    return pimpinanProfiles.map(pimpinan => {
+      const raterStatus = pimpinanRaterMap[pimpinan.id] || { asnRated: false, nonAsnRated: false };
+      const hasRated = raterStatus.asnRated || raterStatus.nonAsnRated;
+      const unit = participatingUnits.find(u => u.id === pimpinan.work_unit_id);
+      
+      return {
+        id: pimpinan.id,
+        name: pimpinan.name,
+        nip: pimpinan.nip,
+        avatar_url: pimpinan.avatar_url,
+        work_unit_name: unit?.name || "Unit tidak diketahui",
+        hasRated,
+        ratedASN: raterStatus.asnRated,
+        ratedNonASN: raterStatus.nonAsnRated,
+      };
+    }).sort((a, b) => {
+      // Sort: not rated first, then by name
+      if (a.hasRated && !b.hasRated) return 1;
+      if (!a.hasRated && b.hasRated) return -1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [selectedPeriod, allRatings, pimpinanProfiles, allProfiles, participatingUnits]);
+
+  // Pimpinan summary stats
+  const pimpinanSummary = useMemo(() => {
+    const total = pimpinanRatingStatus.length;
+    const rated = pimpinanRatingStatus.filter(p => p.hasRated).length;
+    const ratedComplete = pimpinanRatingStatus.filter(p => p.ratedASN && p.ratedNonASN).length;
+    const notRated = pimpinanRatingStatus.filter(p => !p.hasRated).length;
+    
+    return { total, rated, ratedComplete, notRated };
+  }, [pimpinanRatingStatus]);
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -254,8 +359,8 @@ export function EomAnalyticsTab() {
                 <TableCell className="hidden md:table-cell">
                   <Badge variant="outline" className={`text-xs ${
                     emp.kriteria_asn === "Non ASN" 
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                      ? "bg-success/10 text-success border-success/20"
+                      : "bg-primary/10 text-primary border-primary/20"
                   }`}>
                     {emp.kriteria_asn || "ASN"}
                   </Badge>
@@ -264,18 +369,18 @@ export function EomAnalyticsTab() {
                   {type === 'rated' ? (
                     <div className="flex flex-wrap gap-1">
                       {emp.ratedASN && (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
                           ✓ ASN
                         </Badge>
                       )}
                       {emp.ratedNonASN && (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
                           ✓ Non
                         </Badge>
                       )}
                     </div>
                   ) : (
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                    <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
                       <XCircle className="h-3 w-3 mr-0.5 sm:mr-1" />
                       <span className="hidden sm:inline">Belum Menilai</span>
                       <span className="sm:hidden">Belum</span>
@@ -434,57 +539,57 @@ export function EomAnalyticsTab() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <Building2 className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Unit Peserta</p>
-                <p className="text-2xl font-bold text-blue-600">{summaryStats.totalUnits}</p>
+                <p className="text-2xl font-bold text-primary">{summaryStats.totalUnits}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+        <Card className="bg-gradient-to-br from-secondary/30 to-secondary/50 border-secondary">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-purple-500/10">
-                <Users className="h-5 w-5 text-purple-600" />
+              <div className="p-2 rounded-full bg-secondary">
+                <Users className="h-5 w-5 text-secondary-foreground" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Pegawai</p>
-                <p className="text-2xl font-bold text-purple-600">{summaryStats.totalEmployees}</p>
+                <p className="text-2xl font-bold text-secondary-foreground">{summaryStats.totalEmployees}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800">
+        <Card className="bg-gradient-to-br from-success/5 to-success/10 border-success/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-500/10">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-full bg-success/10">
+                <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Sudah Menilai</p>
-                <p className="text-2xl font-bold text-green-600">{summaryStats.totalRated}</p>
+                <p className="text-2xl font-bold text-success">{summaryStats.totalRated}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
+        <Card className="bg-gradient-to-br from-warning/5 to-warning/10 border-warning/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-orange-500/10">
-                <XCircle className="h-5 w-5 text-orange-600" />
+              <div className="p-2 rounded-full bg-warning/10">
+                <XCircle className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Belum Menilai</p>
-                <p className="text-2xl font-bold text-orange-600">{summaryStats.totalNotRated}</p>
+                <p className="text-2xl font-bold text-warning">{summaryStats.totalNotRated}</p>
               </div>
             </div>
           </CardContent>
@@ -504,102 +609,332 @@ export function EomAnalyticsTab() {
         </CardContent>
       </Card>
 
-      {/* Unit Details */}
+      {/* Employee Search Section */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Detail per Unit Kerja
+            <Search className="h-5 w-5" />
+            Cari Pegawai
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Ketik nama atau NIP pegawai untuk melihat status penilaian mereka
+          </p>
         </CardHeader>
         <CardContent>
-          {unitAnalytics.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Tidak ada unit peserta yang aktif</p>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama atau NIP pegawai..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Search Results */}
+          {debouncedSearch.trim() && (
+            <div className="mt-4">
+              {searchResults.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Tidak ditemukan pegawai dengan nama/NIP "{debouncedSearch}"</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Ditemukan {searchResults.length} pegawai
+                  </p>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Pegawai</TableHead>
+                          <TableHead className="hidden sm:table-cell">NIP</TableHead>
+                          <TableHead className="hidden md:table-cell">Unit Kerja</TableHead>
+                          <TableHead>Status Penilaian</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {searchResults.slice(0, 20).map((emp) => (
+                          <TableRow key={emp.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7 flex-shrink-0">
+                                  <AvatarImage src={emp.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs">
+                                    {getInitials(emp.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <span className="font-medium text-sm block truncate max-w-[120px] sm:max-w-none">{emp.name}</span>
+                                  <span className="text-xs text-muted-foreground sm:hidden block">{emp.nip}</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground hidden sm:table-cell">{emp.nip}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <span className="text-sm">{emp.unitName}</span>
+                            </TableCell>
+                            <TableCell>
+                              {emp.hasRated ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {emp.ratedASN && (
+                                    <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                                      ✓ ASN
+                                    </Badge>
+                                  )}
+                                  {emp.ratedNonASN && (
+                                    <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                                      ✓ Non ASN
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                                  <XCircle className="h-3 w-3 mr-0.5" />
+                                  Belum Menilai
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {searchResults.length > 20 && (
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Menampilkan 20 dari {searchResults.length} hasil. Ketik lebih spesifik untuk mempersempit pencarian.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <Accordion type="multiple" className="w-full">
-              {unitAnalytics.map((unit) => (
-                <AccordionItem key={unit.unitId} value={String(unit.unitId)}>
-                  <AccordionTrigger className="hover:no-underline py-3 sm:py-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-2 sm:pr-4 gap-2 sm:gap-4">
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                        <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="font-medium text-sm sm:text-base truncate">{unit.unitName}</span>
-                      </div>
-                      <div className="flex items-center gap-2 sm:gap-4 ml-6 sm:ml-0">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs px-1.5 sm:px-2">
-                            <CheckCircle2 className="h-3 w-3 sm:mr-1" />
-                            <span className="hidden sm:inline">Sudah: </span>{unit.employeesRated}
-                          </Badge>
-                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs px-1.5 sm:px-2">
-                            <XCircle className="h-3 w-3 sm:mr-1" />
-                            <span className="hidden sm:inline">Belum: </span>{unit.employeesNotRated}
-                          </Badge>
-                        </div>
-                        <div className="w-16 sm:w-24 flex items-center gap-1 sm:gap-2">
-                          <Progress value={unit.ratedPercentage} className="h-1.5 sm:h-2" />
-                          <span className="text-xs font-medium w-10 text-right">
-                            {unit.ratedPercentage.toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="pt-4">
-                      <Tabs defaultValue="not_rated" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-4">
-                          <TabsTrigger value="not_rated" className="text-orange-600 data-[state=active]:bg-orange-100 dark:data-[state=active]:bg-orange-900/30">
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Belum Menilai ({unit.employeesNotRated})
-                          </TabsTrigger>
-                          <TabsTrigger value="rated" className="text-green-600 data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-900/30">
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Sudah Menilai ({unit.employeesRated})
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="not_rated">
-                          {unit.notRatedEmployees.length === 0 ? (
-                            <div className="text-center py-6 text-green-600">
-                              <CheckCircle2 className="h-8 w-8 mx-auto mb-2" />
-                              <p className="text-sm">Semua pegawai sudah melakukan penilaian!</p>
-                            </div>
-                          ) : (
-                            <PaginatedEmployeeTable 
-                              employees={unit.notRatedEmployees} 
-                              type="not_rated" 
-                              getInitials={getInitials}
-                            />
-                          )}
-                        </TabsContent>
-
-                        <TabsContent value="rated">
-                          {unit.ratedEmployees.length === 0 ? (
-                            <div className="text-center py-6 text-muted-foreground">
-                              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">Belum ada pegawai yang melakukan penilaian</p>
-                            </div>
-                          ) : (
-                            <PaginatedEmployeeTable 
-                              employees={unit.ratedEmployees} 
-                              type="rated" 
-                              getInitials={getInitials}
-                            />
-                          )}
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
           )}
         </CardContent>
       </Card>
+
+      {/* Main Tabs: Units & Pimpinan */}
+      <Tabs value={activeAnalyticsTab} onValueChange={setActiveAnalyticsTab}>
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="units" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Detail per Unit</span>
+            <span className="sm:hidden">Unit</span>
+          </TabsTrigger>
+          <TabsTrigger value="pimpinan" className="gap-2">
+            <Crown className="h-4 w-4" />
+            <span className="hidden sm:inline">Status Pimpinan</span>
+            <span className="sm:hidden">Pimpinan</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Unit Details Tab */}
+        <TabsContent value="units">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Detail per Unit Kerja
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {unitAnalytics.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Tidak ada unit peserta yang aktif</p>
+                </div>
+              ) : (
+                <Accordion type="multiple" className="w-full">
+                  {unitAnalytics.map((unit) => (
+                    <AccordionItem key={unit.unitId} value={String(unit.unitId)}>
+                      <AccordionTrigger className="hover:no-underline py-3 sm:py-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-2 sm:pr-4 gap-2 sm:gap-4">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium text-sm sm:text-base truncate">{unit.unitName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-4 ml-6 sm:ml-0">
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs px-1.5 sm:px-2">
+                                <CheckCircle2 className="h-3 w-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Sudah: </span>{unit.employeesRated}
+                              </Badge>
+                              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs px-1.5 sm:px-2">
+                                <XCircle className="h-3 w-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Belum: </span>{unit.employeesNotRated}
+                              </Badge>
+                            </div>
+                            <div className="w-16 sm:w-24 flex items-center gap-1 sm:gap-2">
+                              <Progress value={unit.ratedPercentage} className="h-1.5 sm:h-2" />
+                              <span className="text-xs font-medium w-10 text-right">
+                                {unit.ratedPercentage.toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="pt-4">
+                          <Tabs defaultValue="not_rated" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                              <TabsTrigger value="not_rated" className="text-warning data-[state=active]:bg-warning/10">
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Belum Menilai ({unit.employeesNotRated})
+                              </TabsTrigger>
+                              <TabsTrigger value="rated" className="text-success data-[state=active]:bg-success/10">
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Sudah Menilai ({unit.employeesRated})
+                              </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="not_rated">
+                              {unit.notRatedEmployees.length === 0 ? (
+                                <div className="text-center py-6 text-success">
+                                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2" />
+                                  <p className="text-sm">Semua pegawai sudah melakukan penilaian!</p>
+                                </div>
+                              ) : (
+                                <PaginatedEmployeeTable 
+                                  employees={unit.notRatedEmployees} 
+                                  type="not_rated" 
+                                  getInitials={getInitials}
+                                />
+                              )}
+                            </TabsContent>
+
+                            <TabsContent value="rated">
+                              {unit.ratedEmployees.length === 0 ? (
+                                <div className="text-center py-6 text-muted-foreground">
+                                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-sm">Belum ada pegawai yang melakukan penilaian</p>
+                                </div>
+                              ) : (
+                                <PaginatedEmployeeTable 
+                                  employees={unit.ratedEmployees} 
+                                  type="rated" 
+                                  getInitials={getInitials}
+                                />
+                              )}
+                            </TabsContent>
+                          </Tabs>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Pimpinan Status Tab */}
+        <TabsContent value="pimpinan">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-primary" />
+                    Status Penilaian Pimpinan
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pimpinan memiliki kuota 2 penilaian (1 ASN, 1 Non-ASN) dengan bobot 1000 poin
+                  </p>
+                </div>
+                {/* Pimpinan Summary */}
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/20 px-3 py-1">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Sudah: {pimpinanSummary.rated}
+                  </Badge>
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 px-3 py-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Belum: {pimpinanSummary.notRated}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pimpinanRatingStatus.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Crown className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Belum ada akun pimpinan yang terdaftar</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Pimpinan</TableHead>
+                        <TableHead className="hidden sm:table-cell">NIP</TableHead>
+                        <TableHead className="hidden md:table-cell">Unit Kerja</TableHead>
+                        <TableHead>Status Penilaian</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pimpinanRatingStatus.map((pimpinan) => (
+                        <TableRow key={pimpinan.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-primary/30">
+                                <AvatarImage src={pimpinan.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                  {getInitials(pimpinan.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-sm block truncate max-w-[120px] sm:max-w-none">{pimpinan.name}</span>
+                                  <Crown className="h-3 w-3 text-primary flex-shrink-0" />
+                                </div>
+                                <span className="text-xs text-muted-foreground sm:hidden block">{pimpinan.nip}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground hidden sm:table-cell">{pimpinan.nip}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <span className="text-sm">{pimpinan.work_unit_name}</span>
+                          </TableCell>
+                          <TableCell>
+                            {pimpinan.hasRated ? (
+                              <div className="flex flex-col sm:flex-row gap-1">
+                                <Badge variant="outline" className={`text-[10px] sm:text-xs px-1.5 sm:px-2 ${
+                                  pimpinan.ratedASN 
+                                    ? "bg-success/10 text-success border-success/20" 
+                                    : "bg-muted text-muted-foreground border-muted"
+                                }`}>
+                                  {pimpinan.ratedASN ? "✓" : "○"} ASN
+                                </Badge>
+                                <Badge variant="outline" className={`text-[10px] sm:text-xs px-1.5 sm:px-2 ${
+                                  pimpinan.ratedNonASN 
+                                    ? "bg-success/10 text-success border-success/20" 
+                                    : "bg-muted text-muted-foreground border-muted"
+                                }`}>
+                                  {pimpinan.ratedNonASN ? "✓" : "○"} Non ASN
+                                </Badge>
+                                {pimpinan.ratedASN && pimpinan.ratedNonASN && (
+                                  <Badge className="bg-success text-success-foreground text-[10px] sm:text-xs px-1.5 sm:px-2 hidden sm:inline-flex">
+                                    Lengkap
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                                <XCircle className="h-3 w-3 mr-0.5" />
+                                Belum Menilai
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
