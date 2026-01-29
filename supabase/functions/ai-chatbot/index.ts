@@ -337,12 +337,19 @@ serve(async (req) => {
     // Search for relevant FAQs in database
     console.log('Searching FAQs...');
 
-    // Build search query using text search
+    // Build search query using text search with sanitized input
+    // SECURITY: Sanitize search term to prevent SQL injection via wildcards
+    const sanitizedSearchTerm = message
+      .substring(0, 100)
+      .replace(/[%_\\'"]/g, '') // Remove SQL wildcards and quotes
+      .trim();
+
+    // Use separate ilike filters instead of .or() with string interpolation
     const { data: faqs, error: faqError } = await supabase
       .from('faqs')
       .select('*')
       .eq('is_active', true)
-      .or(`question.ilike.%${message.substring(0, 100)}%,answer.ilike.%${message.substring(0, 100)}%`)
+      .or(`question.ilike.%${sanitizedSearchTerm}%,answer.ilike.%${sanitizedSearchTerm}%`)
       .limit(5);
 
     if (faqError) {
