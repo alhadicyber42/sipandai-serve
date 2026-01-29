@@ -19,6 +19,8 @@ import { PROMOTION_CATEGORIES, MONTHS, YEARS } from "@/lib/promotion-categories"
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
 import { StatCardSkeleton } from "@/components/skeletons";
+import { promotionFormSchema } from "@/lib/validation-schemas";
+import { getSafeErrorMessage } from "@/lib/error-handler";
 
 export default function KenaikanPangkat() {
   const { user, updateProfile } = useAuth();
@@ -96,18 +98,28 @@ export default function KenaikanPangkat() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!selectedCategory) {
-      toast.error("Pilih kategori kenaikan pangkat");
-      return;
-    }
+    // Validate form inputs using Zod schema
+    const formData = new FormData(e.currentTarget);
+    const description = formData.get("description") as string || "";
 
-    if (!selectedMonth || !selectedYear) {
-      toast.error("Pilih periode pengajuan");
+    const validationResult = promotionFormSchema.safeParse({
+      category: selectedCategory,
+      month: selectedMonth,
+      year: selectedYear,
+      description: description,
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     const category = PROMOTION_CATEGORIES.find(c => c.id === selectedCategory);
-    if (!category) return;
+    if (!category) {
+      toast.error("Kategori tidak valid");
+      return;
+    }
 
     // Validate all required documents are filled
     const missingDocs = category.documents.filter(doc => !documentLinks[doc.name] || documentLinks[doc.name].trim() === "");
@@ -117,9 +129,6 @@ export default function KenaikanPangkat() {
     }
 
     setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const description = formData.get("description") as string;
 
     // AUTO-SAVE: Sync documents to repository
     const updatedDocs = { ...user!.documents };
@@ -192,8 +201,7 @@ export default function KenaikanPangkat() {
     });
 
     if (error) {
-      toast.error("Gagal mengajukan usulan");
-      console.error(error);
+      toast.error(getSafeErrorMessage(error, "Gagal mengajukan usulan"));
     } else {
       toast.success("Usulan berhasil diajukan");
       setIsDialogOpen(false);

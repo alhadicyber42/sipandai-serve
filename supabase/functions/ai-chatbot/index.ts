@@ -280,6 +280,37 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Validate authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with user's auth
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getUser(token);
+    
+    if (claimsError || !claimsData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.user.id;
+
     const { message, conversationHistory = [], userRole } = await req.json();
     
     if (!message) {
@@ -289,13 +320,19 @@ serve(async (req) => {
       );
     }
 
-    console.log('Received message:', message);
+    // Input validation
+    if (typeof message !== 'string' || message.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: 'Message must be a string with max 2000 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Received message from user:', userId);
     console.log('User role:', userRole);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Use service role for FAQ queries
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Search for relevant FAQs in database
     console.log('Searching FAQs...');
@@ -305,7 +342,7 @@ serve(async (req) => {
       .from('faqs')
       .select('*')
       .eq('is_active', true)
-      .or(`question.ilike.%${message}%,answer.ilike.%${message}%`)
+      .or(`question.ilike.%${message.substring(0, 100)}%,answer.ilike.%${message.substring(0, 100)}%`)
       .limit(5);
 
     if (faqError) {
@@ -360,10 +397,17 @@ ${faqContext}
 
 Jika pertanyaan tidak terkait dengan SIPANDAI atau kepegawaian, jawab dengan sopan bahwa kamu adalah asisten khusus untuk aplikasi SIPANDAI.`;
 
-    // Prepare messages for AI
+    // Prepare messages for AI - sanitize conversation history
+    const sanitizedHistory = Array.isArray(conversationHistory) 
+      ? conversationHistory.slice(-10).map((msg: any) => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: typeof msg.content === 'string' ? msg.content.substring(0, 2000) : ''
+        }))
+      : [];
+
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.slice(-10),
+      ...sanitizedHistory,
       { role: 'user', content: message }
     ];
 
@@ -437,7 +481,7 @@ Jika pertanyaan tidak terkait dengan SIPANDAI atau kepegawaian, jawab dengan sop
     console.error('Error in ai-chatbot function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Terjadi kesalahan pada server',
+        error: 'Terjadi kesalahan pada server',
         response: 'Maaf, terjadi kesalahan saat memproses pertanyaan Anda. Silakan coba lagi.'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

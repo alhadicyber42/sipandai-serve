@@ -16,6 +16,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { getRepositoryId } from "@/lib/document-mapping";
 import { StatCardSkeleton } from "@/components/skeletons";
+import { retirementFormSchema } from "@/lib/validation-schemas";
+import { getSafeErrorMessage } from "@/lib/error-handler";
 
 export default function Pensiun() {
     const { user, updateProfile } = useAuth();
@@ -92,8 +94,14 @@ export default function Pensiun() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!selectedCategory) {
-            toast.error("Pilih kategori pensiun terlebih dahulu");
+        // Validate form inputs using Zod schema
+        const validationResult = retirementFormSchema.safeParse({
+            category: selectedCategory,
+        });
+
+        if (!validationResult.success) {
+            const firstError = validationResult.error.errors[0];
+            toast.error(firstError.message);
             return;
         }
 
@@ -174,8 +182,7 @@ export default function Pensiun() {
         });
 
         if (error) {
-            toast.error("Gagal mengajukan usulan");
-            console.error(error);
+            toast.error(getSafeErrorMessage(error, "Gagal mengajukan usulan"));
         } else {
             toast.success("Usulan berhasil diajukan");
             setIsDialogOpen(false);
